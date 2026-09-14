@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789180958903,
+      "tag": "0000_grant_customer_addresses_access",
+      "breakpoints": true
+    }
+  ]
+}
