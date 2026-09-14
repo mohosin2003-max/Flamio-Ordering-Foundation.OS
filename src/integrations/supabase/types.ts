@@ -851,13 +851,18 @@ export type Database = {
         Row: {
           address_line: string | null
           city: string | null
+          closes_at: string | null
           country: string | null
           created_at: string
           email: string | null
+          facebook_url: string | null
+          google_maps_url: string | null
           id: string
+          instagram_url: string | null
           inventory_mode: string
           is_open: boolean
           name: string
+          opens_at: string | null
           phone: string | null
           tagline: string | null
           updated_at: string
@@ -865,13 +870,18 @@ export type Database = {
         Insert: {
           address_line?: string | null
           city?: string | null
+          closes_at?: string | null
           country?: string | null
           created_at?: string
           email?: string | null
+          facebook_url?: string | null
+          google_maps_url?: string | null
           id?: string
+          instagram_url?: string | null
           inventory_mode?: string
           is_open?: boolean
           name?: string
+          opens_at?: string | null
           phone?: string | null
           tagline?: string | null
           updated_at?: string
@@ -879,13 +889,18 @@ export type Database = {
         Update: {
           address_line?: string | null
           city?: string | null
+          closes_at?: string | null
           country?: string | null
           created_at?: string
           email?: string | null
+          facebook_url?: string | null
+          google_maps_url?: string | null
           id?: string
+          instagram_url?: string | null
           inventory_mode?: string
           is_open?: boolean
           name?: string
+          opens_at?: string | null
           phone?: string | null
           tagline?: string | null
           updated_at?: string
