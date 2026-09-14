@@ -149,6 +149,51 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_zones: {
+        Row: {
+          created_at: string
+          delivery_charge: number
+          estimated_delivery_time: string | null
+          free_delivery_threshold: number | null
+          id: string
+          is_active: boolean
+          is_free_delivery_enabled: boolean
+          minimum_order: number
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_charge?: number
+          estimated_delivery_time?: string | null
+          free_delivery_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          is_free_delivery_enabled?: boolean
+          minimum_order?: number
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_charge?: number
+          estimated_delivery_time?: string | null
+          free_delivery_threshold?: number | null
+          id?: string
+          is_active?: boolean
+          is_free_delivery_enabled?: boolean
+          minimum_order?: number
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
