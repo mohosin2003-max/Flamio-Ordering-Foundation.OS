@@ -112,6 +112,8 @@ export type Database = {
           is_default: boolean
           label: string | null
           landmark: string | null
+          latitude: number | null
+          longitude: number | null
           phone: string
           updated_at: string
           user_id: string
@@ -127,6 +129,8 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
           phone: string
           updated_at?: string
           user_id: string
@@ -142,6 +146,8 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
           phone?: string
           updated_at?: string
           user_id?: string
@@ -160,9 +166,12 @@ export type Database = {
           is_free_delivery_enabled: boolean
           minimum_order: number
           name: string
+          radius_max_m: number | null
+          radius_min_m: number | null
           slug: string
           sort_order: number
           updated_at: string
+          zone_type: string
         }
         Insert: {
           created_at?: string
@@ -174,9 +183,12 @@ export type Database = {
           is_free_delivery_enabled?: boolean
           minimum_order?: number
           name: string
+          radius_max_m?: number | null
+          radius_min_m?: number | null
           slug: string
           sort_order?: number
           updated_at?: string
+          zone_type?: string
         }
         Update: {
           created_at?: string
@@ -188,9 +200,12 @@ export type Database = {
           is_free_delivery_enabled?: boolean
           minimum_order?: number
           name?: string
+          radius_max_m?: number | null
+          radius_min_m?: number | null
           slug?: string
           sort_order?: number
           updated_at?: string
+          zone_type?: string
         }
         Relationships: []
       }
@@ -470,13 +485,17 @@ export type Database = {
           delivery_charge: number
           delivery_notes: string | null
           discount: number
+          distance_m: number | null
           estimated_time: string | null
           fulfillment: string
           id: string
           landmark: string | null
+          latitude: number | null
+          longitude: number | null
           payment_label: string
           payment_method: string
           pickup_note: string | null
+          rider_id: string | null
           status: string
           subtotal: number
           total: number
@@ -496,13 +515,17 @@ export type Database = {
           delivery_charge?: number
           delivery_notes?: string | null
           discount?: number
+          distance_m?: number | null
           estimated_time?: string | null
           fulfillment: string
           id?: string
           landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
           payment_label: string
           payment_method: string
           pickup_note?: string | null
+          rider_id?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -522,13 +545,17 @@ export type Database = {
           delivery_charge?: number
           delivery_notes?: string | null
           discount?: number
+          distance_m?: number | null
           estimated_time?: string | null
           fulfillment?: string
           id?: string
           landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
           payment_label?: string
           payment_method?: string
           pickup_note?: string | null
+          rider_id?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -537,7 +564,15 @@ export type Database = {
           zone_id?: string | null
           zone_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "riders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       owner_invites: {
         Row: {
@@ -557,6 +592,45 @@ export type Database = {
           id?: string
           note?: string | null
           phone?: string
+        }
+        Relationships: []
+      }
+      payment_providers: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          label: string
+          merchant_reference: string | null
+          mode: string
+          note: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          label: string
+          merchant_reference?: string | null
+          mode?: string
+          note?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          merchant_reference?: string | null
+          mode?: string
+          note?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -742,6 +816,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -750,6 +825,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -758,6 +834,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -772,8 +849,10 @@ export type Database = {
           created_at: string
           cta_href: string | null
           cta_label: string | null
+          desktop_image_path: string | null
           id: string
           is_active: boolean
+          mobile_image_path: string | null
           sort_order: number
           subtitle: string | null
           title: string
@@ -783,19 +862,23 @@ export type Database = {
           created_at?: string
           cta_href?: string | null
           cta_label?: string | null
+          desktop_image_path?: string | null
           id?: string
           is_active?: boolean
+          mobile_image_path?: string | null
           sort_order?: number
           subtitle?: string | null
-          title: string
+          title?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           cta_href?: string | null
           cta_label?: string | null
+          desktop_image_path?: string | null
           id?: string
           is_active?: boolean
+          mobile_image_path?: string | null
           sort_order?: number
           subtitle?: string | null
           title?: string
@@ -897,6 +980,8 @@ export type Database = {
           instagram_url: string | null
           inventory_mode: string
           is_open: boolean
+          latitude: number | null
+          longitude: number | null
           name: string
           opens_at: string | null
           phone: string | null
@@ -916,6 +1001,8 @@ export type Database = {
           instagram_url?: string | null
           inventory_mode?: string
           is_open?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           opens_at?: string | null
           phone?: string | null
@@ -935,10 +1022,226 @@ export type Database = {
           instagram_url?: string | null
           inventory_mode?: string
           is_open?: boolean
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           opens_at?: string | null
           phone?: string | null
           tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reward_claims: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          reference: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rule_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reference: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          reference?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rule_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_claims_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "reward_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          name: string
+          points: number
+          requires_claim: boolean
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name: string
+          points?: number
+          requires_claim?: boolean
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          name?: string
+          points?: number
+          requires_claim?: boolean
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reward_transactions: {
+        Row: {
+          action_key: string
+          created_at: string
+          description: string
+          id: string
+          points: number
+          reference_id: string
+          rule_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_key: string
+          created_at?: string
+          description: string
+          id?: string
+          points: number
+          reference_id: string
+          rule_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_key?: string
+          created_at?: string
+          description?: string
+          id?: string
+          points?: number
+          reference_id?: string
+          rule_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_transactions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "reward_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riders: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
