@@ -71,6 +71,9 @@ export interface RestaurantSettings {
   googleMapsUrl: string | null;
   recommendationsEnabled: boolean;
   recommendationsCount: number;
+  reviewsEnabled: boolean;
+  reviewPhotosEnabled: boolean;
+
 }
 
 /**
@@ -522,7 +525,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { data } = await supabaseAdmin
       .from("restaurant_settings")
       .select(
-        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count",
+        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled",
       )
       .order("created_at")
       .limit(1)
@@ -549,6 +552,9 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
       googleMapsUrl: data.google_maps_url,
       recommendationsEnabled: data.recommendations_enabled !== false,
       recommendationsCount: Number(data.recommendations_count ?? 6) || 6,
+      reviewsEnabled: data.reviews_enabled !== false,
+      reviewPhotosEnabled: data.review_photos_enabled !== false,
+
     };
   });
 
@@ -574,6 +580,9 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         googleMapsUrl: z.string().trim().max(500).nullable(),
         recommendationsEnabled: z.boolean(),
         recommendationsCount: z.number().int().min(1).max(12),
+        reviewsEnabled: z.boolean(),
+        reviewPhotosEnabled: z.boolean(),
+
       })
       .parse(input),
   )
@@ -601,6 +610,9 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         google_maps_url: data.googleMapsUrl,
         recommendations_enabled: data.recommendationsEnabled,
         recommendations_count: data.recommendationsCount,
+        reviews_enabled: data.reviewsEnabled,
+        review_photos_enabled: data.reviewPhotosEnabled,
+
       })
       .eq("id", data.id);
 

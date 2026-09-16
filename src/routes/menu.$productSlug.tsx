@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { FavoriteButton } from "@/components/menu/FavoriteButton";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { QuantityStepper } from "@/components/menu/QuantityStepper";
+import { ProductReviews } from "@/components/reviews/ProductReviews";
 import { Button } from "@/components/ui/button";
+
 import { EmptyState } from "@/components/ui/states";
 import { useCart } from "@/context/cart";
 import { formatBDT } from "@/lib/format";
@@ -173,7 +175,10 @@ function ProductDetailPage() {
         </div>
       </div>
 
+      <ProductReviews productId={product.id} />
+
       {data.related.length > 0 && (
+
         <section aria-labelledby="related-heading" className="mt-16">
           <h2 id="related-heading" className="font-display text-2xl font-extrabold">
             You might also like

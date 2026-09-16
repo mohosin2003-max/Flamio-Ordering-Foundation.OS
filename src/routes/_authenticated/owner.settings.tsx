@@ -114,7 +114,37 @@ function OwnerSettings() {
             )}
           </div>
 
+          <div className="space-y-3 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between">
+              <div className="pr-3">
+                <p className="font-medium">Customer reviews</p>
+                <p className="text-sm text-muted-foreground">
+                  Lets customers rate a completed order. Approved reviews show on the food page.
+                </p>
+              </div>
+              <Switch
+                checked={form.reviewsEnabled}
+                onCheckedChange={(v) => set("reviewsEnabled", v)}
+              />
+            </div>
+            {form.reviewsEnabled && (
+              <div className="flex items-center justify-between">
+                <div className="pr-3">
+                  <p className="font-medium">Allow review photos</p>
+                  <p className="text-sm text-muted-foreground">
+                    Customers may add one food photo with their review.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.reviewPhotosEnabled}
+                  onCheckedChange={(v) => set("reviewPhotosEnabled", v)}
+                />
+              </div>
+            )}
+          </div>
+
           <Field label="Restaurant name">
+
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </Field>
           <Field label="Tagline">

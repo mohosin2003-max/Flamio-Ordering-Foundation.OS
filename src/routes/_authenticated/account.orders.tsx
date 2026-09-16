@@ -197,6 +197,13 @@ function OrderCard({
               View details
             </Link>
           </Button>
+          {order.status === "completed" ? (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/account/review/$orderId" params={{ orderId: order.id }}>
+                Rate order
+              </Link>
+            </Button>
+          ) : null}
           {isActiveOrder(order.status) ? (
             <Button asChild size="sm" variant="outline">
               <Link to="/track/$orderId" params={{ orderId: order.id }}>
@@ -204,6 +211,7 @@ function OrderCard({
               </Link>
             </Button>
           ) : !isCancelled(order.status) ? (
+
             <Button size="sm" onClick={handleReorder}>
               <RotateCcw aria-hidden="true" /> Reorder
             </Button>
