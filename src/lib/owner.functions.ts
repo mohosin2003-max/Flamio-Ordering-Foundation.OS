@@ -522,7 +522,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { data } = await supabaseAdmin
       .from("restaurant_settings")
       .select(
-        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_url, instagram_url, google_maps_url",
+        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count",
       )
       .order("created_at")
       .limit(1)
@@ -547,6 +547,8 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
       facebookUrl: data.facebook_url,
       instagramUrl: data.instagram_url,
       googleMapsUrl: data.google_maps_url,
+      recommendationsEnabled: data.recommendations_enabled !== false,
+      recommendationsCount: Number(data.recommendations_count ?? 6) || 6,
     };
   });
 
@@ -570,6 +572,8 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         facebookUrl: z.string().trim().max(300).nullable(),
         instagramUrl: z.string().trim().max(300).nullable(),
         googleMapsUrl: z.string().trim().max(500).nullable(),
+        recommendationsEnabled: z.boolean(),
+        recommendationsCount: z.number().int().min(1).max(12),
       })
       .parse(input),
   )
@@ -595,6 +599,8 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         facebook_url: data.facebookUrl,
         instagram_url: data.instagramUrl,
         google_maps_url: data.googleMapsUrl,
+        recommendations_enabled: data.recommendationsEnabled,
+        recommendations_count: data.recommendationsCount,
       })
       .eq("id", data.id);
 
