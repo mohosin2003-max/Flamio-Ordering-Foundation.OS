@@ -173,7 +173,10 @@ function ProductDetailPage() {
         </div>
       </div>
 
+      <ProductReviews productId={product.id} />
+
       {data.related.length > 0 && (
+
         <section aria-labelledby="related-heading" className="mt-16">
           <h2 id="related-heading" className="font-display text-2xl font-extrabold">
             You might also like

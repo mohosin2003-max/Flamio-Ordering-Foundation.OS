@@ -73,10 +73,19 @@ export function NotificationList({
             onClick={async () => {
               onOpen(n);
               if (n.orderId) {
-                await navigate({ to: "/order/$orderId", params: { orderId: n.orderId } });
+                // A review reminder opens the rating screen for that order.
+                if (n.status === "review_request") {
+                  await navigate({
+                    to: "/account/review/$orderId",
+                    params: { orderId: n.orderId },
+                  });
+                } else {
+                  await navigate({ to: "/order/$orderId", params: { orderId: n.orderId } });
+                }
                 onAfterNavigate?.();
               }
             }}
+
             className={cn(
               "flex w-full flex-col gap-1 px-4 py-3 text-left transition-smooth hover:bg-secondary/60",
               !n.isRead && "bg-secondary/40",
