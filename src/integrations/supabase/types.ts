@@ -1374,6 +1374,8 @@ export type Database = {
           name: string
           opens_at: string | null
           phone: string | null
+          recommendations_count: number
+          recommendations_enabled: boolean
           tagline: string | null
           updated_at: string
         }
@@ -1395,6 +1397,8 @@ export type Database = {
           name?: string
           opens_at?: string | null
           phone?: string | null
+          recommendations_count?: number
+          recommendations_enabled?: boolean
           tagline?: string | null
           updated_at?: string
         }
@@ -1416,6 +1420,8 @@ export type Database = {
           name?: string
           opens_at?: string | null
           phone?: string | null
+          recommendations_count?: number
+          recommendations_enabled?: boolean
           tagline?: string | null
           updated_at?: string
         }
