@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { useCart } from "@/context/cart";
 import { formatBDT } from "@/lib/format";
+import type { CartLine } from "@/types/menu";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({
@@ -25,8 +26,35 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
+type CartGroup = {
+  comboKey: string | null;
+  comboName: string | null;
+  lines: CartLine[];
+};
+
+/** Keeps the lines of one built combo together, in the order they were added. */
+function groupLines(lines: CartLine[]): CartGroup[] {
+  const groups: CartGroup[] = [];
+  for (const line of lines) {
+    const key = line.comboKey ?? null;
+    const last = groups[groups.length - 1];
+    if (key && last?.comboKey === key) {
+      last.lines.push(line);
+      continue;
+    }
+    if (!key && last && last.comboKey === null) {
+      last.lines.push(line);
+      continue;
+    }
+    groups.push({ comboKey: key, comboName: line.comboName ?? null, lines: [line] });
+  }
+  return groups;
+}
+
 function CartPage() {
-  const { lines, subtotal, total, isHydrated, increment, decrement, removeItem, clear } = useCart();
+  const { lines, subtotal, total, isHydrated, increment, decrement, removeItem, removeCombo, clear } =
+    useCart();
+  const groups = groupLines(lines);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
