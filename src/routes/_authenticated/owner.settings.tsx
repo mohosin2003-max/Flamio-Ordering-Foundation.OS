@@ -82,6 +82,38 @@ function OwnerSettings() {
             />
           </div>
 
+          <div className="space-y-3 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between">
+              <div className="pr-3">
+                <p className="font-medium">Recommended for You</p>
+                <p className="text-sm text-muted-foreground">
+                  Shows customers items to order again plus new picks on the home page. Featured
+                  items are chosen in the Menu screen.
+                </p>
+              </div>
+              <Switch
+                checked={form.recommendationsEnabled}
+                onCheckedChange={(v) => set("recommendationsEnabled", v)}
+              />
+            </div>
+            {form.recommendationsEnabled && (
+              <Field label="How many items to show (1–12)">
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={form.recommendationsCount}
+                  onChange={(e) =>
+                    set(
+                      "recommendationsCount",
+                      Math.min(Math.max(Number(e.target.value) || 1, 1), 12),
+                    )
+                  }
+                />
+              </Field>
+            )}
+          </div>
+
           <Field label="Restaurant name">
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </Field>
