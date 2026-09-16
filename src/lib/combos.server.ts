@@ -195,10 +195,10 @@ export interface IncomingItem {
   unitPrice: number;
   quantity: number;
   imageUrl: string | null;
-  comboId?: string | null;
-  comboName?: string | null;
-  comboKey?: string | null;
-  comboGroupId?: string | null;
+  comboId?: string | null | undefined;
+  comboName?: string | null | undefined;
+  comboKey?: string | null | undefined;
+  comboGroupId?: string | null | undefined;
 }
 
 /**
