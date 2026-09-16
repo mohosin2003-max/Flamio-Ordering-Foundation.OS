@@ -69,6 +69,8 @@ export interface RestaurantSettings {
   facebookUrl: string | null;
   instagramUrl: string | null;
   googleMapsUrl: string | null;
+  recommendationsEnabled: boolean;
+  recommendationsCount: number;
 }
 
 /**
