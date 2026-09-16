@@ -19,6 +19,10 @@ interface CartContextValue {
   total: number;
   isHydrated: boolean;
   addItem: (product: Product, variant: ProductVariant | null, quantity?: number) => void;
+  /** Adds one built combo as its individual item lines, tagged with the combo. */
+  addComboLines: (lines: CartLine[]) => void;
+  /** Removes every line of one built combo. */
+  removeCombo: (comboKey: string) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   increment: (lineId: string) => void;
   decrement: (lineId: string) => void;
@@ -87,6 +91,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const addComboLines = useCallback((comboLines: CartLine[]) => {
+    setLines((current) => [...current, ...comboLines]);
+  }, []);
+
+  const removeCombo = useCallback((comboKey: string) => {
+    setLines((current) => current.filter((l) => l.comboKey !== comboKey));
+  }, []);
+
   const setQuantity = useCallback((lineId: string, quantity: number) => {
     setLines((current) =>
       quantity <= 0
@@ -132,13 +144,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
       total: subtotal,
       isHydrated,
       addItem,
+      addComboLines,
+      removeCombo,
       setQuantity,
       increment,
       decrement,
       removeItem,
       clear,
     };
-  }, [lines, isHydrated, addItem, setQuantity, increment, decrement, removeItem, clear]);
+  }, [
+    lines,
+    isHydrated,
+    addItem,
+    addComboLines,
+    removeCombo,
+    setQuantity,
+    increment,
+    decrement,
+    removeItem,
+    clear,
+  ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

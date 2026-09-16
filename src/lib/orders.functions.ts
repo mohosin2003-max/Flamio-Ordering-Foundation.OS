@@ -15,6 +15,11 @@ const itemSchema = z.object({
   unitPrice: z.number().nonnegative(),
   quantity: z.number().int().positive().max(99),
   imageUrl: z.string().nullable(),
+  /** Combo lines: labels only — re-checked and re-priced on the server below. */
+  comboId: z.string().nullable().optional(),
+  comboName: z.string().nullable().optional(),
+  comboKey: z.string().nullable().optional(),
+  comboGroupId: z.string().nullable().optional(),
 });
 
 const placeOrderSchema = z.object({
@@ -65,8 +70,14 @@ export const placeOrder = createServerFn({ method: "POST" })
     // Signed-in customers own their orders; guests keep placing orders freely.
     const userId = await getOptionalUserId();
 
+    // Combo lines are re-checked against the owner's configuration and the live
+    // menu, then re-priced here. Availability, selection rules and combo prices
+    // are decided by the server; anything sent by the browser is ignored.
+    const { validateComboItems } = await import("@/lib/combos.server");
+    const items = await validateComboItems(data.items);
+
     // Recompute money server-side; never trust totals from the browser.
-    const subtotal = data.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+    const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
     // Coupons are validated and priced on the server only.
     let couponCode: string | null = null;
     let discount = Math.min(data.discount, subtotal);
@@ -176,7 +187,7 @@ export const placeOrder = createServerFn({ method: "POST" })
     }
 
     const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
-      data.items.map((i) => ({
+      items.map((i) => ({
         order_id: inserted.id,
         product_id: i.productId,
         product_slug: i.productSlug,
@@ -186,6 +197,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         unit_price: i.unitPrice,
         quantity: i.quantity,
         image_url: i.imageUrl,
+        combo_name: i.comboName ?? null,
+        combo_key: i.comboKey ?? null,
       })),
     );
 

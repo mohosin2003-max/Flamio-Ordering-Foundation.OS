@@ -439,6 +439,98 @@ export type Database = {
           },
         ]
       }
+      combo_groups: {
+        Row: {
+          category_ids: string[]
+          combo_id: string
+          created_at: string
+          extra_charge: number
+          id: string
+          is_required: boolean
+          max_select: number
+          min_select: number
+          name: string
+          product_ids: string[]
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_ids?: string[]
+          combo_id: string
+          created_at?: string
+          extra_charge?: number
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name: string
+          product_ids?: string[]
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_ids?: string[]
+          combo_id?: string
+          created_at?: string
+          extra_charge?: number
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name?: string
+          product_ids?: string[]
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_groups_combo_id_fkey"
+            columns: ["combo_id"]
+            isOneToOne: false
+            referencedRelation: "combos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combos: {
+        Row: {
+          created_at: string
+          description: string | null
+          fixed_price: number | null
+          id: string
+          is_active: boolean
+          name: string
+          pricing_mode: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fixed_price?: number | null
+          id?: string
+          is_active?: boolean
+          name: string
+          pricing_mode?: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fixed_price?: number | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          pricing_mode?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           code: string
@@ -814,6 +906,8 @@ export type Database = {
       }
       order_items: {
         Row: {
+          combo_key: string | null
+          combo_name: string | null
           created_at: string
           id: string
           image_url: string | null
@@ -827,6 +921,8 @@ export type Database = {
           variant_name: string | null
         }
         Insert: {
+          combo_key?: string | null
+          combo_name?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -840,6 +936,8 @@ export type Database = {
           variant_name?: string | null
         }
         Update: {
+          combo_key?: string | null
+          combo_name?: string | null
           created_at?: string
           id?: string
           image_url?: string | null

@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 const navItems = [
   { to: "/", label: "Home" },
   { to: "/menu", label: "Menu" },
+  { to: "/combos", label: "Combos" },
   { to: "/offers", label: "Offers" },
   { to: "/contact", label: "Contact" },
 ] as const;

@@ -51,62 +51,111 @@ function CartPage() {
       ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_20rem]">
           <ul className="flex flex-col gap-4">
-            {lines.map((line) => (
-              <li
-                key={line.lineId}
-                className="flex gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-card"
-              >
-                {line.imageUrl ? (
-                  <img
-                    src={line.imageUrl}
-                    alt={line.productName}
-                    loading="lazy"
-                    width={96}
-                    height={96}
-                    className="size-20 shrink-0 rounded-xl object-cover sm:size-24"
-                  />
-                ) : null}
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {groups.map((group) =>
+              group.comboKey ? (
+                <li
+                  key={group.comboKey}
+                  className="rounded-2xl border border-primary/40 bg-card p-4 shadow-card"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold">
-                        <Link
-                          to="/menu/$productSlug"
-                          params={{ productSlug: line.productSlug }}
-                          className="transition-smooth hover:text-primary"
-                        >
-                          {line.productName}
-                        </Link>
-                      </h2>
-                      {line.variantName ? (
-                        <p className="text-sm text-muted-foreground">{line.variantName}</p>
-                      ) : null}
-                      <p className="text-sm text-muted-foreground">{formatBDT(line.unitPrice)}</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+                        Combo
+                      </p>
+                      <h2 className="truncate text-base font-semibold">{group.comboName}</h2>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`Remove ${line.productName} from cart`}
-                      onClick={() => removeItem(line.lineId)}
+                      aria-label={`Remove ${group.comboName} from cart`}
+                      onClick={() => removeCombo(group.comboKey as string)}
                     >
                       <Trash2 aria-hidden="true" />
                     </Button>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <QuantityStepper
-                      value={line.quantity}
-                      label={line.productName}
-                      min={0}
-                      onDecrease={() => decrement(line.lineId)}
-                      onIncrease={() => increment(line.lineId)}
-                    />
+                  <ul className="mt-3 space-y-1.5">
+                    {group.lines.map((line) => (
+                      <li key={line.lineId} className="flex justify-between gap-3 text-sm">
+                        <span className="min-w-0 truncate">
+                          {line.productName}
+                          {line.variantName ? ` (${line.variantName})` : ""}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">
+                          {formatBDT(line.unitPrice)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 flex items-baseline justify-between border-t border-border/70 pt-3">
+                    <span className="text-sm font-semibold">Combo total</span>
                     <span className="font-display text-lg font-bold">
-                      {formatBDT(line.unitPrice * line.quantity)}
+                      {formatBDT(
+                        group.lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
+                      )}
                     </span>
-                  </div>
-                </div>
-              </li>
-            ))}
+                  </p>
+                </li>
+              ) : (
+                group.lines.map((line) => (
+                  <li
+                    key={line.lineId}
+                    className="flex gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-card"
+                  >
+                    {line.imageUrl ? (
+                      <img
+                        src={line.imageUrl}
+                        alt={line.productName}
+                        loading="lazy"
+                        width={96}
+                        height={96}
+                        className="size-20 shrink-0 rounded-xl object-cover sm:size-24"
+                      />
+                    ) : null}
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="truncate text-base font-semibold">
+                            <Link
+                              to="/menu/$productSlug"
+                              params={{ productSlug: line.productSlug }}
+                              className="transition-smooth hover:text-primary"
+                            >
+                              {line.productName}
+                            </Link>
+                          </h2>
+                          {line.variantName ? (
+                            <p className="text-sm text-muted-foreground">{line.variantName}</p>
+                          ) : null}
+                          <p className="text-sm text-muted-foreground">
+                            {formatBDT(line.unitPrice)}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Remove ${line.productName} from cart`}
+                          onClick={() => removeItem(line.lineId)}
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <QuantityStepper
+                          value={line.quantity}
+                          label={line.productName}
+                          min={0}
+                          onDecrease={() => decrement(line.lineId)}
+                          onIncrease={() => increment(line.lineId)}
+                        />
+                        <span className="font-display text-lg font-bold">
+                          {formatBDT(line.unitPrice * line.quantity)}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              ),
+            )}
           </ul>
 
           <aside className="h-fit rounded-2xl border border-border/70 bg-card p-5 shadow-card lg:sticky lg:top-24">

@@ -340,6 +340,10 @@ function CheckoutPage() {
                   unitPrice: l.unitPrice,
                   quantity: l.quantity,
                   imageUrl: l.imageUrl,
+                  comboId: l.comboId ?? null,
+                  comboName: l.comboName ?? null,
+                  comboKey: l.comboKey ?? null,
+                  comboGroupId: l.comboGroupId ?? null,
                 })),
               },
             });
