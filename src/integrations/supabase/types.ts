@@ -50,6 +50,395 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_play_grants: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          plays: number
+          reference: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          plays?: number
+          reference: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          plays?: number
+          reference?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_play_grants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_play_state: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          id: string
+          last_play_at: string | null
+          plays_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          id?: string
+          last_play_at?: string | null
+          plays_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          id?: string
+          last_play_at?: string | null
+          plays_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_play_state_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_sessions: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          score: number
+          seed: string | null
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          score?: number
+          seed?: string | null
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          score?: number
+          seed?: string | null
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_sessions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_settings: {
+        Row: {
+          auto_cleanup_enabled: boolean
+          created_at: string
+          id: string
+          is_enabled: boolean
+          ticker_duration_seconds: number
+          ticker_enabled: boolean
+          ticker_max_winners: number
+          updated_at: string
+          winner_retention_days: number
+        }
+        Insert: {
+          auto_cleanup_enabled?: boolean
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          ticker_duration_seconds?: number
+          ticker_enabled?: boolean
+          ticker_max_winners?: number
+          updated_at?: string
+          winner_retention_days?: number
+        }
+        Update: {
+          auto_cleanup_enabled?: boolean
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          ticker_duration_seconds?: number
+          ticker_enabled?: boolean
+          ticker_max_winners?: number
+          updated_at?: string
+          winner_retention_days?: number
+        }
+        Relationships: []
+      }
+      challenge_winners: {
+        Row: {
+          challenge_id: string
+          claim_status: string
+          coupon_code: string | null
+          id: string
+          is_hidden: boolean
+          result: Json
+          reward_name: string
+          reward_quantity: number
+          reward_type: string
+          session_id: string | null
+          user_id: string
+          won_at: string
+        }
+        Insert: {
+          challenge_id: string
+          claim_status?: string
+          coupon_code?: string | null
+          id?: string
+          is_hidden?: boolean
+          result?: Json
+          reward_name: string
+          reward_quantity?: number
+          reward_type: string
+          session_id?: string | null
+          user_id: string
+          won_at?: string
+        }
+        Update: {
+          challenge_id?: string
+          claim_status?: string
+          coupon_code?: string | null
+          id?: string
+          is_hidden?: boolean
+          result?: Json
+          reward_name?: string
+          reward_quantity?: number
+          reward_type?: string
+          session_id?: string | null
+          user_id?: string
+          won_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_winners_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_winners_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          attempts_per_session: number
+          banner_path: string | null
+          base_plays: number
+          cooldown_minutes: number
+          created_at: string
+          daily_end_time: string | null
+          daily_start_time: string | null
+          daily_winner_limit: number
+          description: string | null
+          detector_type: string
+          difficulty: string
+          difficulty_config: Json
+          ends_on: string | null
+          game_type: string
+          icon_emoji: string
+          id: string
+          instructions: string | null
+          max_plays_per_customer: number
+          max_stored_plays: number
+          max_wins_per_customer: number
+          name: string
+          order_min_amount: number
+          order_required_status: string
+          order_unlock_enabled: boolean
+          order_unlock_max: number
+          order_unlock_plays: number
+          order_unlock_stack: boolean
+          referral_cooldown_hours: number
+          referral_required_count: number
+          referral_unlock_enabled: boolean
+          referral_unlock_max: number
+          referral_unlock_plays: number
+          referral_verification: string
+          refill_amount: number
+          refill_enabled: boolean
+          refill_interval_minutes: number
+          required_accuracy: number | null
+          required_score: number
+          reward_coupon_id: string | null
+          reward_name: string
+          reward_points: number
+          reward_quantity: number
+          reward_type: string
+          rules_config: Json
+          slug: string
+          sort_order: number
+          starts_on: string | null
+          status: string
+          time_limit_seconds: number | null
+          total_winner_limit: number
+          updated_at: string
+          winning_condition: Json
+        }
+        Insert: {
+          attempts_per_session?: number
+          banner_path?: string | null
+          base_plays?: number
+          cooldown_minutes?: number
+          created_at?: string
+          daily_end_time?: string | null
+          daily_start_time?: string | null
+          daily_winner_limit?: number
+          description?: string | null
+          detector_type: string
+          difficulty?: string
+          difficulty_config?: Json
+          ends_on?: string | null
+          game_type: string
+          icon_emoji?: string
+          id?: string
+          instructions?: string | null
+          max_plays_per_customer?: number
+          max_stored_plays?: number
+          max_wins_per_customer?: number
+          name: string
+          order_min_amount?: number
+          order_required_status?: string
+          order_unlock_enabled?: boolean
+          order_unlock_max?: number
+          order_unlock_plays?: number
+          order_unlock_stack?: boolean
+          referral_cooldown_hours?: number
+          referral_required_count?: number
+          referral_unlock_enabled?: boolean
+          referral_unlock_max?: number
+          referral_unlock_plays?: number
+          referral_verification?: string
+          refill_amount?: number
+          refill_enabled?: boolean
+          refill_interval_minutes?: number
+          required_accuracy?: number | null
+          required_score?: number
+          reward_coupon_id?: string | null
+          reward_name?: string
+          reward_points?: number
+          reward_quantity?: number
+          reward_type?: string
+          rules_config?: Json
+          slug: string
+          sort_order?: number
+          starts_on?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          total_winner_limit?: number
+          updated_at?: string
+          winning_condition?: Json
+        }
+        Update: {
+          attempts_per_session?: number
+          banner_path?: string | null
+          base_plays?: number
+          cooldown_minutes?: number
+          created_at?: string
+          daily_end_time?: string | null
+          daily_start_time?: string | null
+          daily_winner_limit?: number
+          description?: string | null
+          detector_type?: string
+          difficulty?: string
+          difficulty_config?: Json
+          ends_on?: string | null
+          game_type?: string
+          icon_emoji?: string
+          id?: string
+          instructions?: string | null
+          max_plays_per_customer?: number
+          max_stored_plays?: number
+          max_wins_per_customer?: number
+          name?: string
+          order_min_amount?: number
+          order_required_status?: string
+          order_unlock_enabled?: boolean
+          order_unlock_max?: number
+          order_unlock_plays?: number
+          order_unlock_stack?: boolean
+          referral_cooldown_hours?: number
+          referral_required_count?: number
+          referral_unlock_enabled?: boolean
+          referral_unlock_max?: number
+          referral_unlock_plays?: number
+          referral_verification?: string
+          refill_amount?: number
+          refill_enabled?: boolean
+          refill_interval_minutes?: number
+          required_accuracy?: number | null
+          required_score?: number
+          reward_coupon_id?: string | null
+          reward_name?: string
+          reward_points?: number
+          reward_quantity?: number
+          reward_type?: string
+          rules_config?: Json
+          slug?: string
+          sort_order?: number
+          starts_on?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          total_winner_limit?: number
+          updated_at?: string
+          winning_condition?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_reward_coupon_id_fkey"
+            columns: ["reward_coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string

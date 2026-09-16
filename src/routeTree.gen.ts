@@ -25,6 +25,7 @@ import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as AuthenticatedAccountIndexRouteImport } from './routes/_authenticated/account.index'
 import { Route as AuthenticatedAccountAddressesRouteImport } from './routes/_authenticated/account.addresses'
+import { Route as AuthenticatedAccountChallengesRouteImport } from './routes/_authenticated/account.challenges'
 import { Route as AuthenticatedAccountFavoritesRouteImport } from './routes/_authenticated/account.favorites'
 import { Route as AuthenticatedAccountNotificationsRouteImport } from './routes/_authenticated/account.notifications'
 import { Route as AuthenticatedAccountOrdersRouteImport } from './routes/_authenticated/account.orders'
@@ -126,6 +127,12 @@ const AuthenticatedAccountAddressesRoute =
   AuthenticatedAccountAddressesRouteImport.update({
     id: '/account/addresses',
     path: '/account/addresses',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAccountChallengesRoute =
+  AuthenticatedAccountChallengesRouteImport.update({
+    id: '/account/challenges',
+    path: '/account/challenges',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAccountFavoritesRoute =
@@ -266,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu/': typeof MenuIndexRoute
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
@@ -303,6 +311,7 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu': typeof MenuIndexRoute
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
@@ -343,6 +352,7 @@ export interface FileRoutesById {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu/': typeof MenuIndexRoute
   '/_authenticated/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/_authenticated/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/_authenticated/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/_authenticated/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/_authenticated/account/orders': typeof AuthenticatedAccountOrdersRoute
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu/'
     | '/account/addresses'
+    | '/account/challenges'
     | '/account/favorites'
     | '/account/notifications'
     | '/account/orders'
@@ -420,6 +431,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu'
     | '/account/addresses'
+    | '/account/challenges'
     | '/account/favorites'
     | '/account/notifications'
     | '/account/orders'
@@ -459,6 +471,7 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu/'
     | '/_authenticated/account/addresses'
+    | '/_authenticated/account/challenges'
     | '/_authenticated/account/favorites'
     | '/_authenticated/account/notifications'
     | '/_authenticated/account/orders'
@@ -610,6 +623,13 @@ declare module '@tanstack/react-router' {
       path: '/account/addresses'
       fullPath: '/account/addresses'
       preLoaderRoute: typeof AuthenticatedAccountAddressesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/account/challenges': {
+      id: '/_authenticated/account/challenges'
+      path: '/account/challenges'
+      fullPath: '/account/challenges'
+      preLoaderRoute: typeof AuthenticatedAccountChallengesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/account/favorites': {
@@ -807,6 +827,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
   AuthenticatedOwnerRoute: typeof AuthenticatedOwnerRouteWithChildren
   AuthenticatedAccountAddressesRoute: typeof AuthenticatedAccountAddressesRoute
+  AuthenticatedAccountChallengesRoute: typeof AuthenticatedAccountChallengesRoute
   AuthenticatedAccountFavoritesRoute: typeof AuthenticatedAccountFavoritesRoute
   AuthenticatedAccountNotificationsRoute: typeof AuthenticatedAccountNotificationsRoute
   AuthenticatedAccountOrdersRoute: typeof AuthenticatedAccountOrdersRoute
@@ -819,6 +840,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
   AuthenticatedOwnerRoute: AuthenticatedOwnerRouteWithChildren,
   AuthenticatedAccountAddressesRoute: AuthenticatedAccountAddressesRoute,
+  AuthenticatedAccountChallengesRoute: AuthenticatedAccountChallengesRoute,
   AuthenticatedAccountFavoritesRoute: AuthenticatedAccountFavoritesRoute,
   AuthenticatedAccountNotificationsRoute:
     AuthenticatedAccountNotificationsRoute,
