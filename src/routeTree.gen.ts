@@ -33,6 +33,7 @@ import { Route as AuthenticatedAccountRewardsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAccountVouchersRouteImport } from './routes/_authenticated/account.vouchers'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner.index'
 import { Route as AuthenticatedOwnerBannersRouteImport } from './routes/_authenticated/owner.banners'
+import { Route as AuthenticatedOwnerChallengesRouteImport } from './routes/_authenticated/owner.challenges'
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
@@ -176,6 +177,12 @@ const AuthenticatedOwnerBannersRoute =
     path: '/banners',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerChallengesRoute =
+  AuthenticatedOwnerChallengesRouteImport.update({
+    id: '/challenges',
+    path: '/challenges',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerCouponsRoute =
   AuthenticatedOwnerCouponsRouteImport.update({
     id: '/coupons',
@@ -280,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -359,6 +368,7 @@ export interface FileRoutesById {
   '/_authenticated/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/_authenticated/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/_authenticated/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/_authenticated/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -400,6 +410,7 @@ export interface FileRouteTypes {
     | '/account/rewards'
     | '/account/vouchers'
     | '/owner/banners'
+    | '/owner/challenges'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/account/rewards'
     | '/account/vouchers'
     | '/owner/banners'
+    | '/owner/challenges'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -478,6 +490,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/rewards'
     | '/_authenticated/account/vouchers'
     | '/_authenticated/owner/banners'
+    | '/_authenticated/owner/challenges'
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/delivery'
@@ -681,6 +694,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerBannersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/challenges': {
+      id: '/_authenticated/owner/challenges'
+      path: '/challenges'
+      fullPath: '/owner/challenges'
+      preLoaderRoute: typeof AuthenticatedOwnerChallengesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/coupons': {
       id: '/_authenticated/owner/coupons'
       path: '/coupons'
@@ -784,6 +804,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerBannersRoute: typeof AuthenticatedOwnerBannersRoute
+  AuthenticatedOwnerChallengesRoute: typeof AuthenticatedOwnerChallengesRoute
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
@@ -803,6 +824,7 @@ interface AuthenticatedOwnerRouteChildren {
 
 const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerBannersRoute: AuthenticatedOwnerBannersRoute,
+  AuthenticatedOwnerChallengesRoute: AuthenticatedOwnerChallengesRoute,
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
