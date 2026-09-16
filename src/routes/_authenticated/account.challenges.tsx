@@ -31,7 +31,7 @@ import {
 } from "@/lib/challenges.functions";
 import { difficultyLabel, formatCountdown } from "@/lib/challenges";
 import type { PublicChallenge } from "@/lib/challenges";
-import { formatCurrency } from "@/lib/format";
+import { formatBDT } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/account/challenges")({
   head: () => ({
@@ -352,7 +352,7 @@ function ChallengeCard({
               if (method.kind === "order") {
                 return (
                   <p key="order" className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <ShoppingBag className="size-3.5" /> Order {formatCurrency(method.minAmount)} → get +
+                    <ShoppingBag className="size-3.5" /> Order {formatBDT(method.minAmount)} → get +
                     {method.plays} play
                   </p>
                 );

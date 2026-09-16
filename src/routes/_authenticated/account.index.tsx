@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Coins,
   Crown,
+  Gamepad2,
   Gift,
   Heart,
   Loader2,

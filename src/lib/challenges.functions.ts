@@ -273,18 +273,15 @@ export const ownerListChallenges = createServerFn({ method: "GET" })
         autoCleanupEnabled: settings.auto_cleanup_enabled,
       },
       challenges: (challengesResult.data ?? []).map((row) => {
-        const challenge = row as Record<string, never> & { [key: string]: never };
-        const value = row as unknown as Record<string, unknown>;
-        void challenge;
-        const totals = playTotals.get(String(value["id"])) ?? { plays: 0, customers: 0 };
+        const totals = playTotals.get(row.id) ?? { plays: 0, customers: 0 };
         return {
-          ...(value as never),
-          dailyWinners: dailyCounts.get(String(value["id"])) ?? 0,
+          ...row,
+          dailyWinners: dailyCounts.get(row.id) ?? 0,
           totalPlays: totals.plays,
           totalPlayers: totals.customers,
-          detectorImplemented: Boolean(DETECTORS[value["detector_type"] as DetectorType]?.implemented),
-          detectorNote: DETECTORS[value["detector_type"] as DetectorType]?.note ?? null,
-        } as ChallengeAdminRow;
+          detectorImplemented: Boolean(DETECTORS[row.detector_type as DetectorType]?.implemented),
+          detectorNote: DETECTORS[row.detector_type as DetectorType]?.note ?? null,
+        };
       }),
       winners: winnerRows.map((row) => {
         const challenge = Array.isArray(row.challenges) ? row.challenges[0] : row.challenges;
@@ -304,19 +301,6 @@ export const ownerListChallenges = createServerFn({ method: "GET" })
     };
   });
 
-export type ChallengeAdminRow = Record<string, unknown> & {
-  id: string;
-  slug: string;
-  name: string;
-  status: string;
-  detector_type: string;
-  difficulty: string;
-  dailyWinners: number;
-  totalPlays: number;
-  totalPlayers: number;
-  detectorImplemented: boolean;
-  detectorNote: string | null;
-};
 
 const challengeInput = z.object({
   id: z.string().uuid().nullable(),
