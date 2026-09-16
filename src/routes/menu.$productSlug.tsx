@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { FavoriteButton } from "@/components/menu/FavoriteButton";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { QuantityStepper } from "@/components/menu/QuantityStepper";
+import { ProductReviews } from "@/components/reviews/ProductReviews";
 import { Button } from "@/components/ui/button";
+
 import { EmptyState } from "@/components/ui/states";
 import { useCart } from "@/context/cart";
 import { formatBDT } from "@/lib/format";
