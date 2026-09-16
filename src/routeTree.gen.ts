@@ -25,6 +25,7 @@ import { Route as OrderOrderIdRouteImport } from './routes/order.$orderId'
 import { Route as TrackOrderIdRouteImport } from './routes/track.$orderId'
 import { Route as AuthenticatedAccountIndexRouteImport } from './routes/_authenticated/account.index'
 import { Route as AuthenticatedAccountAddressesRouteImport } from './routes/_authenticated/account.addresses'
+import { Route as AuthenticatedAccountChallengesRouteImport } from './routes/_authenticated/account.challenges'
 import { Route as AuthenticatedAccountFavoritesRouteImport } from './routes/_authenticated/account.favorites'
 import { Route as AuthenticatedAccountNotificationsRouteImport } from './routes/_authenticated/account.notifications'
 import { Route as AuthenticatedAccountOrdersRouteImport } from './routes/_authenticated/account.orders'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedAccountRewardsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAccountVouchersRouteImport } from './routes/_authenticated/account.vouchers'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner.index'
 import { Route as AuthenticatedOwnerBannersRouteImport } from './routes/_authenticated/owner.banners'
+import { Route as AuthenticatedOwnerChallengesRouteImport } from './routes/_authenticated/owner.challenges'
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
@@ -128,6 +130,12 @@ const AuthenticatedAccountAddressesRoute =
     path: '/account/addresses',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAccountChallengesRoute =
+  AuthenticatedAccountChallengesRouteImport.update({
+    id: '/account/challenges',
+    path: '/account/challenges',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAccountFavoritesRoute =
   AuthenticatedAccountFavoritesRouteImport.update({
     id: '/account/favorites',
@@ -167,6 +175,12 @@ const AuthenticatedOwnerBannersRoute =
   AuthenticatedOwnerBannersRouteImport.update({
     id: '/banners',
     path: '/banners',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
+const AuthenticatedOwnerChallengesRoute =
+  AuthenticatedOwnerChallengesRouteImport.update({
+    id: '/challenges',
+    path: '/challenges',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
 const AuthenticatedOwnerCouponsRoute =
@@ -266,12 +280,14 @@ export interface FileRoutesByFullPath {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu/': typeof MenuIndexRoute
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -303,12 +319,14 @@ export interface FileRoutesByTo {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu': typeof MenuIndexRoute
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -343,12 +361,14 @@ export interface FileRoutesById {
   '/track/$orderId': typeof TrackOrderIdRoute
   '/menu/': typeof MenuIndexRoute
   '/_authenticated/account/addresses': typeof AuthenticatedAccountAddressesRoute
+  '/_authenticated/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/_authenticated/account/favorites': typeof AuthenticatedAccountFavoritesRoute
   '/_authenticated/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/_authenticated/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/_authenticated/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/_authenticated/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/_authenticated/owner/banners': typeof AuthenticatedOwnerBannersRoute
+  '/_authenticated/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -383,12 +403,14 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu/'
     | '/account/addresses'
+    | '/account/challenges'
     | '/account/favorites'
     | '/account/notifications'
     | '/account/orders'
     | '/account/rewards'
     | '/account/vouchers'
     | '/owner/banners'
+    | '/owner/challenges'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -420,12 +442,14 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu'
     | '/account/addresses'
+    | '/account/challenges'
     | '/account/favorites'
     | '/account/notifications'
     | '/account/orders'
     | '/account/rewards'
     | '/account/vouchers'
     | '/owner/banners'
+    | '/owner/challenges'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -459,12 +483,14 @@ export interface FileRouteTypes {
     | '/track/$orderId'
     | '/menu/'
     | '/_authenticated/account/addresses'
+    | '/_authenticated/account/challenges'
     | '/_authenticated/account/favorites'
     | '/_authenticated/account/notifications'
     | '/_authenticated/account/orders'
     | '/_authenticated/account/rewards'
     | '/_authenticated/account/vouchers'
     | '/_authenticated/owner/banners'
+    | '/_authenticated/owner/challenges'
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/delivery'
@@ -612,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountAddressesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/account/challenges': {
+      id: '/_authenticated/account/challenges'
+      path: '/account/challenges'
+      fullPath: '/account/challenges'
+      preLoaderRoute: typeof AuthenticatedAccountChallengesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/account/favorites': {
       id: '/_authenticated/account/favorites'
       path: '/account/favorites'
@@ -659,6 +692,13 @@ declare module '@tanstack/react-router' {
       path: '/banners'
       fullPath: '/owner/banners'
       preLoaderRoute: typeof AuthenticatedOwnerBannersRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
+    '/_authenticated/owner/challenges': {
+      id: '/_authenticated/owner/challenges'
+      path: '/challenges'
+      fullPath: '/owner/challenges'
+      preLoaderRoute: typeof AuthenticatedOwnerChallengesRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
     '/_authenticated/owner/coupons': {
@@ -764,6 +804,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerBannersRoute: typeof AuthenticatedOwnerBannersRoute
+  AuthenticatedOwnerChallengesRoute: typeof AuthenticatedOwnerChallengesRoute
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
@@ -783,6 +824,7 @@ interface AuthenticatedOwnerRouteChildren {
 
 const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerBannersRoute: AuthenticatedOwnerBannersRoute,
+  AuthenticatedOwnerChallengesRoute: AuthenticatedOwnerChallengesRoute,
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
@@ -807,6 +849,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
   AuthenticatedOwnerRoute: typeof AuthenticatedOwnerRouteWithChildren
   AuthenticatedAccountAddressesRoute: typeof AuthenticatedAccountAddressesRoute
+  AuthenticatedAccountChallengesRoute: typeof AuthenticatedAccountChallengesRoute
   AuthenticatedAccountFavoritesRoute: typeof AuthenticatedAccountFavoritesRoute
   AuthenticatedAccountNotificationsRoute: typeof AuthenticatedAccountNotificationsRoute
   AuthenticatedAccountOrdersRoute: typeof AuthenticatedAccountOrdersRoute
@@ -819,6 +862,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
   AuthenticatedOwnerRoute: AuthenticatedOwnerRouteWithChildren,
   AuthenticatedAccountAddressesRoute: AuthenticatedAccountAddressesRoute,
+  AuthenticatedAccountChallengesRoute: AuthenticatedAccountChallengesRoute,
   AuthenticatedAccountFavoritesRoute: AuthenticatedAccountFavoritesRoute,
   AuthenticatedAccountNotificationsRoute:
     AuthenticatedAccountNotificationsRoute,
