@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as CombosRouteImport } from './routes/combos'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as OffersRouteImport } from './routes/offers'
@@ -34,6 +35,7 @@ import { Route as AuthenticatedAccountVouchersRouteImport } from './routes/_auth
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner.index'
 import { Route as AuthenticatedOwnerBannersRouteImport } from './routes/_authenticated/owner.banners'
 import { Route as AuthenticatedOwnerChallengesRouteImport } from './routes/_authenticated/owner.challenges'
+import { Route as AuthenticatedOwnerCombosRouteImport } from './routes/_authenticated/owner.combos'
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
@@ -71,6 +73,11 @@ const CartRoute = CartRouteImport.update({
 const CheckoutRoute = CheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CombosRoute = CombosRouteImport.update({
+  id: '/combos',
+  path: '/combos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -183,6 +190,12 @@ const AuthenticatedOwnerChallengesRoute =
     path: '/challenges',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerCombosRoute =
+  AuthenticatedOwnerCombosRouteImport.update({
+    id: '/combos',
+    path: '/combos',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerCouponsRoute =
   AuthenticatedOwnerCouponsRouteImport.update({
     id: '/coupons',
@@ -270,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/combos': typeof CombosRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
@@ -288,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
+  '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -310,6 +325,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/combos': typeof CombosRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
@@ -327,6 +343,7 @@ export interface FileRoutesByTo {
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
+  '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -351,6 +368,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
+  '/combos': typeof CombosRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
@@ -369,6 +387,7 @@ export interface FileRoutesById {
   '/_authenticated/account/vouchers': typeof AuthenticatedAccountVouchersRoute
   '/_authenticated/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/_authenticated/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
+  '/_authenticated/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
@@ -393,6 +412,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/combos'
     | '/contact'
     | '/forgot-password'
     | '/offers'
@@ -411,6 +431,7 @@ export interface FileRouteTypes {
     | '/account/vouchers'
     | '/owner/banners'
     | '/owner/challenges'
+    | '/owner/combos'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -433,6 +454,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/combos'
     | '/contact'
     | '/forgot-password'
     | '/offers'
@@ -450,6 +472,7 @@ export interface FileRouteTypes {
     | '/account/vouchers'
     | '/owner/banners'
     | '/owner/challenges'
+    | '/owner/combos'
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
@@ -473,6 +496,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cart'
     | '/checkout'
+    | '/combos'
     | '/contact'
     | '/forgot-password'
     | '/offers'
@@ -491,6 +515,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/vouchers'
     | '/_authenticated/owner/banners'
     | '/_authenticated/owner/challenges'
+    | '/_authenticated/owner/combos'
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/delivery'
@@ -515,6 +540,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
+  CombosRoute: typeof CombosRoute
   ContactRoute: typeof ContactRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   OffersRoute: typeof OffersRoute
@@ -559,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/combos': {
+      id: '/combos'
+      path: '/combos'
+      fullPath: '/combos'
+      preLoaderRoute: typeof CombosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -701,6 +734,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerChallengesRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/combos': {
+      id: '/_authenticated/owner/combos'
+      path: '/combos'
+      fullPath: '/owner/combos'
+      preLoaderRoute: typeof AuthenticatedOwnerCombosRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/coupons': {
       id: '/_authenticated/owner/coupons'
       path: '/coupons'
@@ -805,6 +845,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerBannersRoute: typeof AuthenticatedOwnerBannersRoute
   AuthenticatedOwnerChallengesRoute: typeof AuthenticatedOwnerChallengesRoute
+  AuthenticatedOwnerCombosRoute: typeof AuthenticatedOwnerCombosRoute
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
@@ -825,6 +866,7 @@ interface AuthenticatedOwnerRouteChildren {
 const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerBannersRoute: AuthenticatedOwnerBannersRoute,
   AuthenticatedOwnerChallengesRoute: AuthenticatedOwnerChallengesRoute,
+  AuthenticatedOwnerCombosRoute: AuthenticatedOwnerCombosRoute,
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
@@ -881,6 +923,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
+  CombosRoute: CombosRoute,
   ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   OffersRoute: OffersRoute,

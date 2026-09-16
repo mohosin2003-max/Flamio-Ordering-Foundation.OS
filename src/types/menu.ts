@@ -112,6 +112,17 @@ export interface CartLine {
   unitPrice: number;
   quantity: number;
   imageUrl: string | null;
+  /**
+   * Combo lines are ordinary product lines tagged with the combo they came
+   * from, so orders, the kitchen list and stock counting stay unchanged. All
+   * combo pricing and rules are re-checked server-side before an order is
+   * accepted, so these fields are labels — never a source of truth.
+   */
+  comboId?: ID | null;
+  comboName?: string | null;
+  /** Groups the lines of one built combo together in the cart. */
+  comboKey?: string | null;
+  comboGroupId?: ID | null;
 }
 
 export type FulfillmentType = "delivery" | "pickup";
