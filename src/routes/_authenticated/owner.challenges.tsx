@@ -51,7 +51,6 @@ export const Route = createFileRoute("/_authenticated/owner/challenges")({
   component: OwnerChallenges,
 });
 
-type AdminChallenge = Record<string, never> extends never ? Record<string, unknown> : never;
 
 function value<T>(row: Record<string, unknown>, key: string, fallback: T): T {
   const raw = row[key];
@@ -1070,4 +1069,3 @@ function Select({
   );
 }
 
-export type { AdminChallenge };
