@@ -43,6 +43,7 @@ const TABS: {
   { to: "/owner/orders", label: "Orders", exact: false, permission: "online_orders" },
   { to: "/owner/pos", label: "Counter sale", exact: false, permission: "pos" },
   { to: "/owner/menu", label: "Menu", exact: false, permission: "menu" },
+  { to: "/owner/combos", label: "Combos", exact: false, permission: "menu" },
   { to: "/owner/inventory", label: "Inventory", exact: false, permission: "inventory" },
   { to: "/owner/purchases", label: "Purchases", exact: false, permission: "purchases" },
   { to: "/owner/suppliers", label: "Suppliers", exact: false, permission: "suppliers" },
