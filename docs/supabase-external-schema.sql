@@ -2843,7 +2843,19 @@ COMMIT;
 --    create the buckets and then re-run section 7 on its own.
 -- E. Project settings > API: copy URL + publishable/anon key + service role key
 --    into your own environment configuration.
--- F. Data restore: run YOUR production data dump AFTER this file, with
---    `SET session_replication_role = replica;` so the reward/review triggers do
---    not fire, then reset it. No seed rows are inserted by this file, so there
---    is nothing to de-duplicate and nothing to truncate.
+-- F. Data restore: run YOUR production data dump AFTER this file. Temporarily
+--    disable only these four order triggers so completed orders in your backup
+--    do not re-award rewards or re-create review-request notifications:
+--      ALTER TABLE public.orders DISABLE TRIGGER award_completed_order_reward_after_insert;
+--      ALTER TABLE public.orders DISABLE TRIGGER award_completed_order_reward_after_update;
+--      ALTER TABLE public.orders DISABLE TRIGGER request_order_review_after_insert;
+--      ALTER TABLE public.orders DISABLE TRIGGER request_order_review_after_update;
+--    After restoring data, re-enable all four BEFORE going live and verify with:
+--      ALTER TABLE public.orders ENABLE TRIGGER award_completed_order_reward_after_insert;
+--      ALTER TABLE public.orders ENABLE TRIGGER award_completed_order_reward_after_update;
+--      ALTER TABLE public.orders ENABLE TRIGGER request_order_review_after_insert;
+--      ALTER TABLE public.orders ENABLE TRIGGER request_order_review_after_update;
+--      SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+--        WHERE NOT t.tgisinternal AND n.nspname = 'public' AND t.tgenabled = 'O' AND c.relname = 'orders';  -- expect 4
+--    No seed rows are inserted by this file, so there is nothing to de-duplicate
+--    and nothing to truncate.
