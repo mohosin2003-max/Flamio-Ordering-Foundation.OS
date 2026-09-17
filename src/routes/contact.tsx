@@ -46,49 +46,41 @@ function ContactPage() {
   const hoursText = info?.opensAt && info?.closesAt ? `${info.opensAt} – ${info.closesAt}` : null;
 
   const hasAddress = Boolean(addressLine || city || country);
+  const addressText = [addressLine, city && country ? `${city}, ${country}` : city || country]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col gap-3 px-4 py-8 pb-28 text-left sm:px-6 sm:py-10">
-      <h1 className="mb-2 text-center font-display text-3xl font-black sm:text-4xl">
+    <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col gap-4 px-4 py-6 pb-28 text-foreground sm:px-6 sm:py-8">
+      <h1 className="mb-1 text-center font-display text-2xl font-bold tracking-tight">
         {name}
       </h1>
 
       {hasAddress ? (
-        <section className="border-b border-border/70 py-4">
-          <div className="flex gap-3">
-            <MapPin aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <h2 className="font-semibold">Location</h2>
-              <address className="mt-1 text-sm not-italic leading-relaxed text-muted-foreground">
-                {addressLine ? <>{addressLine}<br /></> : null}
-                {city || country ? <>{city}{city && country ? ", " : ""}{country}</> : null}
-              </address>
-              {googleMapsUrl ? (
-                <a
-                  href={googleMapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-                >
-                  Open map <ExternalLink aria-hidden="true" className="size-3.5" />
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="border-b border-border/70 py-4">
-        <div className="flex gap-3">
-          <Clock3 aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
-          <div>
-            <h2 className="font-semibold">Opening Hours</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {hoursText ?? "Not added yet"}
-            </p>
+        <div className="flex items-start gap-3">
+          <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+          <div className="min-w-0 text-sm">
+            <p className="text-muted-foreground">{addressText}</p>
+            {googleMapsUrl ? (
+              <a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                Open map <ExternalLink aria-hidden="true" className="size-3" />
+              </a>
+            ) : null}
           </div>
         </div>
-      </section>
+      ) : null}
+
+      <div className="flex items-start gap-3">
+        <Clock3 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+        <p className="min-w-0 text-sm text-muted-foreground">
+          {hoursText ?? "—"}
+        </p>
+      </div>
 
       {facebookUrl ? (
         <a
@@ -96,11 +88,10 @@ function ContactPage() {
           target="_blank"
           rel="noreferrer"
           aria-label={`Open ${facebookPageName} on Facebook`}
-          className="flex items-center gap-3 py-3 text-sm font-semibold text-foreground transition-smooth hover:text-primary"
+          className="flex items-center gap-3 py-1 text-sm font-medium text-foreground transition-smooth hover:text-primary"
         >
-          <Facebook aria-hidden="true" className="size-5 shrink-0 text-primary" />
+          <Facebook aria-hidden="true" className="size-4 shrink-0 text-primary" />
           <span>{facebookPageName}</span>
-          <ExternalLink aria-hidden="true" className="ml-auto size-3.5 text-muted-foreground" />
         </a>
       ) : null}
     </div>
