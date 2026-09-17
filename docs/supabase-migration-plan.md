@@ -178,12 +178,30 @@ Nothing else is Lovable-locked: no edge functions, no Lovable AI calls in runtim
 5. Record current auth settings (email sign-up on, auto-confirm on) and the current owner user ID.
 
 **B. Schema on the new project**
-6. Apply `supabase/migrations/*.sql` in filename order (they are the authoritative schema, seeds included).
+6. Apply `supabase/migrations/*.sql` in filename order (they are the authoritative schema).
+   **Seed-data collision handling (required):** several migrations contain seed `INSERT`s
+   (products, restaurant_settings, payment_providers, reward rules, inventory). Two safe options
+   — pick one before starting:
+   - **Option 1 (recommended):** restore production data *first* (section D), then apply migrations
+     wrapped so seed inserts no-op — run seeds inside `ON CONFLICT DO NOTHING` (or comment out the
+     seed blocks before applying) so restored rows are never duplicated or overwritten.
+   - **Option 2:** apply migrations *with* seeds on the empty project, then restore production data
+     with `TRUNCATE ... CASCADE` on only the seeded tables immediately before inserting the dump —
+     never truncate orders/users/reviews tables.
+   Never apply seed inserts on top of already-restored production rows without a conflict guard:
+   that is the one step that could duplicate menu items or overwrite edited settings.
 7. Apply `drizzle/migrations/0000_grant_customer_addresses_access.sql`.
-8. Verify: 38 tables, 7 functions, 32 triggers, `app_role` enum, all policies and grants present.
+8. Verify: 38 tables, 7 functions, 32 triggers, `app_role` enum, all policies and grants present
+   (including all **11** storage policies listed in section 1).
 
 **C. Auth users**
 9. Restore `auth.users` (and `auth.identities`) from the dump **with original UUIDs**; otherwise create users and plan a password reset.
+   **Unconfirmed account (decision required before migration):** 1 of the 4 live accounts is
+   **unconfirmed** (`email_confirmed_at` IS NULL). Decide before migrating: either (a) confirm it
+   during restore by setting `email_confirmed_at` in the dump, or (b) leave it unconfirmed and let
+   the user confirm on the new project. The owner account (`p8801647502172@phone.flamio.app`,
+   UUID `e17aaaaa-9ac3-4005-bcdf-4424b01c6364`) **must** be carried over with the same UUID —
+   it owns the only stored photo and holds the owner role.
 10. Enable email sign-up and email auto-confirmation to match current behaviour.
 11. Confirm `user_roles` will map the owner UUID (restored in step D).
 
