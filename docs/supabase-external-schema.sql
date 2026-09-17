@@ -2824,7 +2824,7 @@ COMMIT;
 -- SELECT count(*) FROM pg_policies WHERE schemaname = 'storage';              -- expect 11
 -- SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 --   WHERE n.nspname='public';                                                 -- expect 7
--- SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal;                     -- expect 32
+-- SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE NOT t.tgisinternal AND n.nspname = 'public'; -- expect 32
 -- SELECT count(*) FROM pg_type WHERE typname = 'app_role';                     -- expect 1
 
 -- =====================================================================
