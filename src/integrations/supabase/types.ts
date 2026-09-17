@@ -1515,6 +1515,7 @@ export type Database = {
           country: string | null
           created_at: string
           email: string | null
+          facebook_page_name: string | null
           facebook_url: string | null
           google_maps_url: string | null
           id: string
@@ -1540,6 +1541,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          facebook_page_name?: string | null
           facebook_url?: string | null
           google_maps_url?: string | null
           id?: string
@@ -1565,6 +1567,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          facebook_page_name?: string | null
           facebook_url?: string | null
           google_maps_url?: string | null
           id?: string

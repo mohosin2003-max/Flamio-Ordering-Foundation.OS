@@ -204,13 +204,23 @@ function OwnerSettings() {
               />
             </Field>
           </div>
-          <Field label="Facebook page URL">
-            <Input
-              placeholder="https://facebook.com/…"
-              value={form.facebookUrl ?? ""}
-              onChange={(e) => set("facebookUrl", e.target.value || null)}
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Facebook Page Name">
+              <Input
+                placeholder="Flamio"
+                value={form.facebookPageName ?? ""}
+                onChange={(e) => set("facebookPageName", e.target.value || null)}
+              />
+            </Field>
+            <Field label="Facebook Page URL">
+              <Input
+                type="url"
+                placeholder="https://facebook.com/…"
+                value={form.facebookUrl ?? ""}
+                onChange={(e) => set("facebookUrl", e.target.value || null)}
+              />
+            </Field>
+          </div>
           <Field label="Instagram profile URL">
             <Input
               placeholder="https://instagram.com/…"

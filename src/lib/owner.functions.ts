@@ -66,6 +66,7 @@ export interface RestaurantSettings {
   inventoryMode: "simple" | "advanced";
   opensAt: string | null;
   closesAt: string | null;
+  facebookPageName: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;
   googleMapsUrl: string | null;
@@ -525,7 +526,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { data } = await supabaseAdmin
       .from("restaurant_settings")
       .select(
-        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled",
+        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled",
       )
       .order("created_at")
       .limit(1)
@@ -547,6 +548,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
         | "advanced",
       opensAt: data.opens_at,
       closesAt: data.closes_at,
+      facebookPageName: data.facebook_page_name,
       facebookUrl: data.facebook_url,
       instagramUrl: data.instagram_url,
       googleMapsUrl: data.google_maps_url,
@@ -575,6 +577,7 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         inventoryMode: z.enum(["simple", "advanced"]),
         opensAt: z.string().trim().max(30).nullable(),
         closesAt: z.string().trim().max(30).nullable(),
+        facebookPageName: z.string().trim().max(100).nullable(),
         facebookUrl: z.string().trim().max(300).nullable(),
         instagramUrl: z.string().trim().max(300).nullable(),
         googleMapsUrl: z.string().trim().max(500).nullable(),
@@ -605,6 +608,7 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         inventory_mode: data.inventoryMode,
         opens_at: data.opensAt,
         closes_at: data.closesAt,
+        facebook_page_name: data.facebookPageName,
         facebook_url: data.facebookUrl,
         instagram_url: data.instagramUrl,
         google_maps_url: data.googleMapsUrl,

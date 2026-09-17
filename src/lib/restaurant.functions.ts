@@ -14,6 +14,7 @@ export interface PublicRestaurantInfo {
   isOpen: boolean;
   opensAt: string | null;
   closesAt: string | null;
+  facebookPageName: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;
   googleMapsUrl: string | null;
@@ -32,7 +33,7 @@ export const getPublicRestaurantInfo = createServerFn({ method: "GET" }).handler
     const { data, error } = await supabasePublic
       .from("restaurant_settings")
       .select(
-        "name, tagline, phone, email, address_line, city, country, is_open, opens_at, closes_at, facebook_url, instagram_url, google_maps_url",
+        "name, tagline, phone, email, address_line, city, country, is_open, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url",
       )
       .order("created_at")
       .limit(1)
@@ -54,6 +55,7 @@ export const getPublicRestaurantInfo = createServerFn({ method: "GET" }).handler
       isOpen: data.is_open,
       opensAt: data.opens_at,
       closesAt: data.closes_at,
+      facebookPageName: data.facebook_page_name,
       facebookUrl: data.facebook_url,
       instagramUrl: data.instagram_url,
       googleMapsUrl: data.google_maps_url,
