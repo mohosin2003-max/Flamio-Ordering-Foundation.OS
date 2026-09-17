@@ -106,7 +106,7 @@ function ContactRow({
   icon: React.ReactNode;
   title: string;
   subtitle: string;
-  href?: string;
+  href?: string | undefined;
   external?: boolean;
 }) {
   const content = (
