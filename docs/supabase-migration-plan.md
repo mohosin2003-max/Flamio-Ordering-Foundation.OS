@@ -50,7 +50,10 @@ Verified object-by-object against the running database:
 - **Functions:** all 7 (`has_role`, `claim_owner`, `apply_stock_change`, `consume_inventory_for_order`, `award_completed_order_reward`, `request_order_review`, `update_updated_at_column`) are in the files.
 - **Triggers:** all 32 live triggers are in the files.
 - **Enum:** `app_role` (owner/admin/staff) is in the files.
-- **RLS policies:** all live `public` policies and all 7 `storage.objects` policies are in the files.
+- **RLS policies:** all live `public` policies and all **11** `storage.objects` policies are in the files. The 11 storage rules, verified live:
+  - `profile-photos` (4): Customers can **view / upload / update / delete their profile photo** — all scoped to `bucket_id = 'profile-photos'` and first path folder = `auth.uid()`.
+  - `review-photos` (5): Customers can **view / upload / delete their review photo** (own folder), plus **Restaurant team can view review photos** — SELECT for `has_role(auth.uid(), 'owner' | 'admin' | 'staff')`.
+  - `banner-images` (3): Owners can **upload / update / delete banner images** — `has_role(auth.uid(), 'owner' | 'admin')`. **There is no SELECT policy on `banner-images`** — see the banner read-access note in section 2.
 - **Grants:** present in every table-creating migration.
 - **Indexes:** all live indexes are either PK/unique constraints declared inline or explicit `CREATE INDEX` in the files.
 - **Columns:** every column added later (facebook fields, recommendations, reviews toggles, combo labels, geo/radius fields, photo paths) traces to a migration file.
@@ -86,6 +89,19 @@ All 4 buckets are **private**; files are served via signed URLs.
 Rule for migration: object paths are stored in the database, so **objects must keep identical
 key names** in the new project, and `profiles.avatar_path` / `order_reviews.photo_path` prefixes
 must match the *new* auth user IDs. Preserving original user IDs (section 3) avoids rewriting paths.
+
+**Banner read-access behaviour (verified):** `banner-images` is **private** and has **no SELECT
+policy** (only owner/admin INSERT/UPDATE/DELETE). Banner images on the public homepage are served
+through **server-side signed URLs created by the service-role client**, which bypasses RLS.
+Exact rule required after migration: **none beyond the existing 3 write policies** — keep the
+bucket private, keep `SUPABASE_SERVICE_ROLE_KEY` set correctly, and banners keep displaying.
+Do **not** add an anon SELECT policy or make the bucket public unless you intentionally change
+that design.
+
+**Stored photo ownership (verified):** the single stored photo (`review-photos`, 1 object) lives
+under the current **owner account's folder** (`e17aaaaa-…`). If that auth user is not migrated
+**with the same UUID**, the path prefix no longer matches `auth.uid()` and the photo becomes
+orphaned (unreadable/undeletable by its owner). Preserve original auth UUIDs — see section 3.
 
 ---
 
