@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const ITEMS = [
   { to: "/", label: "Home", icon: Home, exact: true },
   { to: "/contact", label: "Contact", icon: Phone, exact: false },
-  { to: "/account/orders", label: "My Orders", icon: Receipt, exact: false },
+  { to: "/account/orders", label: "My Orders", icon: ReceiptText, exact: false },
   { to: "/account", label: "Account", icon: User, exact: true },
 ] as const;
 
