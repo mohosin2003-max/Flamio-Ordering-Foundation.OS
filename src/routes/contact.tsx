@@ -36,6 +36,8 @@ function ContactPage() {
   });
   const info = infoQuery.data ?? null;
 
+  const name = info?.name ?? restaurant.name;
+  const facebookPageName = info?.facebookPageName?.trim() || "Facebook";
   const facebookUrl = info?.facebookUrl ?? restaurant.facebookUrl;
   const googleMapsUrl = info?.googleMapsUrl ?? restaurant.googleMapsUrl;
   const addressLine = info?.addressLine ?? restaurant.addressLine;
@@ -46,58 +48,60 @@ function ContactPage() {
   const hasAddress = Boolean(addressLine || city || country);
 
   return (
-    <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col gap-4 px-4 py-10 pb-28 text-left sm:px-6 sm:py-14">
-      <h1 className="text-center font-display text-4xl font-black sm:text-5xl">
-        {restaurant.name}
+    <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col gap-3 px-4 py-8 pb-28 text-left sm:px-6 sm:py-10">
+      <h1 className="mb-2 text-center font-display text-3xl font-black sm:text-4xl">
+        {name}
       </h1>
 
       {hasAddress ? (
-        <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-          <div className="flex items-center gap-2">
-            <MapPin aria-hidden="true" className="size-5 text-primary" />
-            <h2 className="text-base font-semibold">Location</h2>
+        <section className="border-b border-border/70 py-4">
+          <div className="flex gap-3">
+            <MapPin aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <h2 className="font-semibold">Location</h2>
+              <address className="mt-1 text-sm not-italic leading-relaxed text-muted-foreground">
+                {addressLine ? <>{addressLine}<br /></> : null}
+                {city || country ? <>{city}{city && country ? ", " : ""}{country}</> : null}
+              </address>
+              {googleMapsUrl ? (
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                >
+                  Open map <ExternalLink aria-hidden="true" className="size-3.5" />
+                </a>
+              ) : null}
+            </div>
           </div>
-          <address className="mt-3 text-sm not-italic leading-relaxed text-muted-foreground">
-            {addressLine ? <>{addressLine}<br /></> : null}
-            {city || country ? <>{city}{city && country ? ", " : ""}{country}</> : null}
-          </address>
-          {googleMapsUrl ? (
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-            >
-              Open map <ExternalLink aria-hidden="true" className="size-3.5" />
-            </a>
-          ) : null}
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-        <div className="flex items-center gap-2">
-          <Clock3 aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="text-base font-semibold">Opening Hours</h2>
+      <section className="border-b border-border/70 py-4">
+        <div className="flex gap-3">
+          <Clock3 aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div>
+            <h2 className="font-semibold">Opening Hours</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {hoursText ?? "Not added yet"}
+            </p>
+          </div>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {hoursText ? `Every day · ${hoursText}` : "Opening hours not added yet"}
-        </p>
       </section>
 
       {facebookUrl ? (
-        <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-card">
-          <a
-            href={facebookUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Visit Flamio on Facebook"
-            className="flex items-center gap-3 text-foreground transition-smooth hover:text-primary"
-          >
-            <Facebook aria-hidden="true" className="size-6 text-primary" />
-            <span className="text-sm font-semibold">Flamio on Facebook</span>
-            <ExternalLink aria-hidden="true" className="ml-auto size-4 text-muted-foreground" />
-          </a>
-        </section>
+        <a
+          href={facebookUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open ${facebookPageName} on Facebook`}
+          className="flex items-center gap-3 py-3 text-sm font-semibold text-foreground transition-smooth hover:text-primary"
+        >
+          <Facebook aria-hidden="true" className="size-5 shrink-0 text-primary" />
+          <span>{facebookPageName}</span>
+          <ExternalLink aria-hidden="true" className="ml-auto size-3.5 text-muted-foreground" />
+        </a>
       ) : null}
     </div>
   );
