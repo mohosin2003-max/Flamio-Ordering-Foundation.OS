@@ -50,7 +50,10 @@ Verified object-by-object against the running database:
 - **Functions:** all 7 (`has_role`, `claim_owner`, `apply_stock_change`, `consume_inventory_for_order`, `award_completed_order_reward`, `request_order_review`, `update_updated_at_column`) are in the files.
 - **Triggers:** all 32 live triggers are in the files.
 - **Enum:** `app_role` (owner/admin/staff) is in the files.
-- **RLS policies:** all live `public` policies and all 7 `storage.objects` policies are in the files.
+- **RLS policies:** all live `public` policies and all **11** `storage.objects` policies are in the files. The 11 storage rules, verified live:
+  - `profile-photos` (4): Customers can **view / upload / update / delete their profile photo** — all scoped to `bucket_id = 'profile-photos'` and first path folder = `auth.uid()`.
+  - `review-photos` (5): Customers can **view / upload / delete their review photo** (own folder), plus **Restaurant team can view review photos** — SELECT for `has_role(auth.uid(), 'owner' | 'admin' | 'staff')`.
+  - `banner-images` (3): Owners can **upload / update / delete banner images** — `has_role(auth.uid(), 'owner' | 'admin')`. **There is no SELECT policy on `banner-images`** — see the banner read-access note in section 2.
 - **Grants:** present in every table-creating migration.
 - **Indexes:** all live indexes are either PK/unique constraints declared inline or explicit `CREATE INDEX` in the files.
 - **Columns:** every column added later (facebook fields, recommendations, reviews toggles, combo labels, geo/radius fields, photo paths) traces to a migration file.
@@ -60,6 +63,22 @@ Verified object-by-object against the running database:
 1. **Storage buckets themselves.** The 4 buckets were created through the platform tool, not SQL. Only their *policies* are in the files. Buckets must be created by hand on the new project.
 2. **Auth configuration.** Email sign-up enabled + email auto-confirmation on. Not in SQL.
 3. **Seed/production data beyond the seeds in the files.** The 24 products, categories, delivery zone, payment methods and reward rules do come from migration seeds, but any row edited later in the app (settings, orders, customers, winners, favorites, addresses) exists only in the live database and needs a data dump.
+
+### Live data snapshot (verified, latest counts — restore all of these)
+
+| Data | Live rows |
+| --- | --- |
+| Orders | **6** |
+| Order lines | **8** |
+| Reviews | **1** |
+| Review photos (storage objects) | **1** |
+| Challenge winners | **1** |
+| Game sessions | **3** |
+| Reward entries | **3** |
+| Menu items | **24** |
+| Categories | **5** |
+| Challenges (games) | **10** |
+| Auth accounts | 4 (1 owner, 1 unconfirmed — see step 9) |
 4. **Auth users.** 4 accounts including the owner live in `auth.users`; not reproducible from migrations.
 5. **Secrets/env values.** Listed in section 5.
 
@@ -86,6 +105,19 @@ All 4 buckets are **private**; files are served via signed URLs.
 Rule for migration: object paths are stored in the database, so **objects must keep identical
 key names** in the new project, and `profiles.avatar_path` / `order_reviews.photo_path` prefixes
 must match the *new* auth user IDs. Preserving original user IDs (section 3) avoids rewriting paths.
+
+**Banner read-access behaviour (verified):** `banner-images` is **private** and has **no SELECT
+policy** (only owner/admin INSERT/UPDATE/DELETE). Banner images on the public homepage are served
+through **server-side signed URLs created by the service-role client**, which bypasses RLS.
+Exact rule required after migration: **none beyond the existing 3 write policies** — keep the
+bucket private, keep `SUPABASE_SERVICE_ROLE_KEY` set correctly, and banners keep displaying.
+Do **not** add an anon SELECT policy or make the bucket public unless you intentionally change
+that design.
+
+**Stored photo ownership (verified):** the single stored photo (`review-photos`, 1 object) lives
+under the current **owner account's folder** (`e17aaaaa-…`). If that auth user is not migrated
+**with the same UUID**, the path prefix no longer matches `auth.uid()` and the photo becomes
+orphaned (unreadable/undeletable by its owner). Preserve original auth UUIDs — see section 3.
 
 ---
 
@@ -162,12 +194,30 @@ Nothing else is Lovable-locked: no edge functions, no Lovable AI calls in runtim
 5. Record current auth settings (email sign-up on, auto-confirm on) and the current owner user ID.
 
 **B. Schema on the new project**
-6. Apply `supabase/migrations/*.sql` in filename order (they are the authoritative schema, seeds included).
+6. Apply `supabase/migrations/*.sql` in filename order (they are the authoritative schema).
+   **Seed-data collision handling (required):** several migrations contain seed `INSERT`s
+   (products, restaurant_settings, payment_providers, reward rules, inventory). Two safe options
+   — pick one before starting:
+   - **Option 1 (recommended):** restore production data *first* (section D), then apply migrations
+     wrapped so seed inserts no-op — run seeds inside `ON CONFLICT DO NOTHING` (or comment out the
+     seed blocks before applying) so restored rows are never duplicated or overwritten.
+   - **Option 2:** apply migrations *with* seeds on the empty project, then restore production data
+     with `TRUNCATE ... CASCADE` on only the seeded tables immediately before inserting the dump —
+     never truncate orders/users/reviews tables.
+   Never apply seed inserts on top of already-restored production rows without a conflict guard:
+   that is the one step that could duplicate menu items or overwrite edited settings.
 7. Apply `drizzle/migrations/0000_grant_customer_addresses_access.sql`.
-8. Verify: 38 tables, 7 functions, 32 triggers, `app_role` enum, all policies and grants present.
+8. Verify: 38 tables, 7 functions, 32 triggers, `app_role` enum, all policies and grants present
+   (including all **11** storage policies listed in section 1).
 
 **C. Auth users**
 9. Restore `auth.users` (and `auth.identities`) from the dump **with original UUIDs**; otherwise create users and plan a password reset.
+   **Unconfirmed account (decision required before migration):** 1 of the 4 live accounts is
+   **unconfirmed** (`email_confirmed_at` IS NULL). Decide before migrating: either (a) confirm it
+   during restore by setting `email_confirmed_at` in the dump, or (b) leave it unconfirmed and let
+   the user confirm on the new project. The owner account (`p8801647502172@phone.flamio.app`,
+   UUID `e17aaaaa-9ac3-4005-bcdf-4424b01c6364`) **must** be carried over with the same UUID —
+   it owns the only stored photo and holds the owner role.
 10. Enable email sign-up and email auto-confirmation to match current behaviour.
 11. Confirm `user_roles` will map the owner UUID (restored in step D).
 
@@ -177,9 +227,11 @@ Nothing else is Lovable-locked: no edge functions, no Lovable AI calls in runtim
 14. Reset sequences if any are used (all keys are UUID defaults — expected: none).
 
 **E. Storage**
-15. Create the 4 buckets, all private; set `review-photos` file-size limit to 5 MB.
-16. Upload the downloaded objects with identical keys.
-17. Confirm the 7 storage policies from the migrations exist.
+15. Create the 4 buckets, all **private**; set `review-photos` file-size limit to 5 MB
+    (currently 5,242,880 bytes). No MIME allow-lists are set today — keep it that way.
+16. Upload the downloaded objects with identical keys (the review photo under the owner's UUID folder).
+17. Confirm all **11** storage policies from the migrations exist (listed in section 1) — and that
+    `banner-images` intentionally has **no** SELECT policy (server-side signed URLs, section 2).
 
 **F. App configuration**
 18. Point env vars at the new project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) and set your own cron secret.
