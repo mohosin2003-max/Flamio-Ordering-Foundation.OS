@@ -43,20 +43,24 @@ function ContactPage() {
   const country = info?.country ?? restaurant.country;
   const hoursText = info?.opensAt && info?.closesAt ? `${info.opensAt} – ${info.closesAt}` : null;
 
-  return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 pb-28 sm:px-6 sm:py-12">
-      <h1 className="font-display text-3xl font-black sm:text-4xl">Contact</h1>
+  const hasAddress = Boolean(addressLine || city || country);
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+  return (
+    <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col gap-4 px-4 py-10 pb-28 text-left sm:px-6 sm:py-14">
+      <h1 className="text-center font-display text-4xl font-black sm:text-5xl">
+        {restaurant.name}
+      </h1>
+
+      {hasAddress ? (
         <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-          <MapPin aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="mt-3 text-base font-semibold">Location</h2>
-          {(addressLine || city || country) ? (
-            <address className="mt-2 text-sm not-italic leading-relaxed text-muted-foreground">
-              {addressLine ? <>{addressLine}<br /></> : null}
-              {city || country ? <>{city}{city && country ? ", " : ""}{country}</> : null}
-            </address>
-          ) : null}
+          <div className="flex items-center gap-2">
+            <MapPin aria-hidden="true" className="size-5 text-primary" />
+            <h2 className="text-base font-semibold">Location</h2>
+          </div>
+          <address className="mt-3 text-sm not-italic leading-relaxed text-muted-foreground">
+            {addressLine ? <>{addressLine}<br /></> : null}
+            {city || country ? <>{city}{city && country ? ", " : ""}{country}</> : null}
+          </address>
           {googleMapsUrl ? (
             <a
               href={googleMapsUrl}
@@ -68,31 +72,33 @@ function ContactPage() {
             </a>
           ) : null}
         </section>
+      ) : null}
 
-        <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
+      <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
+        <div className="flex items-center gap-2">
           <Clock3 aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="mt-3 text-base font-semibold">Opening hours</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {hoursText ? `Every day · ${hoursText}` : "Opening hours not added yet"}
-          </p>
-        </section>
+          <h2 className="text-base font-semibold">Opening Hours</h2>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {hoursText ? `Every day · ${hoursText}` : "Opening hours not added yet"}
+        </p>
+      </section>
 
-        {facebookUrl ? (
-          <section className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-            <Facebook aria-hidden="true" className="size-5 text-primary" />
-            <h2 className="mt-3 text-base font-semibold">Facebook</h2>
-            <a
-              href={facebookUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Visit Flamio on Facebook"
-              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-            >
-              Visit our page <ExternalLink aria-hidden="true" className="size-3.5" />
-            </a>
-          </section>
-        ) : null}
-      </div>
+      {facebookUrl ? (
+        <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-card">
+          <a
+            href={facebookUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Visit Flamio on Facebook"
+            className="flex items-center gap-3 text-foreground transition-smooth hover:text-primary"
+          >
+            <Facebook aria-hidden="true" className="size-6 text-primary" />
+            <span className="text-sm font-semibold">Flamio on Facebook</span>
+            <ExternalLink aria-hidden="true" className="ml-auto size-4 text-muted-foreground" />
+          </a>
+        </section>
+      ) : null}
     </div>
   );
 }
