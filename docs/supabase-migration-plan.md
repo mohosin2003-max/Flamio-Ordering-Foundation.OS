@@ -63,6 +63,22 @@ Verified object-by-object against the running database:
 1. **Storage buckets themselves.** The 4 buckets were created through the platform tool, not SQL. Only their *policies* are in the files. Buckets must be created by hand on the new project.
 2. **Auth configuration.** Email sign-up enabled + email auto-confirmation on. Not in SQL.
 3. **Seed/production data beyond the seeds in the files.** The 24 products, categories, delivery zone, payment methods and reward rules do come from migration seeds, but any row edited later in the app (settings, orders, customers, winners, favorites, addresses) exists only in the live database and needs a data dump.
+
+### Live data snapshot (verified, latest counts — restore all of these)
+
+| Data | Live rows |
+| --- | --- |
+| Orders | **6** |
+| Order lines | **8** |
+| Reviews | **1** |
+| Review photos (storage objects) | **1** |
+| Challenge winners | **1** |
+| Game sessions | **3** |
+| Reward entries | **3** |
+| Menu items | **24** |
+| Categories | **5** |
+| Challenges (games) | **10** |
+| Auth accounts | 4 (1 owner, 1 unconfirmed — see step 9) |
 4. **Auth users.** 4 accounts including the owner live in `auth.users`; not reproducible from migrations.
 5. **Secrets/env values.** Listed in section 5.
 
@@ -211,9 +227,11 @@ Nothing else is Lovable-locked: no edge functions, no Lovable AI calls in runtim
 14. Reset sequences if any are used (all keys are UUID defaults — expected: none).
 
 **E. Storage**
-15. Create the 4 buckets, all private; set `review-photos` file-size limit to 5 MB.
-16. Upload the downloaded objects with identical keys.
-17. Confirm the 7 storage policies from the migrations exist.
+15. Create the 4 buckets, all **private**; set `review-photos` file-size limit to 5 MB
+    (currently 5,242,880 bytes). No MIME allow-lists are set today — keep it that way.
+16. Upload the downloaded objects with identical keys (the review photo under the owner's UUID folder).
+17. Confirm all **11** storage policies from the migrations exist (listed in section 1) — and that
+    `banner-images` intentionally has **no** SELECT policy (server-side signed URLs, section 2).
 
 **F. App configuration**
 18. Point env vars at the new project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) and set your own cron secret.
