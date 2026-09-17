@@ -92,12 +92,6 @@ function ContactPage() {
           />
         ) : null}
       </div>
-
-      <div className="mt-auto pt-10 text-center">
-        <p className="text-xs text-muted-foreground">
-          © 2026 Flamio · Owned by Mohosin
-        </p>
-      </div>
     </div>
   );
 }
