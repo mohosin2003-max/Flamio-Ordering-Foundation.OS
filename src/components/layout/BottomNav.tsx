@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Phone, Tag, Receipt, User } from "lucide-react";
+import { Home, Phone, ReceiptText, Tag, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
