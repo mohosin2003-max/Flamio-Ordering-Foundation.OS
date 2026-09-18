@@ -63,7 +63,7 @@ export const Route = createFileRoute("/_authenticated/owner/staff-accounts")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: OwnerStaffAccounts;
+  component: OwnerStaffAccounts,
 });
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
