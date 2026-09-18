@@ -19,6 +19,7 @@ export const STAFF_PERMISSIONS = [
   "customers",
   "reports",
   "staff",
+  "staff_finance",
   "settings",
 ] as const;
 
@@ -37,6 +38,7 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   customers: "Customers / CRM",
   reports: "Reports",
   staff: "Staff Management",
+  staff_finance: "Staff Accounts",
   settings: "Settings",
 };
 
