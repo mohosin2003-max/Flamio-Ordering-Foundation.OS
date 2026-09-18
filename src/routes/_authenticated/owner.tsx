@@ -42,6 +42,8 @@ const TABS: {
   { to: "/owner", label: "Home", exact: true, permission: null },
   { to: "/owner/orders", label: "Orders", exact: false, permission: "online_orders" },
   { to: "/owner/pos", label: "Counter sale", exact: false, permission: "pos" },
+  { to: "/owner/platforms", label: "Platforms", exact: false, permission: "platform_sales" },
+  { to: "/owner/platform-sale", label: "Platform sale", exact: false, permission: "platform_sales" },
   { to: "/owner/menu", label: "Menu", exact: false, permission: "menu" },
   { to: "/owner/combos", label: "Combos", exact: false, permission: "menu" },
   { to: "/owner/inventory", label: "Inventory", exact: false, permission: "inventory" },
