@@ -159,7 +159,8 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
             : null,
           paidThisMonth,
           salaryDue,
-          outstandingAdvance: Math.max(sum(all, ["advance"]) - sum(all, ["loan_repayment"]) * 0, 0),
+          // Advances are recovered through deduction entries.
+          outstandingAdvance: Math.max(sum(all, ["advance"]) - sum(all, ["deduction"]), 0),
           outstandingLoan: Math.max(sum(all, ["loan"]) - sum(all, ["loan_repayment"]), 0),
           lifetimePaid: sum(all, ["salary_payment", "overtime", "bonus", "advance", "loan"]),
         };
