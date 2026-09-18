@@ -1748,6 +1748,42 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_ledger_audit: {
+        Row: {
+          action: string
+          after_data: Json | null
+          before_data: Json | null
+          changed_by: string | null
+          created_at: string
+          entry_id: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_by?: string | null
+          created_at?: string
+          entry_id: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          after_data?: Json | null
+          before_data?: Json | null
+          changed_by?: string | null
+          created_at?: string
+          entry_id?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_ledger_entries: {
         Row: {
           amount: number
@@ -1759,6 +1795,7 @@ export type Database = {
           payment_method: string | null
           recorded_by: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
         }
         Insert: {
@@ -1771,6 +1808,7 @@ export type Database = {
           payment_method?: string | null
           recorded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
         }
         Update: {
@@ -1783,6 +1821,7 @@ export type Database = {
           payment_method?: string | null
           recorded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []

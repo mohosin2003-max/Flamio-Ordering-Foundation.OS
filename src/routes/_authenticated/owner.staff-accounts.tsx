@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -35,15 +35,23 @@ import {
   PAYMENT_METHODS,
   ownerCreateLedgerEntry,
   ownerDeleteLedgerEntry,
+  ownerListLedgerAudit,
   ownerListLedgerEntries,
   ownerListStaffAccounts,
   ownerSaveSalaryProfile,
+  ownerUpdateLedgerEntry,
 } from "@/lib/staff-finance.functions";
-import type { LedgerType, PaymentMethod, StaffAccount } from "@/lib/staff-finance.functions";
+import type {
+  LedgerEntry,
+  LedgerType,
+  PaymentMethod,
+  StaffAccount,
+} from "@/lib/staff-finance.functions";
 
 /**
- * Owner → Staff Accounts. Salary setup and the money ledger for each team
- * member. Reads the existing team from roles/profiles; nothing else changes.
+ * Owner → Staff Accounts. Salary setup, the money ledger and corrections for
+ * each team member. Reads the existing team from roles/profiles; nothing else
+ * in the app changes.
  */
 export const Route = createFileRoute("/_authenticated/owner/staff-accounts")({
   head: () => ({
@@ -68,6 +76,11 @@ export const Route = createFileRoute("/_authenticated/owner/staff-accounts")({
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
 const today = () => new Date().toISOString().slice(0, 10);
+
+const methodLabel = (m: string) =>
+  m === "cash" ? "Cash" : m === "bank" ? "Bank" : m === "mobile" ? "Mobile banking" : m;
+
+const memberName = (m: StaffAccount) => m.fullName ?? m.phone ?? m.email ?? "Unnamed team member";
 
 function OwnerStaffAccounts() {
   const listAccounts = useServerFn(ownerListStaffAccounts);
@@ -132,11 +145,19 @@ function OwnerStaffAccounts() {
                 </p>
               </div>
               <div>
+                <p className="text-muted-foreground">Outstanding loans</p>
+                <p className="font-display text-lg font-bold">
+                  {formatBDT(accounts.data.accounts.reduce((a, m) => a + m.outstandingLoan, 0))}
+                </p>
+              </div>
+              <div>
                 <p className="text-muted-foreground">Team members</p>
                 <p className="font-display text-lg font-bold">{accounts.data.accounts.length}</p>
               </div>
             </CardContent>
           </Card>
+
+          <GiveMoneyCard members={accounts.data.accounts} month={month} />
 
           <div className="space-y-3">
             {accounts.data.accounts.map((member) => (
@@ -145,15 +166,180 @@ function OwnerStaffAccounts() {
                 member={member}
                 month={month}
                 open={openUser === member.userId}
-                onToggle={() =>
-                  setOpenUser(openUser === member.userId ? null : member.userId)
-                }
+                onToggle={() => setOpenUser(openUser === member.userId ? null : member.userId)}
               />
             ))}
           </div>
         </>
       )}
     </div>
+  );
+}
+
+type EntryForm = {
+  entryType: LedgerType;
+  amount: string;
+  entryDate: string;
+  paymentMethod: PaymentMethod | "none";
+  note: string;
+};
+
+const emptyForm = (): EntryForm => ({
+  entryType: "salary_payment",
+  amount: "",
+  entryDate: today(),
+  paymentMethod: "cash",
+  note: "",
+});
+
+function EntryFields({
+  form,
+  setForm,
+}: {
+  form: EntryForm;
+  setForm: (updater: (f: EntryForm) => EntryForm) => void;
+}) {
+  return (
+    <>
+      <div className="space-y-1">
+        <Label>Reason</Label>
+        <Select
+          value={form.entryType}
+          onValueChange={(v) => setForm((f) => ({ ...f, entryType: v as LedgerType }))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LEDGER_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {LEDGER_TYPE_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label>Amount</Label>
+          <Input
+            type="number"
+            min="0"
+            value={form.amount}
+            onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>Date</Label>
+          <Input
+            type="date"
+            value={form.entryDate}
+            onChange={(e) => setForm((f) => ({ ...f, entryDate: e.target.value }))}
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label>Paid by</Label>
+        <Select
+          value={form.paymentMethod}
+          onValueChange={(v) =>
+            setForm((f) => ({ ...f, paymentMethod: v as PaymentMethod | "none" }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PAYMENT_METHODS.map((m) => (
+              <SelectItem key={m} value={m}>
+                {methodLabel(m)}
+              </SelectItem>
+            ))}
+            <SelectItem value="none">Not applicable</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label>Note (optional)</Label>
+        <Textarea
+          rows={2}
+          value={form.note}
+          onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+        />
+      </div>
+    </>
+  );
+}
+
+const toPayload = (form: EntryForm) => ({
+  entryType: form.entryType,
+  amount: Number(form.amount) || 0,
+  entryDate: form.entryDate,
+  paymentMethod: form.paymentMethod === "none" ? null : form.paymentMethod,
+  note: form.note.trim() ? form.note.trim() : null,
+});
+
+/** Owner-only quick form: pick anyone on the team and record money given. */
+function GiveMoneyCard({ members, month }: { members: StaffAccount[]; month: string }) {
+  const create = useServerFn(ownerCreateLedgerEntry);
+  const queryClient = useQueryClient();
+  const [userId, setUserId] = useState(members[0]?.userId ?? "");
+  const [form, setForm] = useState<EntryForm>(emptyForm());
+
+  const mutation = useMutation({
+    mutationFn: () => create({ data: { userId, ...toPayload(form) } }),
+    onSuccess: async () => {
+      toast.success("Record saved");
+      setForm((f) => ({ ...emptyForm(), entryType: f.entryType, entryDate: f.entryDate }));
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", userId] }),
+      ]);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <p className="font-semibold">Give money / Add record</p>
+          <p className="text-xs text-muted-foreground">
+            Salary advances reduce this month's salary due. Loans stay separate.
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label>Team member</Label>
+          <Select value={userId} onValueChange={setUserId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a team member" />
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m) => (
+                <SelectItem key={m.userId} value={m.userId}>
+                  {memberName(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <EntryFields form={form} setForm={setForm} />
+        <Button
+          className="w-full"
+          disabled={mutation.isPending || !userId || !form.amount}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Save record
+        </Button>
+        <p className="text-[11px] text-muted-foreground">
+          {month === thisMonth()
+            ? "Records are also listed under each person below."
+            : "Viewing another month — records are saved on the date you choose."}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -173,7 +359,7 @@ function AccountRow({
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="font-semibold">{member.fullName ?? "Unnamed team member"}</p>
+            <p className="font-semibold">{memberName(member)}</p>
             <p className="text-xs text-muted-foreground">
               {member.phone ?? member.email ?? "No contact saved"}
             </p>
@@ -194,7 +380,8 @@ function AccountRow({
                 : "No salary set"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Paid {formatBDT(member.paidThisMonth)} · Due {formatBDT(member.salaryDue)}
+              Paid {formatBDT(member.paidThisMonth)} · Remaining salary{" "}
+              {formatBDT(member.salaryDue)}
             </p>
             <p className="text-xs text-muted-foreground">
               Advance {formatBDT(member.outstandingAdvance)} · Loan{" "}
@@ -352,33 +539,18 @@ function EntryDialog({ member, month }: { member: StaffAccount; month: string })
   const create = useServerFn(ownerCreateLedgerEntry);
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    entryType: "salary_payment" as LedgerType,
-    amount: "",
-    entryDate: today(),
-    paymentMethod: "cash" as PaymentMethod | "none",
-    note: "",
-  });
+  const [form, setForm] = useState<EntryForm>(emptyForm());
 
   const mutation = useMutation({
-    mutationFn: () =>
-      create({
-        data: {
-          userId: member.userId,
-          entryType: form.entryType,
-          amount: Number(form.amount) || 0,
-          entryDate: form.entryDate,
-          paymentMethod: form.paymentMethod === "none" ? null : form.paymentMethod,
-          note: form.note.trim() ? form.note.trim() : null,
-        },
-      }),
+    mutationFn: () => create({ data: { userId: member.userId, ...toPayload(form) } }),
     onSuccess: async () => {
       toast.success("Record saved");
       setOpen(false);
-      setForm((f) => ({ ...f, amount: "", note: "" }));
+      setForm(emptyForm());
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger", member.userId] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", member.userId] }),
       ]);
     },
     onError: (error: Error) => toast.error(error.message),
@@ -391,75 +563,10 @@ function EntryDialog({ member, month }: { member: StaffAccount; month: string })
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add money record</DialogTitle>
+          <DialogTitle>Money for {memberName(member)}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Type</Label>
-            <Select
-              value={form.entryType}
-              onValueChange={(v) => setForm((f) => ({ ...f, entryType: v as LedgerType }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LEDGER_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {LEDGER_TYPE_LABELS[type]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                min="0"
-                value={form.amount}
-                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={form.entryDate}
-                onChange={(e) => setForm((f) => ({ ...f, entryDate: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label>Paid by</Label>
-            <Select
-              value={form.paymentMethod}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, paymentMethod: v as PaymentMethod | "none" }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m === "cash" ? "Cash" : m === "bank" ? "Bank" : "Mobile banking"}
-                  </SelectItem>
-                ))}
-                <SelectItem value="none">Not applicable</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label>Note</Label>
-            <Textarea
-              rows={2}
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-            />
-          </div>
+          <EntryFields form={form} setForm={setForm} />
           <Button
             className="w-full"
             disabled={mutation.isPending || !form.amount}
@@ -474,23 +581,120 @@ function EntryDialog({ member, month }: { member: StaffAccount; month: string })
   );
 }
 
+/** Correcting a mistake: keeps a reason and writes the change history. */
+function EditEntryDialog({
+  entry,
+  month,
+  onDone,
+}: {
+  entry: LedgerEntry;
+  month: string;
+  onDone: () => void;
+}) {
+  const update = useServerFn(ownerUpdateLedgerEntry);
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [form, setForm] = useState<EntryForm>({
+    entryType: entry.entryType,
+    amount: String(entry.amount),
+    entryDate: entry.entryDate,
+    paymentMethod: entry.paymentMethod ?? "none",
+    note: entry.note ?? "",
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => update({ data: { id: entry.id, ...toPayload(form), reason: reason.trim() } }),
+    onSuccess: async () => {
+      toast.success("Record corrected");
+      setOpen(false);
+      setReason("");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger", entry.userId] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", entry.userId] }),
+      ]);
+      onDone();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" aria-label="Correct record">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Correct this record</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <EntryFields form={form} setForm={setForm} />
+          <div className="space-y-1">
+            <Label>Why is this being corrected?</Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} />
+          </div>
+          <Button
+            className="w-full"
+            disabled={mutation.isPending || !form.amount || !reason.trim()}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Save correction
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function History({ userId, month }: { userId: string; month: string }) {
   const list = useServerFn(ownerListLedgerEntries);
+  const listAudit = useServerFn(ownerListLedgerAudit);
   const remove = useServerFn(ownerDeleteLedgerEntry);
   const queryClient = useQueryClient();
   const [allTime, setAllTime] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [typeFilter, setTypeFilter] = useState<LedgerType | "all">("all");
+  const [showAudit, setShowAudit] = useState(false);
 
   const entries = useQuery({
-    queryKey: ["staff-ledger", userId, allTime ? "all" : month],
-    queryFn: () => list({ data: { userId, month: allTime ? null : month } }),
+    queryKey: [
+      "staff-ledger",
+      userId,
+      allTime ? "all" : month,
+      fromDate,
+      toDate,
+      typeFilter,
+    ],
+    queryFn: () =>
+      list({
+        data: {
+          userId,
+          month: allTime || fromDate || toDate ? null : month,
+          fromDate: fromDate || null,
+          toDate: toDate || null,
+          entryType: typeFilter === "all" ? null : typeFilter,
+        },
+      }),
+  });
+
+  const audit = useQuery({
+    queryKey: ["staff-ledger-audit", userId],
+    queryFn: () => listAudit({ data: { userId } }),
+    enabled: showAudit,
   });
 
   const del = useMutation({
-    mutationFn: (id: string) => remove({ data: { id } }),
+    mutationFn: (id: string) => remove({ data: { id, reason: "Removed by owner" } }),
     onSuccess: async () => {
       toast.success("Record removed");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["staff-ledger", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", userId] }),
         queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
       ]);
     },
@@ -498,13 +702,49 @@ function History({ userId, month }: { userId: string; month: string }) {
   });
 
   return (
-    <div className="space-y-2 rounded-xl border border-border p-3">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 rounded-xl border border-border p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">History</p>
-        <Button size="sm" variant="ghost" onClick={() => setAllTime((v) => !v)}>
-          {allTime ? "This month only" : "Show all time"}
-        </Button>
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={() => setAllTime((v) => !v)}>
+            {allTime ? "This month only" : "Show all time"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowAudit((v) => !v)}>
+            {showAudit ? "Hide changes" : "Change log"}
+          </Button>
+        </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="space-y-1">
+          <Label className="text-xs">From</Label>
+          <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">To</Label>
+          <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Reason</Label>
+          <Select
+            value={typeFilter}
+            onValueChange={(v) => setTypeFilter(v as LedgerType | "all")}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All reasons</SelectItem>
+              {LEDGER_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {LEDGER_TYPE_LABELS[type]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {entries.isLoading ? (
         <Skeleton className="h-16 w-full" />
       ) : !entries.data?.length ? (
@@ -514,15 +754,27 @@ function History({ userId, month }: { userId: string; month: string }) {
           {entries.data.map((entry) => (
             <li key={entry.id} className="flex items-center justify-between gap-3 py-2 text-sm">
               <div>
-                <p className="font-medium">{LEDGER_TYPE_LABELS[entry.entryType]}</p>
+                <p className="font-medium">
+                  {LEDGER_TYPE_LABELS[entry.entryType]}
+                  {entry.wasCorrected ? (
+                    <Badge variant="outline" className="ml-2 text-[10px]">
+                      corrected
+                    </Badge>
+                  ) : null}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {entry.entryDate}
-                  {entry.paymentMethod ? ` · ${entry.paymentMethod}` : ""}
+                  {entry.paymentMethod ? ` · ${methodLabel(entry.paymentMethod)}` : ""}
                   {entry.note ? ` · ${entry.note}` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <span className="font-semibold">{formatBDT(entry.amount)}</span>
+                <EditEntryDialog
+                  entry={entry}
+                  month={month}
+                  onDone={() => void entries.refetch()}
+                />
                 <Button
                   size="icon"
                   variant="ghost"
@@ -537,6 +789,39 @@ function History({ userId, month }: { userId: string; month: string }) {
           ))}
         </ul>
       )}
+
+      {showAudit ? (
+        <div className="space-y-2 rounded-lg bg-muted/40 p-3">
+          <p className="text-xs font-semibold uppercase text-muted-foreground">Change log</p>
+          {audit.isLoading ? (
+            <Skeleton className="h-12 w-full" />
+          ) : !audit.data?.length ? (
+            <p className="text-sm text-muted-foreground">No changes recorded yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {audit.data.map((row) => (
+                <li key={row.id} className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {row.action === "create"
+                      ? "Added"
+                      : row.action === "update"
+                        ? "Corrected"
+                        : "Removed"}
+                  </span>{" "}
+                  {new Date(row.createdAt).toLocaleString()}
+                  {row.changedByName ? ` by ${row.changedByName}` : ""}
+                  {row.reason ? ` — ${row.reason}` : ""}
+                  {row.before && row.after
+                    ? ` (${formatBDT(Number(row.before.amount ?? 0))} → ${formatBDT(
+                        Number(row.after.amount ?? 0),
+                      )})`
+                    : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

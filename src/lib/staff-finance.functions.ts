@@ -7,13 +7,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Staff Accounts & Financial Ledger.
  *
  * Reuses the EXISTING people in `public.user_roles` + `public.profiles`; money
- * records live in the new `staff_salary_profiles` / `staff_ledger_entries`
- * tables. Purchases, POS, orders and sales reports are untouched.
+ * records live in the `staff_salary_profiles` / `staff_ledger_entries` tables.
+ * Corrections are logged in `staff_ledger_audit`. Purchases, POS, orders and
+ * sales reports are untouched.
  */
 
+/** Selectable record types (legacy `advance` rows are read as personal advance). */
 export const LEDGER_TYPES = [
   "salary_payment",
-  "advance",
+  "salary_advance",
+  "personal_advance",
   "loan",
   "loan_repayment",
   "bonus",
@@ -22,11 +25,16 @@ export const LEDGER_TYPES = [
   "other",
 ] as const;
 
-export type LedgerType = (typeof LEDGER_TYPES)[number];
+/** Everything the database accepts, including the legacy `advance` type. */
+export const LEDGER_TYPES_ALL = [...LEDGER_TYPES, "advance"] as const;
+
+export type LedgerType = (typeof LEDGER_TYPES_ALL)[number];
 
 export const LEDGER_TYPE_LABELS: Record<LedgerType, string> = {
   salary_payment: "Salary payment",
-  advance: "Advance",
+  salary_advance: "Salary advance",
+  personal_advance: "Personal advance",
+  advance: "Personal advance (old record)",
   loan: "Loan given",
   loan_repayment: "Loan repayment",
   bonus: "Bonus",
@@ -57,6 +65,27 @@ export type LedgerEntry = {
   paymentMethod: PaymentMethod | null;
   note: string | null;
   createdAt: string;
+  updatedAt: string | null;
+  wasCorrected: boolean;
+};
+
+export type LedgerSnapshot = {
+  entry_type?: string;
+  amount?: number | string;
+  entry_date?: string;
+  payment_method?: string | null;
+  note?: string | null;
+};
+
+export type LedgerAuditRow = {
+  id: string;
+  entryId: string;
+  action: "create" | "update" | "delete";
+  reason: string | null;
+  before: LedgerSnapshot | null;
+  after: LedgerSnapshot | null;
+  changedByName: string | null;
+  createdAt: string;
 };
 
 export type StaffAccount = {
@@ -66,7 +95,7 @@ export type StaffAccount = {
   email: string | null;
   roles: string[];
   profile: SalaryProfile | null;
-  /** Salary + overtime + bonus paid inside the selected month. */
+  /** Salary + salary advance + overtime + bonus paid inside the selected month. */
   paidThisMonth: number;
   /** Monthly salary still unpaid for the selected month (monthly pay only). */
   salaryDue: number;
@@ -76,6 +105,7 @@ export type StaffAccount = {
 };
 
 const monthSchema = z.string().regex(/^\d{4}-\d{2}$/);
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const monthBounds = (month: string) => {
   const [y, m] = month.split("-").map(Number);
@@ -133,11 +163,24 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
         const all = (entryRows ?? []).filter((e) => e.user_id === userId);
         const inMonth = all.filter((e) => e.entry_date >= from && e.entry_date < to);
 
-        const paidThisMonth = sum(inMonth, ["salary_payment", "overtime", "bonus"]);
+        // Salary advance is money against this month's salary, so it counts as paid.
+        const paidThisMonth = sum(inMonth, [
+          "salary_payment",
+          "salary_advance",
+          "overtime",
+          "bonus",
+        ]);
         const monthlyRate = s ? Number(s.monthly_rate) : 0;
+        // Salary due drops once for salary payments, salary advances and deductions.
+        // Loans and personal advances never touch it.
         const salaryDue =
           s && s.pay_type === "monthly" && s.is_active
-            ? Math.max(monthlyRate - sum(inMonth, ["salary_payment"]) - sum(inMonth, ["deduction"]), 0)
+            ? Math.max(
+                monthlyRate -
+                  sum(inMonth, ["salary_payment", "salary_advance"]) -
+                  sum(inMonth, ["deduction"]),
+                0,
+              )
             : 0;
 
         return {
@@ -159,10 +202,22 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
             : null,
           paidThisMonth,
           salaryDue,
-          // Advances are recovered through deduction entries.
-          outstandingAdvance: Math.max(sum(all, ["advance"]) - sum(all, ["deduction"]), 0),
+          // Personal advances (incl. legacy rows) are recovered through deductions.
+          outstandingAdvance: Math.max(
+            sum(all, ["personal_advance", "advance"]) - sum(all, ["deduction"]),
+            0,
+          ),
+          // Loans stand on their own and are only cleared by loan repayments.
           outstandingLoan: Math.max(sum(all, ["loan"]) - sum(all, ["loan_repayment"]), 0),
-          lifetimePaid: sum(all, ["salary_payment", "overtime", "bonus", "advance", "loan"]),
+          lifetimePaid: sum(all, [
+            "salary_payment",
+            "salary_advance",
+            "overtime",
+            "bonus",
+            "personal_advance",
+            "advance",
+            "loan",
+          ]),
         };
       });
 
@@ -171,7 +226,7 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
     },
   );
 
-/** Full dated history for one person. */
+/** Full dated history for one person, filterable by month, date range and type. */
 export const ownerListLedgerEntries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -179,7 +234,9 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
       .object({
         userId: z.string().uuid(),
         month: monthSchema.nullable().optional(),
-        entryType: z.enum(LEDGER_TYPES).nullable().optional(),
+        fromDate: dateSchema.nullable().optional(),
+        toDate: dateSchema.nullable().optional(),
+        entryType: z.enum(LEDGER_TYPES_ALL).nullable().optional(),
       })
       .parse(input),
   )
@@ -190,7 +247,9 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
 
     let query = supabaseAdmin
       .from("staff_ledger_entries")
-      .select("id, user_id, entry_type, amount, entry_date, payment_method, note, created_at")
+      .select(
+        "id, user_id, entry_type, amount, entry_date, payment_method, note, created_at, updated_at, updated_by",
+      )
       .eq("user_id", data.userId)
       .order("entry_date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -200,6 +259,8 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
       const { from, to } = monthBounds(data.month);
       query = query.gte("entry_date", from).lt("entry_date", to);
     }
+    if (data.fromDate) query = query.gte("entry_date", data.fromDate);
+    if (data.toDate) query = query.lte("entry_date", data.toDate);
     if (data.entryType) query = query.eq("entry_type", data.entryType);
 
     const { data: rows, error } = await query;
@@ -217,6 +278,53 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
       paymentMethod: (r.payment_method as PaymentMethod | null) ?? null,
       note: r.note,
       createdAt: r.created_at,
+      updatedAt: r.updated_at ?? null,
+      wasCorrected: Boolean((r as { updated_by?: string | null }).updated_by),
+    }));
+  });
+
+/** Correction history for one person's records. */
+export const ownerListLedgerAudit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<LedgerAuditRow[]> => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "staff_finance");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("staff_ledger_audit")
+      .select("id, entry_id, action, reason, before_data, after_data, changed_by, created_at")
+      .eq("user_id", data.userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Ledger audit list failed", error);
+      throw new Error("We couldn't load the change history. Please try again.");
+    }
+
+    const changerIds = Array.from(
+      new Set((rows ?? []).map((r) => r.changed_by).filter((v): v is string => Boolean(v))),
+    );
+    const names = new Map<string, string | null>();
+    if (changerIds.length) {
+      const { data: people } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", changerIds);
+      for (const p of people ?? []) names.set(p.id as string, p.full_name);
+    }
+
+    return (rows ?? []).map((r) => ({
+      id: r.id,
+      entryId: r.entry_id,
+      action: r.action as "create" | "update" | "delete",
+      reason: r.reason,
+      before: (r.before_data as LedgerSnapshot | null) ?? null,
+      after: (r.after_data as LedgerSnapshot | null) ?? null,
+      changedByName: r.changed_by ? (names.get(r.changed_by) ?? null) : null,
+      createdAt: r.created_at,
     }));
   });
 
@@ -232,10 +340,7 @@ export const ownerSaveSalaryProfile = createServerFn({ method: "POST" })
         dailyRate: z.number().nonnegative().max(100000000),
         overtimeHourlyRate: z.number().nonnegative().max(100000000),
         payday: z.number().int().min(1).max(31),
-        startsOn: z
-          .string()
-          .regex(/^\d{4}-\d{2}-\d{2}$/)
-          .nullable(),
+        startsOn: dateSchema.nullable(),
         isActive: z.boolean(),
       })
       .parse(input),
@@ -266,18 +371,64 @@ export const ownerSaveSalaryProfile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const entryFields = {
+  entryType: z.enum(LEDGER_TYPES),
+  amount: z.number().nonnegative().max(100000000),
+  entryDate: dateSchema,
+  paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
+  note: z.string().trim().max(300).nullable(),
+};
+
 /** Records one money event for a team member. */
 export const ownerCreateLedgerEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
+    z.object({ userId: z.string().uuid(), ...entryFields }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "staff_finance");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: created, error } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .insert({
+        user_id: data.userId,
+        entry_type: data.entryType,
+        amount: data.amount,
+        entry_date: data.entryDate,
+        payment_method: data.paymentMethod,
+        note: data.note,
+        recorded_by: context.userId,
+      })
+      .select("id, entry_type, amount, entry_date, payment_method, note")
+      .single();
+
+    if (error || !created) {
+      console.error("Create ledger entry failed", error);
+      throw new Error("We couldn't save this record. Please try again.");
+    }
+
+    await supabaseAdmin.from("staff_ledger_audit").insert({
+      entry_id: created.id,
+      user_id: data.userId,
+      action: "create",
+      after_data: created,
+      changed_by: context.userId,
+    });
+
+    return { ok: true, id: created.id };
+  });
+
+/** Corrects a mistake on an existing record and logs the change. */
+export const ownerUpdateLedgerEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
     z
       .object({
-        userId: z.string().uuid(),
-        entryType: z.enum(LEDGER_TYPES),
-        amount: z.number().nonnegative().max(100000000),
-        entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
-        note: z.string().trim().max(300).nullable(),
+        id: z.string().uuid(),
+        ...entryFields,
+        reason: z.string().trim().min(1).max(300),
       })
       .parse(input),
   )
@@ -286,38 +437,83 @@ export const ownerCreateLedgerEntry = createServerFn({ method: "POST" })
     await assertPermission(context.userId, "staff_finance");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { error } = await supabaseAdmin.from("staff_ledger_entries").insert({
-      user_id: data.userId,
-      entry_type: data.entryType,
-      amount: data.amount,
-      entry_date: data.entryDate,
-      payment_method: data.paymentMethod,
-      note: data.note,
-      recorded_by: context.userId,
+    const { data: before, error: loadError } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .select("id, user_id, entry_type, amount, entry_date, payment_method, note")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (loadError || !before) {
+      console.error("Ledger entry load for update failed", loadError);
+      throw new Error("We couldn't find this record.");
+    }
+
+    const { data: after, error } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .update({
+        entry_type: data.entryType,
+        amount: data.amount,
+        entry_date: data.entryDate,
+        payment_method: data.paymentMethod,
+        note: data.note,
+        updated_by: context.userId,
+      })
+      .eq("id", data.id)
+      .select("id, entry_type, amount, entry_date, payment_method, note")
+      .single();
+
+    if (error || !after) {
+      console.error("Update ledger entry failed", error);
+      throw new Error("We couldn't save this correction. Please try again.");
+    }
+
+    await supabaseAdmin.from("staff_ledger_audit").insert({
+      entry_id: data.id,
+      user_id: before.user_id,
+      action: "update",
+      before_data: before,
+      after_data: after,
+      reason: data.reason,
+      changed_by: context.userId,
     });
 
-    if (error) {
-      console.error("Create ledger entry failed", error);
-      throw new Error("We couldn't save this record. Please try again.");
-    }
     return { ok: true };
   });
 
 export const ownerDeleteLedgerEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z
+      .object({ id: z.string().uuid(), reason: z.string().trim().max(300).nullable().optional() })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "staff_finance");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { error } = await supabaseAdmin
+    const { data: before } = await supabaseAdmin
       .from("staff_ledger_entries")
-      .delete()
-      .eq("id", data.id);
+      .select("id, user_id, entry_type, amount, entry_date, payment_method, note")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    const { error } = await supabaseAdmin.from("staff_ledger_entries").delete().eq("id", data.id);
     if (error) {
       console.error("Delete ledger entry failed", error);
       throw new Error("We couldn't remove this record. Please try again.");
     }
+
+    if (before) {
+      await supabaseAdmin.from("staff_ledger_audit").insert({
+        entry_id: before.id,
+        user_id: before.user_id,
+        action: "delete",
+        before_data: before,
+        reason: data.reason ?? null,
+        changed_by: context.userId,
+      });
+    }
+
     return { ok: true };
   });
