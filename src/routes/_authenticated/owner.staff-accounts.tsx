@@ -548,7 +548,7 @@ function EntryDialog({ member, month }: { member: StaffAccount; month: string })
       setOpen(false);
       setForm(emptyForm());
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts"] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger", member.userId] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", member.userId] }),
       ]);
@@ -610,7 +610,7 @@ function EditEntryDialog({
       setOpen(false);
       setReason("");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts"] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger", entry.userId] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", entry.userId] }),
       ]);
@@ -695,7 +695,7 @@ function History({ userId, month }: { userId: string; month: string }) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["staff-ledger", userId] }),
         queryClient.invalidateQueries({ queryKey: ["staff-ledger-audit", userId] }),
-        queryClient.invalidateQueries({ queryKey: ["staff-accounts", month] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts"] }),
       ]);
     },
     onError: (error: Error) => toast.error(error.message),
