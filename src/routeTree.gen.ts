@@ -42,6 +42,7 @@ import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnerInventoryRouteImport } from './routes/_authenticated/owner.inventory'
 import { Route as AuthenticatedOwnerMenuRouteImport } from './routes/_authenticated/owner.menu'
 import { Route as AuthenticatedOwnerOrdersRouteImport } from './routes/_authenticated/owner.orders'
+import { Route as AuthenticatedOwnerPlatformSaleRouteImport } from './routes/_authenticated/owner.platform-sale'
 import { Route as AuthenticatedOwnerPlatformsRouteImport } from './routes/_authenticated/owner.platforms'
 import { Route as AuthenticatedOwnerPosRouteImport } from './routes/_authenticated/owner.pos'
 import { Route as AuthenticatedOwnerPurchasesRouteImport } from './routes/_authenticated/owner.purchases'
@@ -235,6 +236,12 @@ const AuthenticatedOwnerOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerPlatformSaleRoute =
+  AuthenticatedOwnerPlatformSaleRouteImport.update({
+    id: '/platform-sale',
+    path: '/platform-sale',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerPlatformsRoute =
   AuthenticatedOwnerPlatformsRouteImport.update({
     id: '/platforms',
@@ -337,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
@@ -382,6 +390,7 @@ export interface FileRoutesByTo {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
@@ -430,6 +439,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/_authenticated/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/_authenticated/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/_authenticated/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/_authenticated/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/_authenticated/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/_authenticated/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
@@ -478,6 +488,7 @@ export interface FileRouteTypes {
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/platform-sale'
     | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
@@ -523,6 +534,7 @@ export interface FileRouteTypes {
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/platform-sale'
     | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
@@ -570,6 +582,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/inventory'
     | '/_authenticated/owner/menu'
     | '/_authenticated/owner/orders'
+    | '/_authenticated/owner/platform-sale'
     | '/_authenticated/owner/platforms'
     | '/_authenticated/owner/pos'
     | '/_authenticated/owner/purchases'
@@ -835,6 +848,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerOrdersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/platform-sale': {
+      id: '/_authenticated/owner/platform-sale'
+      path: '/platform-sale'
+      fullPath: '/owner/platform-sale'
+      preLoaderRoute: typeof AuthenticatedOwnerPlatformSaleRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/platforms': {
       id: '/_authenticated/owner/platforms'
       path: '/platforms'
@@ -932,6 +952,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerInventoryRoute: typeof AuthenticatedOwnerInventoryRoute
   AuthenticatedOwnerMenuRoute: typeof AuthenticatedOwnerMenuRoute
   AuthenticatedOwnerOrdersRoute: typeof AuthenticatedOwnerOrdersRoute
+  AuthenticatedOwnerPlatformSaleRoute: typeof AuthenticatedOwnerPlatformSaleRoute
   AuthenticatedOwnerPlatformsRoute: typeof AuthenticatedOwnerPlatformsRoute
   AuthenticatedOwnerPosRoute: typeof AuthenticatedOwnerPosRoute
   AuthenticatedOwnerPurchasesRoute: typeof AuthenticatedOwnerPurchasesRoute
@@ -956,6 +977,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerInventoryRoute: AuthenticatedOwnerInventoryRoute,
   AuthenticatedOwnerMenuRoute: AuthenticatedOwnerMenuRoute,
   AuthenticatedOwnerOrdersRoute: AuthenticatedOwnerOrdersRoute,
+  AuthenticatedOwnerPlatformSaleRoute: AuthenticatedOwnerPlatformSaleRoute,
   AuthenticatedOwnerPlatformsRoute: AuthenticatedOwnerPlatformsRoute,
   AuthenticatedOwnerPosRoute: AuthenticatedOwnerPosRoute,
   AuthenticatedOwnerPurchasesRoute: AuthenticatedOwnerPurchasesRoute,
