@@ -5,6 +5,7 @@ import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
 import { PromoBannerArea } from "@/components/home/PromoBannerArea";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
+import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 
@@ -39,6 +40,11 @@ function HomePage() {
   const popular = menu.products.filter((p) => p.isPopular);
   const carouselProducts = (featured.length ? featured : popular.length ? popular : menu.products).slice(0, 5);
   const showcase = (popular.length ? popular : menu.products).slice(0, 8);
+  // IDs already rendered by the carousel, Popular showcase and Offers sections,
+  // so the "Explore the full menu" section never duplicates them.
+  const shownIds = new Set(
+    [...carouselProducts, ...showcase, ...featured.slice(0, 4)].map((p) => p.id),
+  );
 
   return (
     <>
@@ -142,6 +148,12 @@ function HomePage() {
           )}
         </div>
       </section>
+
+      <RemainingMenuSection
+        products={menu.products}
+        categories={menu.categories}
+        shownIds={shownIds}
+      />
 
       <div className="pt-10">
         <LocationSection restaurant={info.restaurant} />
