@@ -44,7 +44,7 @@ export function RemainingMenuSection({
     .map((category) => ({
       category,
       items: products.filter(
-        (p) => p.categoryId === category.id && p.isAvailable && !shownIds.has(p.id),
+        (p) => p.categoryId === category.id && p.isAvailable && !excluded.has(p.id),
       ),
     }))
     .filter((group) => group.items.length > 0);

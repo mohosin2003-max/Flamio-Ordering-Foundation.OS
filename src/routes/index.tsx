@@ -40,6 +40,11 @@ function HomePage() {
   const popular = menu.products.filter((p) => p.isPopular);
   const carouselProducts = (featured.length ? featured : popular.length ? popular : menu.products).slice(0, 5);
   const showcase = (popular.length ? popular : menu.products).slice(0, 8);
+  // IDs already rendered by the carousel, Popular showcase and Offers sections,
+  // so the "Explore the full menu" section never duplicates them.
+  const shownIds = new Set(
+    [...carouselProducts, ...showcase, ...featured.slice(0, 4)].map((p) => p.id),
+  );
 
   return (
     <>
@@ -144,7 +149,11 @@ function HomePage() {
         </div>
       </section>
 
-      <RemainingMenuSection products={menu.products} categories={menu.categories} />
+      <RemainingMenuSection
+        products={menu.products}
+        categories={menu.categories}
+        shownIds={shownIds}
+      />
 
       <div className="pt-10">
         <LocationSection restaurant={info.restaurant} />
