@@ -42,6 +42,7 @@ import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnerInventoryRouteImport } from './routes/_authenticated/owner.inventory'
 import { Route as AuthenticatedOwnerMenuRouteImport } from './routes/_authenticated/owner.menu'
 import { Route as AuthenticatedOwnerOrdersRouteImport } from './routes/_authenticated/owner.orders'
+import { Route as AuthenticatedOwnerPlatformsRouteImport } from './routes/_authenticated/owner.platforms'
 import { Route as AuthenticatedOwnerPosRouteImport } from './routes/_authenticated/owner.pos'
 import { Route as AuthenticatedOwnerPurchasesRouteImport } from './routes/_authenticated/owner.purchases'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner.reports'
@@ -234,6 +235,12 @@ const AuthenticatedOwnerOrdersRoute =
     path: '/orders',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerPlatformsRoute =
+  AuthenticatedOwnerPlatformsRouteImport.update({
+    id: '/platforms',
+    path: '/platforms',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerPosRoute = AuthenticatedOwnerPosRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -330,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -374,6 +382,7 @@ export interface FileRoutesByTo {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -421,6 +430,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/_authenticated/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/_authenticated/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/_authenticated/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/_authenticated/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/_authenticated/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
     | '/owner/reports'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/orders'
+    | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
     | '/owner/reports'
@@ -558,6 +570,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/inventory'
     | '/_authenticated/owner/menu'
     | '/_authenticated/owner/orders'
+    | '/_authenticated/owner/platforms'
     | '/_authenticated/owner/pos'
     | '/_authenticated/owner/purchases'
     | '/_authenticated/owner/reports'
@@ -822,6 +835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerOrdersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/platforms': {
+      id: '/_authenticated/owner/platforms'
+      path: '/platforms'
+      fullPath: '/owner/platforms'
+      preLoaderRoute: typeof AuthenticatedOwnerPlatformsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/pos': {
       id: '/_authenticated/owner/pos'
       path: '/pos'
@@ -912,6 +932,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerInventoryRoute: typeof AuthenticatedOwnerInventoryRoute
   AuthenticatedOwnerMenuRoute: typeof AuthenticatedOwnerMenuRoute
   AuthenticatedOwnerOrdersRoute: typeof AuthenticatedOwnerOrdersRoute
+  AuthenticatedOwnerPlatformsRoute: typeof AuthenticatedOwnerPlatformsRoute
   AuthenticatedOwnerPosRoute: typeof AuthenticatedOwnerPosRoute
   AuthenticatedOwnerPurchasesRoute: typeof AuthenticatedOwnerPurchasesRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
@@ -935,6 +956,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerInventoryRoute: AuthenticatedOwnerInventoryRoute,
   AuthenticatedOwnerMenuRoute: AuthenticatedOwnerMenuRoute,
   AuthenticatedOwnerOrdersRoute: AuthenticatedOwnerOrdersRoute,
+  AuthenticatedOwnerPlatformsRoute: AuthenticatedOwnerPlatformsRoute,
   AuthenticatedOwnerPosRoute: AuthenticatedOwnerPosRoute,
   AuthenticatedOwnerPurchasesRoute: AuthenticatedOwnerPurchasesRoute,
   AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
