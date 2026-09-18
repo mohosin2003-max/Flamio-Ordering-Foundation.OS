@@ -58,6 +58,12 @@ const TABS: {
   { to: "/owner/reviews", label: "Reviews", exact: false, permission: "customers" },
 
   { to: "/owner/staff", label: "Staff", exact: false, permission: "staff" },
+  {
+    to: "/owner/staff-accounts",
+    label: "Staff accounts",
+    exact: false,
+    permission: "staff_finance",
+  },
   { to: "/owner/settings", label: "Settings", exact: false, permission: "settings" },
 ];
 

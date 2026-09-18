@@ -1748,6 +1748,45 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_ledger_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          entry_date: string
+          entry_type: string
+          id: string
+          note: string | null
+          payment_method: string | null
+          recorded_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          entry_date?: string
+          entry_type: string
+          id?: string
+          note?: string | null
+          payment_method?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          note?: string | null
+          payment_method?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_permissions: {
         Row: {
           created_at: string
@@ -1767,6 +1806,48 @@ export type Database = {
           created_at?: string
           id?: string
           permission?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_salary_profiles: {
+        Row: {
+          created_at: string
+          daily_rate: number
+          id: string
+          is_active: boolean
+          monthly_rate: number
+          overtime_hourly_rate: number
+          pay_type: string
+          payday: number
+          starts_on: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          is_active?: boolean
+          monthly_rate?: number
+          overtime_hourly_rate?: number
+          pay_type?: string
+          payday?: number
+          starts_on?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          is_active?: boolean
+          monthly_rate?: number
+          overtime_hourly_rate?: number
+          pay_type?: string
+          payday?: number
+          starts_on?: string | null
           updated_at?: string
           user_id?: string
         }
