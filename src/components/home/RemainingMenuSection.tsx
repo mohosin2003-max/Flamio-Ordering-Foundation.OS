@@ -15,9 +15,12 @@ import type { Category, Product } from "@/types/menu";
 export function RemainingMenuSection({
   products,
   categories,
+  shownIds,
 }: {
   products: Product[];
   categories: Category[];
+  /** IDs already rendered by other Home Page sections (carousel, Popular, Offers). */
+  shownIds: Set<string>;
 }) {
   const { user, loading } = useAuth();
   const fetchRecommendations = useServerFn(getRecommendations);
@@ -29,13 +32,11 @@ export function RemainingMenuSection({
     staleTime: 60 * 1000,
   });
 
-  // IDs already visible on the Home Page: featured (carousel + offers) and
-  // popular (showcase) products, plus anything Recommended renders.
-  const shownIds = new Set(
-    products.filter((p) => p.isFeatured || p.isPopular).map((p) => p.id),
-  );
+  // Also exclude anything the Recommended section renders, so no item is
+  // displayed twice on the Home Page.
+  const excluded = new Set(shownIds);
   if (recs?.enabled) {
-    for (const id of [...recs.orderAgain, ...recs.tryNew]) shownIds.add(id);
+    for (const id of [...recs.orderAgain, ...recs.tryNew]) excluded.add(id);
   }
 
   const visibleCategories = categories.filter((c) => c.isVisible);
