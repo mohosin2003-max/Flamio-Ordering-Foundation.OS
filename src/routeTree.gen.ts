@@ -50,6 +50,7 @@ import { Route as AuthenticatedOwnerRewardsRouteImport } from './routes/_authent
 import { Route as AuthenticatedOwnerRidersRouteImport } from './routes/_authenticated/owner.riders'
 import { Route as AuthenticatedOwnerSettingsRouteImport } from './routes/_authenticated/owner.settings'
 import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authenticated/owner.staff'
+import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
 
@@ -279,6 +280,12 @@ const AuthenticatedOwnerStaffRoute = AuthenticatedOwnerStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AuthenticatedOwnerRoute,
 } as any)
+const AuthenticatedOwnerStaffAccountsRoute =
+  AuthenticatedOwnerStaffAccountsRouteImport.update({
+    id: '/staff-accounts',
+    path: '/staff-accounts',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerSuppliersRoute =
   AuthenticatedOwnerSuppliersRouteImport.update({
     id: '/suppliers',
@@ -331,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/owner/riders': typeof AuthenticatedOwnerRidersRoute
   '/owner/settings': typeof AuthenticatedOwnerSettingsRoute
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
+  '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
@@ -374,6 +382,7 @@ export interface FileRoutesByTo {
   '/owner/riders': typeof AuthenticatedOwnerRidersRoute
   '/owner/settings': typeof AuthenticatedOwnerSettingsRoute
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
+  '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
@@ -420,6 +429,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/riders': typeof AuthenticatedOwnerRidersRoute
   '/_authenticated/owner/settings': typeof AuthenticatedOwnerSettingsRoute
   '/_authenticated/owner/staff': typeof AuthenticatedOwnerStaffRoute
+  '/_authenticated/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/_authenticated/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/owner/riders'
     | '/owner/settings'
     | '/owner/staff'
+    | '/owner/staff-accounts'
     | '/owner/suppliers'
     | '/account/'
     | '/owner/'
@@ -509,6 +520,7 @@ export interface FileRouteTypes {
     | '/owner/riders'
     | '/owner/settings'
     | '/owner/staff'
+    | '/owner/staff-accounts'
     | '/owner/suppliers'
     | '/account'
     | '/owner'
@@ -554,6 +566,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/riders'
     | '/_authenticated/owner/settings'
     | '/_authenticated/owner/staff'
+    | '/_authenticated/owner/staff-accounts'
     | '/_authenticated/owner/suppliers'
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
@@ -865,6 +878,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerStaffRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/staff-accounts': {
+      id: '/_authenticated/owner/staff-accounts'
+      path: '/staff-accounts'
+      fullPath: '/owner/staff-accounts'
+      preLoaderRoute: typeof AuthenticatedOwnerStaffAccountsRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/suppliers': {
       id: '/_authenticated/owner/suppliers'
       path: '/suppliers'
@@ -900,6 +920,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerRidersRoute: typeof AuthenticatedOwnerRidersRoute
   AuthenticatedOwnerSettingsRoute: typeof AuthenticatedOwnerSettingsRoute
   AuthenticatedOwnerStaffRoute: typeof AuthenticatedOwnerStaffRoute
+  AuthenticatedOwnerStaffAccountsRoute: typeof AuthenticatedOwnerStaffAccountsRoute
   AuthenticatedOwnerSuppliersRoute: typeof AuthenticatedOwnerSuppliersRoute
   AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
 }
@@ -922,6 +943,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerRidersRoute: AuthenticatedOwnerRidersRoute,
   AuthenticatedOwnerSettingsRoute: AuthenticatedOwnerSettingsRoute,
   AuthenticatedOwnerStaffRoute: AuthenticatedOwnerStaffRoute,
+  AuthenticatedOwnerStaffAccountsRoute: AuthenticatedOwnerStaffAccountsRoute,
   AuthenticatedOwnerSuppliersRoute: AuthenticatedOwnerSuppliersRoute,
   AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
 }
