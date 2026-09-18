@@ -5,6 +5,7 @@ import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
 import { PromoBannerArea } from "@/components/home/PromoBannerArea";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
+import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 
@@ -142,6 +143,8 @@ function HomePage() {
           )}
         </div>
       </section>
+
+      <RemainingMenuSection products={menu.products} categories={menu.categories} />
 
       <div className="pt-10">
         <LocationSection restaurant={info.restaurant} />
