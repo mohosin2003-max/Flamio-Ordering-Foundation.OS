@@ -8,6 +8,7 @@
 
 export const STAFF_PERMISSIONS = [
   "pos",
+  "platform_sales",
   "online_orders",
   "order_management",
   "kitchen",
