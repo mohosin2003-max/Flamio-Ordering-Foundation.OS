@@ -1019,6 +1019,8 @@ export type Database = {
           address_line: string | null
           area: string | null
           code: string
+          commission_amount: number
+          commission_rate: number
           coupon_code: string | null
           created_at: string
           customer_name: string
@@ -1033,9 +1035,12 @@ export type Database = {
           landmark: string | null
           latitude: number | null
           longitude: number | null
+          net_receivable: number | null
           payment_label: string
           payment_method: string
           pickup_note: string | null
+          platform_id: string | null
+          platform_name: string | null
           rider_id: string | null
           status: string
           subtotal: number
@@ -1049,6 +1054,8 @@ export type Database = {
           address_line?: string | null
           area?: string | null
           code: string
+          commission_amount?: number
+          commission_rate?: number
           coupon_code?: string | null
           created_at?: string
           customer_name: string
@@ -1063,9 +1070,12 @@ export type Database = {
           landmark?: string | null
           latitude?: number | null
           longitude?: number | null
+          net_receivable?: number | null
           payment_label: string
           payment_method: string
           pickup_note?: string | null
+          platform_id?: string | null
+          platform_name?: string | null
           rider_id?: string | null
           status?: string
           subtotal?: number
@@ -1079,6 +1089,8 @@ export type Database = {
           address_line?: string | null
           area?: string | null
           code?: string
+          commission_amount?: number
+          commission_rate?: number
           coupon_code?: string | null
           created_at?: string
           customer_name?: string
@@ -1093,9 +1105,12 @@ export type Database = {
           landmark?: string | null
           latitude?: number | null
           longitude?: number | null
+          net_receivable?: number | null
           payment_label?: string
           payment_method?: string
           pickup_note?: string | null
+          platform_id?: string | null
+          platform_name?: string | null
           rider_id?: string | null
           status?: string
           subtotal?: number
@@ -1106,6 +1121,13 @@ export type Database = {
           zone_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "sales_platforms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_rider_id_fkey"
             columns: ["rider_id"]
@@ -1174,6 +1196,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      platform_product_prices: {
+        Row: {
+          created_at: string
+          id: string
+          platform_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform_id: string
+          price: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform_id?: string
+          price?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_product_prices_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "sales_platforms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_images: {
         Row: {
@@ -1744,6 +1808,39 @@ export type Database = {
           name?: string
           note?: string | null
           phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales_platforms: {
+        Row: {
+          commission_percent: number
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          pricing_mode: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          pricing_mode?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          pricing_mode?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []

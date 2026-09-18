@@ -8,6 +8,7 @@
 
 export const STAFF_PERMISSIONS = [
   "pos",
+  "platform_sales",
   "online_orders",
   "order_management",
   "kitchen",
@@ -27,6 +28,7 @@ export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   pos: "Counter Sale",
+  platform_sales: "Online Platform Sale",
   online_orders: "Online Orders",
   order_management: "Order Management",
   kitchen: "Kitchen / KDS",
