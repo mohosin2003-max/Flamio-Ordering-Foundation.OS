@@ -1542,39 +1542,54 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          expense_category: string | null
+          expense_name: string | null
           id: string
-          item_id: string
+          item_id: string | null
+          kind: string
           note: string | null
+          payment_method: string | null
           purchased_on: string
           quantity: number
           supplier_name: string
           total_price: number
+          unit_label: string | null
           unit_price: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          expense_category?: string | null
+          expense_name?: string | null
           id?: string
-          item_id: string
+          item_id?: string | null
+          kind?: string
           note?: string | null
+          payment_method?: string | null
           purchased_on?: string
           quantity: number
           supplier_name: string
           total_price?: number
+          unit_label?: string | null
           unit_price?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          expense_category?: string | null
+          expense_name?: string | null
           id?: string
-          item_id?: string
+          item_id?: string | null
+          kind?: string
           note?: string | null
+          payment_method?: string | null
           purchased_on?: string
           quantity?: number
           supplier_name?: string
           total_price?: number
+          unit_label?: string | null
           unit_price?: number
           updated_at?: string
         }

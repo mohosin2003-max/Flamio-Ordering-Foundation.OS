@@ -28,6 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatBDT } from "@/lib/format";
 import { ownerListInventory } from "@/lib/inventory.functions";
 import {
+  OTHERS_CATEGORIES,
+  ownerCreateOtherExpense,
   ownerCreatePurchase,
   ownerListPurchases,
   type PurchaseRecord,
@@ -49,10 +51,25 @@ function OwnerPurchases() {
   const listPurchases = useServerFn(ownerListPurchases);
   const listInventory = useServerFn(ownerListInventory);
   const createPurchase = useServerFn(ownerCreatePurchase);
+  const createOther = useServerFn(ownerCreateOtherExpense);
   const listSuppliers = useServerFn(ownerListSuppliers);
   const queryClient = useQueryClient();
 
   const [saving, setSaving] = useState(false);
+  // Purchase type: the existing inventory flow, or a pure expense record.
+  const [kind, setKind] = useState<"inventory" | "others">("inventory");
+  const [others, setOthers] = useState({
+    purchasedOn: todayIso(),
+    name: "",
+    category: "",
+    amount: "",
+    quantity: "",
+    unit: "",
+    supplierName: "",
+    paymentMethod: "",
+    note: "",
+  });
+  const [othersMoreOpen, setOthersMoreOpen] = useState(false);
   const [form, setForm] = useState({
     purchasedOn: todayIso(),
     supplierName: "",
@@ -103,10 +120,12 @@ function OwnerPurchases() {
       if (row.purchasedOn >= weekStart) weekTotal += row.totalPrice;
       if (row.purchasedOn.slice(0, 7) === monthStart) monthTotal += row.totalPrice;
 
-      const ing = byIngredient.get(row.itemName) ?? { quantity: 0, unit: row.unit, cost: 0 };
-      ing.quantity += row.quantity;
-      ing.cost += row.totalPrice;
-      byIngredient.set(row.itemName, ing);
+      if (row.kind === "inventory") {
+        const ing = byIngredient.get(row.itemName) ?? { quantity: 0, unit: row.unit, cost: 0 };
+        ing.quantity += row.quantity;
+        ing.cost += row.totalPrice;
+        byIngredient.set(row.itemName, ing);
+      }
 
       const supplierLabel = row.supplierName?.trim() || "No supplier";
       bySupplier.set(supplierLabel, (bySupplier.get(supplierLabel) ?? 0) + row.totalPrice);
@@ -181,9 +200,193 @@ function OwnerPurchases() {
     }
   };
 
+  const saveOther = async () => {
+    const amount = Number(others.amount) || 0;
+    if (!others.name.trim() || !others.category || amount <= 0) {
+      toast.error("Name, category and amount are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createOther({
+        data: {
+          purchasedOn: others.purchasedOn,
+          name: others.name.trim(),
+          category: others.category,
+          amount,
+          quantity: others.quantity ? Number(others.quantity) : null,
+          unit: others.unit.trim() || null,
+          supplierName: others.supplierName.trim() || null,
+          paymentMethod: others.paymentMethod.trim() || null,
+          note: others.note.trim() || null,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["owner-purchases"] });
+      toast.success("Expense saved (stock not changed)");
+      setOthers({
+        purchasedOn: todayIso(),
+        name: "",
+        category: "",
+        amount: "",
+        quantity: "",
+        unit: "",
+        supplierName: others.supplierName,
+        paymentMethod: others.paymentMethod,
+        note: "",
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save this expense");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {items.length === 0 ? (
+      <Tabs value={kind} onValueChange={(value) => setKind(value as typeof kind)}>
+        <TabsList className="w-full">
+          <TabsTrigger className="flex-1" value="inventory">
+            Inventory / Stock
+          </TabsTrigger>
+          <TabsTrigger className="flex-1" value="others">
+            Others
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {kind === "others" ? (
+        <Card>
+          <CardContent className="space-y-4 p-4">
+            <div>
+              <h2 className="font-display text-base font-bold">Record an expense</h2>
+              <p className="text-xs text-muted-foreground">
+                Saved as an expense only — inventory stock is not changed.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-name">Name</Label>
+                <Input
+                  id="ox-name"
+                  value={others.name}
+                  placeholder="Shop rent, Salt, Electricity bill…"
+                  onChange={(e) => setOthers({ ...others, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select
+                  value={others.category}
+                  onValueChange={(value) => setOthers({ ...others, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OTHERS_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-amount">Amount</Label>
+                <Input
+                  id="ox-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={others.amount}
+                  onChange={(e) => setOthers({ ...others, amount: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-date">Date</Label>
+                <Input
+                  id="ox-date"
+                  type="date"
+                  value={others.purchasedOn}
+                  onChange={(e) => setOthers({ ...others, purchasedOn: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <Collapsible open={othersMoreOpen} onOpenChange={setOthersMoreOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${othersMoreOpen ? "rotate-180" : ""}`}
+                />
+                Optional details
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-3">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ox-qty">Quantity</Label>
+                      <Input
+                        id="ox-qty"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={others.quantity}
+                        onChange={(e) => setOthers({ ...others, quantity: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ox-unit">Unit</Label>
+                      <Input
+                        id="ox-unit"
+                        value={others.unit}
+                        placeholder="kg, pcs…"
+                        onChange={(e) => setOthers({ ...others, unit: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ox-payee">Supplier / payee</Label>
+                    <Input
+                      id="ox-payee"
+                      list="pu-supplier-options"
+                      value={others.supplierName}
+                      onChange={(e) => setOthers({ ...others, supplierName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ox-pay">Payment method</Label>
+                    <Input
+                      id="ox-pay"
+                      value={others.paymentMethod}
+                      placeholder="Cash, bKash, bank…"
+                      onChange={(e) => setOthers({ ...others, paymentMethod: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ox-note">Note</Label>
+                  <Textarea
+                    id="ox-note"
+                    rows={2}
+                    value={others.note}
+                    onChange={(e) => setOthers({ ...others, note: e.target.value })}
+                  />
+                </div>
+                <datalist id="pu-supplier-options">
+                  {supplierNames.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Button disabled={saving} onClick={() => void saveOther()}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save expense
+            </Button>
+          </CardContent>
+        </Card>
+      ) : items.length === 0 ? (
         <EmptyState
           title="Add ingredients first"
           description="Purchases raise the stock of an existing ingredient. Add ingredients in Inventory to start recording purchases."
@@ -382,6 +585,7 @@ function prettyWeek(weekStart: string): string {
  */
 function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
   const [view, setView] = useState<"date" | "week" | "month">("date");
+  const [kindFilter, setKindFilter] = useState<"all" | "inventory" | "others">("all");
   const [week, setWeek] = useState<string>("");
   const [month, setMonth] = useState<string>("");
 
@@ -397,11 +601,27 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
   const selectedWeek = week || weeks[0] || "";
   const selectedMonth = month || months[0] || "";
 
-  const visible = useMemo(() => {
+  const inPeriod = useMemo(() => {
     if (view === "week") return rows.filter((r) => weekStartOf(r.purchasedOn) === selectedWeek);
     if (view === "month") return rows.filter((r) => r.purchasedOn.slice(0, 7) === selectedMonth);
     return rows;
   }, [rows, view, selectedWeek, selectedMonth]);
+
+  const visible = useMemo(
+    () => (kindFilter === "all" ? inPeriod : inPeriod.filter((r) => r.kind === kindFilter)),
+    [inPeriod, kindFilter],
+  );
+
+  // Spending breakdown for the selected period, before the type filter.
+  const totals = useMemo(() => {
+    let inventory = 0;
+    let others = 0;
+    for (const row of inPeriod) {
+      if (row.kind === "others") others += row.totalPrice;
+      else inventory += row.totalPrice;
+    }
+    return { inventory, others, total: inventory + others };
+  }, [inPeriod]);
 
   const groups = useMemo(() => {
     const map = new Map<string, PurchaseRecord[]>();
@@ -413,7 +633,6 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [visible]);
 
-  const periodTotal = visible.reduce((sum, r) => sum + r.totalPrice, 0);
 
   return (
     <div className="space-y-3">
@@ -467,14 +686,34 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
             </Select>
           ) : null}
 
-          {view !== "date" ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
-              <span className="text-muted-foreground">
-                {view === "week" ? "Week total" : "Month total"}
-              </span>
-              <span className="font-display text-base font-bold">{formatBDT(periodTotal)}</span>
+          <Tabs value={kindFilter} onValueChange={(value) => setKindFilter(value as typeof kindFilter)}>
+            <TabsList className="w-full">
+              <TabsTrigger className="flex-1" value="all">
+                All
+              </TabsTrigger>
+              <TabsTrigger className="flex-1" value="inventory">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger className="flex-1" value="others">
+                Others
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="space-y-1.5 rounded-lg border border-border p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Inventory purchases</span>
+              <span className="font-medium">{formatBDT(totals.inventory)}</span>
             </div>
-          ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Others expenses</span>
+              <span className="font-medium">{formatBDT(totals.others)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-1.5">
+              <span className="text-muted-foreground">Total spending</span>
+              <span className="font-display text-base font-bold">{formatBDT(totals.total)}</span>
+            </div>
+          </div>
 
           {groups.length === 0 ? (
             <EmptyState
@@ -520,11 +759,32 @@ function DateGroup({ date, rows }: { date: string; rows: PurchaseRecord[] }) {
             {rows.map((row) => (
               <div key={row.id} className="flex flex-wrap items-start justify-between gap-2 text-sm">
                 <div className="min-w-0">
-                  <p className="font-medium">{row.itemName}</p>
-                  <p className="text-muted-foreground">
-                    {row.supplierName?.trim() || "No supplier"} · {row.quantity} {row.unit} ×{" "}
-                    {formatBDT(row.unitPrice)}
+                  <p className="font-medium">
+                    {row.itemName}
+                    {row.kind === "others" ? (
+                      <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        Others
+                      </span>
+                    ) : null}
                   </p>
+                  {row.kind === "others" ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        {row.category}
+                        {row.quantity > 0 ? ` · ${row.quantity} ${row.unit}`.trimEnd() : ""}
+                        {row.supplierName?.trim() ? ` · ${row.supplierName.trim()}` : ""}
+                        {row.paymentMethod ? ` · ${row.paymentMethod}` : ""}
+                      </p>
+                      {row.note ? (
+                        <p className="text-xs text-muted-foreground">{row.note}</p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      {row.supplierName?.trim() || "No supplier"} · {row.quantity} {row.unit} ×{" "}
+                      {formatBDT(row.unitPrice)}
+                    </p>
+                  )}
                 </div>
                 <span className="font-semibold">{formatBDT(row.totalPrice)}</span>
               </div>
