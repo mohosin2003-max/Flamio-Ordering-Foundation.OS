@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ClipboardList, UtensilsCrossed, Settings2 } from "lucide-react";
 
+import { PushToggle } from "@/components/notifications/PushToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ownerListOrders } from "@/lib/owner.functions";
@@ -41,6 +42,7 @@ function OwnerHome() {
 
   return (
     <div className="space-y-6">
+      <PushToggle />
       {!canSeeOrders ? null : orders.isLoading ? (
         <Skeleton className="h-28 w-full" />
       ) : (
