@@ -46,7 +46,10 @@ type SubscriptionRow = {
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
+  const { looseDb } = await import("@/integrations/supabase/loose.server");
+  // The generated types don't yet know the newest notification columns; the
+  // client, auth and RLS are unchanged.
+  return looseDb(supabaseAdmin);
 }
 
 function vapidKeys() {
