@@ -54,7 +54,6 @@ import { Route as AuthenticatedOwnerSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authenticated/owner.staff'
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
-import { Route as ApiPublicEnvcheckRouteImport } from './routes/api/public/envcheck'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -307,11 +306,6 @@ const AuthenticatedOwnerSuppliersRoute =
     path: '/suppliers',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
-const ApiPublicEnvcheckRoute = ApiPublicEnvcheckRouteImport.update({
-  id: '/api/public/envcheck',
-  path: '/api/public/envcheck',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAccountReviewOrderIdRoute =
   AuthenticatedAccountReviewOrderIdRouteImport.update({
     id: '/account/review/$orderId',
@@ -362,7 +356,6 @@ export interface FileRoutesByFullPath {
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
-  '/api/public/envcheck': typeof ApiPublicEnvcheckRoute
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -409,7 +402,6 @@ export interface FileRoutesByTo {
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
-  '/api/public/envcheck': typeof ApiPublicEnvcheckRoute
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -459,7 +451,6 @@ export interface FileRoutesById {
   '/_authenticated/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/_authenticated/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/_authenticated/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
-  '/api/public/envcheck': typeof ApiPublicEnvcheckRoute
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/_authenticated/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -509,7 +500,6 @@ export interface FileRouteTypes {
     | '/owner/staff'
     | '/owner/staff-accounts'
     | '/owner/suppliers'
-    | '/api/public/envcheck'
     | '/account/'
     | '/owner/'
     | '/account/review/$orderId'
@@ -556,7 +546,6 @@ export interface FileRouteTypes {
     | '/owner/staff'
     | '/owner/staff-accounts'
     | '/owner/suppliers'
-    | '/api/public/envcheck'
     | '/account'
     | '/owner'
     | '/account/review/$orderId'
@@ -605,7 +594,6 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/staff'
     | '/_authenticated/owner/staff-accounts'
     | '/_authenticated/owner/suppliers'
-    | '/api/public/envcheck'
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
     | '/_authenticated/account/review/$orderId'
@@ -625,7 +613,6 @@ export interface RootRouteChildren {
   OrderOrderIdRoute: typeof OrderOrderIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   MenuIndexRoute: typeof MenuIndexRoute
-  ApiPublicEnvcheckRoute: typeof ApiPublicEnvcheckRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -945,13 +932,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSuppliersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
-    '/api/public/envcheck': {
-      id: '/api/public/envcheck'
-      path: '/api/public/envcheck'
-      fullPath: '/api/public/envcheck'
-      preLoaderRoute: typeof ApiPublicEnvcheckRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/account/review/$orderId': {
       id: '/_authenticated/account/review/$orderId'
       path: '/account/review/$orderId'
@@ -1062,7 +1042,6 @@ const rootRouteChildren: RootRouteChildren = {
   OrderOrderIdRoute: OrderOrderIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
   MenuIndexRoute: MenuIndexRoute,
-  ApiPublicEnvcheckRoute: ApiPublicEnvcheckRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
