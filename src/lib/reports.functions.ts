@@ -308,18 +308,23 @@ export const ownerSendPromotion = createServerFn({ method: "POST" })
 
     if (recipients.length === 0) return { ok: true, sent: 0 };
 
-    const { error: insertError } = await supabaseAdmin.from("notifications").insert(
+    // Broadcast stays separate from transactional order notifications: its own
+    // `broadcast` kind, and it is only ever sent when the owner presses send.
+    const { notifyUsers } = await import("@/lib/push.server");
+    await notifyUsers(
       recipients.map((userId) => ({
-        user_id: userId,
+        userId,
+        kind: "broadcast" as const,
         title: data.title,
         body: data.body,
       })),
+      {
+        title: data.title,
+        body: data.body,
+        url: "/account/notifications",
+        urgency: "normal",
+      },
     );
-
-    if (insertError) {
-      console.error("Promotion send failed", insertError);
-      throw new Error("We couldn't send this promotion. Please try again.");
-    }
 
     return { ok: true, sent: recipients.length };
   });
