@@ -585,6 +585,7 @@ function prettyWeek(weekStart: string): string {
  */
 function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
   const [view, setView] = useState<"date" | "week" | "month">("date");
+  const [kindFilter, setKindFilter] = useState<"all" | "inventory" | "others">("all");
   const [week, setWeek] = useState<string>("");
   const [month, setMonth] = useState<string>("");
 
@@ -600,11 +601,27 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
   const selectedWeek = week || weeks[0] || "";
   const selectedMonth = month || months[0] || "";
 
-  const visible = useMemo(() => {
+  const inPeriod = useMemo(() => {
     if (view === "week") return rows.filter((r) => weekStartOf(r.purchasedOn) === selectedWeek);
     if (view === "month") return rows.filter((r) => r.purchasedOn.slice(0, 7) === selectedMonth);
     return rows;
   }, [rows, view, selectedWeek, selectedMonth]);
+
+  const visible = useMemo(
+    () => (kindFilter === "all" ? inPeriod : inPeriod.filter((r) => r.kind === kindFilter)),
+    [inPeriod, kindFilter],
+  );
+
+  // Spending breakdown for the selected period, before the type filter.
+  const totals = useMemo(() => {
+    let inventory = 0;
+    let others = 0;
+    for (const row of inPeriod) {
+      if (row.kind === "others") others += row.totalPrice;
+      else inventory += row.totalPrice;
+    }
+    return { inventory, others, total: inventory + others };
+  }, [inPeriod]);
 
   const groups = useMemo(() => {
     const map = new Map<string, PurchaseRecord[]>();
@@ -616,7 +633,6 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [visible]);
 
-  const periodTotal = visible.reduce((sum, r) => sum + r.totalPrice, 0);
 
   return (
     <div className="space-y-3">
@@ -670,14 +686,34 @@ function PurchaseHistory({ rows }: { rows: PurchaseRecord[] }) {
             </Select>
           ) : null}
 
-          {view !== "date" ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
-              <span className="text-muted-foreground">
-                {view === "week" ? "Week total" : "Month total"}
-              </span>
-              <span className="font-display text-base font-bold">{formatBDT(periodTotal)}</span>
+          <Tabs value={kindFilter} onValueChange={(value) => setKindFilter(value as typeof kindFilter)}>
+            <TabsList className="w-full">
+              <TabsTrigger className="flex-1" value="all">
+                All
+              </TabsTrigger>
+              <TabsTrigger className="flex-1" value="inventory">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger className="flex-1" value="others">
+                Others
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="space-y-1.5 rounded-lg border border-border p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Inventory purchases</span>
+              <span className="font-medium">{formatBDT(totals.inventory)}</span>
             </div>
-          ) : null}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Others expenses</span>
+              <span className="font-medium">{formatBDT(totals.others)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-1.5">
+              <span className="text-muted-foreground">Total spending</span>
+              <span className="font-display text-base font-bold">{formatBDT(totals.total)}</span>
+            </div>
+          </div>
 
           {groups.length === 0 ? (
             <EmptyState
@@ -723,11 +759,32 @@ function DateGroup({ date, rows }: { date: string; rows: PurchaseRecord[] }) {
             {rows.map((row) => (
               <div key={row.id} className="flex flex-wrap items-start justify-between gap-2 text-sm">
                 <div className="min-w-0">
-                  <p className="font-medium">{row.itemName}</p>
-                  <p className="text-muted-foreground">
-                    {row.supplierName?.trim() || "No supplier"} · {row.quantity} {row.unit} ×{" "}
-                    {formatBDT(row.unitPrice)}
+                  <p className="font-medium">
+                    {row.itemName}
+                    {row.kind === "others" ? (
+                      <span className="ml-2 rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        Others
+                      </span>
+                    ) : null}
                   </p>
+                  {row.kind === "others" ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        {row.category}
+                        {row.quantity > 0 ? ` · ${row.quantity} ${row.unit}`.trimEnd() : ""}
+                        {row.supplierName?.trim() ? ` · ${row.supplierName.trim()}` : ""}
+                        {row.paymentMethod ? ` · ${row.paymentMethod}` : ""}
+                      </p>
+                      {row.note ? (
+                        <p className="text-xs text-muted-foreground">{row.note}</p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      {row.supplierName?.trim() || "No supplier"} · {row.quantity} {row.unit} ×{" "}
+                      {formatBDT(row.unitPrice)}
+                    </p>
+                  )}
                 </div>
                 <span className="font-semibold">{formatBDT(row.totalPrice)}</span>
               </div>
