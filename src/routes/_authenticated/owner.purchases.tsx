@@ -28,6 +28,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatBDT } from "@/lib/format";
 import { ownerListInventory } from "@/lib/inventory.functions";
 import {
+  OTHERS_CATEGORIES,
+  ownerCreateOtherExpense,
   ownerCreatePurchase,
   ownerListPurchases,
   type PurchaseRecord,
@@ -49,10 +51,25 @@ function OwnerPurchases() {
   const listPurchases = useServerFn(ownerListPurchases);
   const listInventory = useServerFn(ownerListInventory);
   const createPurchase = useServerFn(ownerCreatePurchase);
+  const createOther = useServerFn(ownerCreateOtherExpense);
   const listSuppliers = useServerFn(ownerListSuppliers);
   const queryClient = useQueryClient();
 
   const [saving, setSaving] = useState(false);
+  // Purchase type: the existing inventory flow, or a pure expense record.
+  const [kind, setKind] = useState<"inventory" | "others">("inventory");
+  const [others, setOthers] = useState({
+    purchasedOn: todayIso(),
+    name: "",
+    category: "",
+    amount: "",
+    quantity: "",
+    unit: "",
+    supplierName: "",
+    paymentMethod: "",
+    note: "",
+  });
+  const [othersMoreOpen, setOthersMoreOpen] = useState(false);
   const [form, setForm] = useState({
     purchasedOn: todayIso(),
     supplierName: "",
@@ -103,10 +120,12 @@ function OwnerPurchases() {
       if (row.purchasedOn >= weekStart) weekTotal += row.totalPrice;
       if (row.purchasedOn.slice(0, 7) === monthStart) monthTotal += row.totalPrice;
 
-      const ing = byIngredient.get(row.itemName) ?? { quantity: 0, unit: row.unit, cost: 0 };
-      ing.quantity += row.quantity;
-      ing.cost += row.totalPrice;
-      byIngredient.set(row.itemName, ing);
+      if (row.kind === "inventory") {
+        const ing = byIngredient.get(row.itemName) ?? { quantity: 0, unit: row.unit, cost: 0 };
+        ing.quantity += row.quantity;
+        ing.cost += row.totalPrice;
+        byIngredient.set(row.itemName, ing);
+      }
 
       const supplierLabel = row.supplierName?.trim() || "No supplier";
       bySupplier.set(supplierLabel, (bySupplier.get(supplierLabel) ?? 0) + row.totalPrice);
@@ -181,9 +200,193 @@ function OwnerPurchases() {
     }
   };
 
+  const saveOther = async () => {
+    const amount = Number(others.amount) || 0;
+    if (!others.name.trim() || !others.category || amount <= 0) {
+      toast.error("Name, category and amount are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createOther({
+        data: {
+          purchasedOn: others.purchasedOn,
+          name: others.name.trim(),
+          category: others.category,
+          amount,
+          quantity: others.quantity ? Number(others.quantity) : null,
+          unit: others.unit.trim() || null,
+          supplierName: others.supplierName.trim() || null,
+          paymentMethod: others.paymentMethod.trim() || null,
+          note: others.note.trim() || null,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["owner-purchases"] });
+      toast.success("Expense saved (stock not changed)");
+      setOthers({
+        purchasedOn: todayIso(),
+        name: "",
+        category: "",
+        amount: "",
+        quantity: "",
+        unit: "",
+        supplierName: others.supplierName,
+        paymentMethod: others.paymentMethod,
+        note: "",
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save this expense");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {items.length === 0 ? (
+      <Tabs value={kind} onValueChange={(value) => setKind(value as typeof kind)}>
+        <TabsList className="w-full">
+          <TabsTrigger className="flex-1" value="inventory">
+            Inventory / Stock
+          </TabsTrigger>
+          <TabsTrigger className="flex-1" value="others">
+            Others
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {kind === "others" ? (
+        <Card>
+          <CardContent className="space-y-4 p-4">
+            <div>
+              <h2 className="font-display text-base font-bold">Record an expense</h2>
+              <p className="text-xs text-muted-foreground">
+                Saved as an expense only — inventory stock is not changed.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-name">Name</Label>
+                <Input
+                  id="ox-name"
+                  value={others.name}
+                  placeholder="Shop rent, Salt, Electricity bill…"
+                  onChange={(e) => setOthers({ ...others, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Select
+                  value={others.category}
+                  onValueChange={(value) => setOthers({ ...others, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OTHERS_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-amount">Amount</Label>
+                <Input
+                  id="ox-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={others.amount}
+                  onChange={(e) => setOthers({ ...others, amount: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ox-date">Date</Label>
+                <Input
+                  id="ox-date"
+                  type="date"
+                  value={others.purchasedOn}
+                  onChange={(e) => setOthers({ ...others, purchasedOn: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <Collapsible open={othersMoreOpen} onOpenChange={setOthersMoreOpen}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${othersMoreOpen ? "rotate-180" : ""}`}
+                />
+                Optional details
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-3">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ox-qty">Quantity</Label>
+                      <Input
+                        id="ox-qty"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={others.quantity}
+                        onChange={(e) => setOthers({ ...others, quantity: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ox-unit">Unit</Label>
+                      <Input
+                        id="ox-unit"
+                        value={others.unit}
+                        placeholder="kg, pcs…"
+                        onChange={(e) => setOthers({ ...others, unit: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ox-payee">Supplier / payee</Label>
+                    <Input
+                      id="ox-payee"
+                      list="pu-supplier-options"
+                      value={others.supplierName}
+                      onChange={(e) => setOthers({ ...others, supplierName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ox-pay">Payment method</Label>
+                    <Input
+                      id="ox-pay"
+                      value={others.paymentMethod}
+                      placeholder="Cash, bKash, bank…"
+                      onChange={(e) => setOthers({ ...others, paymentMethod: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ox-note">Note</Label>
+                  <Textarea
+                    id="ox-note"
+                    rows={2}
+                    value={others.note}
+                    onChange={(e) => setOthers({ ...others, note: e.target.value })}
+                  />
+                </div>
+                <datalist id="pu-supplier-options">
+                  {supplierNames.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Button disabled={saving} onClick={() => void saveOther()}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save expense
+            </Button>
+          </CardContent>
+        </Card>
+      ) : items.length === 0 ? (
         <EmptyState
           title="Add ingredients first"
           description="Purchases raise the stock of an existing ingredient. Add ingredients in Inventory to start recording purchases."
