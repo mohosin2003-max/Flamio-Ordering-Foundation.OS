@@ -44,6 +44,12 @@ const placeOrderSchema = z.object({
   deliveryCharge: z.number().nonnegative(),
   total: z.number().nonnegative(),
   items: z.array(itemSchema).min(1).max(50),
+  /**
+   * Sale channel. `counter` is the Owner/Staff till: it is authorized below
+   * (existing `pos` permission) and is stored as an immediately completed sale,
+   * so it never enters the online-order status flow.
+   */
+  channel: z.enum(["online", "counter"]).default("online"),
 });
 
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
@@ -69,6 +75,16 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     // Signed-in customers own their orders; guests keep placing orders freely.
     const userId = await getOptionalUserId();
+
+    // Only an authorized counter user may record a counter sale; anything else
+    // from the browser is treated as a normal online order.
+    let channel: "online" | "counter" = "online";
+    if (data.channel === "counter") {
+      if (!userId) throw new Error("Please sign in to record a counter sale.");
+      const { assertPermission } = await import("@/lib/owner.server");
+      await assertPermission(userId, "pos");
+      channel = "counter";
+    }
 
     // Combo lines are re-checked against the owner's configuration and the live
     // menu, then re-priced here. Availability, selection rules and combo prices
@@ -146,7 +162,9 @@ export const placeOrder = createServerFn({ method: "POST" })
         .insert({
           code: orderCode(new Date()),
           user_id: userId,
-          status: "placed",
+          channel,
+          // Counter sales are confirmed/sold the moment the bill is completed.
+          status: channel === "counter" ? "completed" : "placed",
           fulfillment: data.fulfillment,
           payment_method: data.paymentMethod,
           payment_label: data.paymentLabel,
@@ -283,6 +301,7 @@ export const getOrder = createServerFn({ method: "GET" })
       id: order.id,
       code: order.code,
       status: order.status,
+      channel: (order.channel ?? "online") as "online" | "counter" | "platform",
       userId: order.user_id,
       createdAt: order.created_at,
       fulfillment: order.fulfillment as "delivery" | "pickup",
