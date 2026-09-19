@@ -85,6 +85,8 @@ function OwnerPos() {
     try {
       const result = await submitOrder({
         data: {
+          // Counter sale: completed/sold immediately, no online status flow.
+          channel: "counter",
           fulfillment: "pickup",
           paymentMethod: "cash",
           paymentLabel: "Cash at counter (POS)",

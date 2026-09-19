@@ -74,7 +74,13 @@ export function NotificationList({
               onOpen(n);
               if (n.orderId) {
                 // A review reminder opens the rating screen for that order.
-                if (n.status === "review_request") {
+                if (n.status === "order_message_staff") {
+                  // Staff notification: opens the order with its message thread.
+                  await navigate({
+                    to: "/owner/orders",
+                    search: { order: n.orderId },
+                  });
+                } else if (n.status === "review_request") {
                   await navigate({
                     to: "/account/review/$orderId",
                     params: { orderId: n.orderId },

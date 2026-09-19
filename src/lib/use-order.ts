@@ -42,6 +42,7 @@ export function useOrder(orderId: string) {
         zoneName: row.zoneName,
         pickupNote: row.pickupNote,
         status: row.status,
+        channel: row.channel,
         address: {
           id: row.id,
           label: null,
