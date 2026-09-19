@@ -8,6 +8,7 @@ export type CustomerProfile = {
   fullName: string | null;
   phone: string | null;
   email: string | null;
+  addressLine: string | null;
   avatarPath: string | null;
   avatarUrl: string | null;
 };
@@ -54,7 +55,7 @@ export function useAuth() {
     let active = true;
     void supabase
       .from("profiles")
-      .select("id, full_name, phone, email, avatar_path")
+      .select("id, full_name, phone, email, address_line, avatar_path")
       .eq("id", user.id)
       .maybeSingle()
       .then(async ({ data }) => {
@@ -76,6 +77,7 @@ export function useAuth() {
                 fullName: data.full_name,
                 phone: data.phone,
                 email: data.email,
+                addressLine: data.address_line,
                 avatarPath: data.avatar_path,
                 avatarUrl,
               }
@@ -84,6 +86,7 @@ export function useAuth() {
                 fullName: null,
                 phone: null,
                 email: null,
+                addressLine: null,
                 avatarPath: null,
                 avatarUrl: null,
               },
