@@ -4,6 +4,8 @@ import { Trash2 } from "lucide-react";
 import { QuantityStepper } from "@/components/menu/QuantityStepper";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
+import { StaffCartNotice } from "@/components/account/StaffCartNotice";
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { useCart } from "@/context/cart";
 import { formatBDT } from "@/lib/format";
 import type { CartLine } from "@/types/menu";
@@ -55,6 +57,9 @@ function CartPage() {
   const { lines, subtotal, total, isHydrated, increment, decrement, removeItem, removeCombo, clear } =
     useCart();
   const groups = groupLines(lines);
+  const { isStaffOnly } = useDashboardAccess();
+
+  if (isStaffOnly) return <StaffCartNotice />;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">

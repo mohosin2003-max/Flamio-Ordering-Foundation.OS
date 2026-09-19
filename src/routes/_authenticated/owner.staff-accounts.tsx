@@ -37,6 +37,8 @@ import {
   ownerDeleteLedgerEntry,
   ownerListLedgerAudit,
   ownerListLedgerEntries,
+  ownerListPendingMoneyEntries,
+  ownerDecideMoneyEntry,
   ownerListStaffAccounts,
   ownerSaveSalaryProfile,
   ownerUpdateLedgerEntry,
@@ -111,6 +113,8 @@ function OwnerStaffAccounts() {
           />
         </div>
       </div>
+
+      <PendingMoneyApprovals month={month} />
 
       {accounts.isLoading ? (
         <div className="space-y-3">
@@ -823,5 +827,81 @@ function History({ userId, month }: { userId: string; month: string }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Money-taken requests from staff. Only the owner can approve or reject. */
+function PendingMoneyApprovals({ month }: { month: string }) {
+  const list = useServerFn(ownerListPendingMoneyEntries);
+  const decide = useServerFn(ownerDecideMoneyEntry);
+  const queryClient = useQueryClient();
+
+  const pending = useQuery({
+    queryKey: ["staff-money-pending"],
+    queryFn: () => list(),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (input: { id: string; decision: "approved" | "rejected" }) =>
+      decide({ data: input }),
+    onSuccess: async (_result, input) => {
+      toast.success(input.decision === "approved" ? "Approved" : "Rejected");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["staff-money-pending"] }),
+        queryClient.invalidateQueries({ queryKey: ["staff-accounts"] }),
+      ]);
+    },
+    onError: (error: unknown) =>
+      toast.error(error instanceof Error ? error.message : "Couldn't save this decision"),
+  });
+
+  if (pending.isLoading || !pending.data?.length) return null;
+
+  return (
+    <Card className="border-amber-300">
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <h3 className="font-display text-base font-bold">Money taken — waiting for you</h3>
+          <p className="text-xs text-muted-foreground">
+            Pending requests don't affect balances until you approve them.
+          </p>
+        </div>
+        {pending.data.map((entry) => (
+          <div
+            key={entry.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-3 py-2"
+          >
+            <div>
+              <p className="text-sm font-medium">
+                {entry.staffName ?? "Team member"} · {formatBDT(entry.amount)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {entry.entryDate}
+                {entry.reason ? ` · ${entry.reason}` : ""}
+                {entry.note ? ` · ${entry.note}` : ""}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={mutation.isPending}
+                onClick={() => mutation.mutate({ id: entry.id, decision: "approved" })}
+              >
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={mutation.isPending}
+                onClick={() => mutation.mutate({ id: entry.id, decision: "rejected" })}
+              >
+                Reject
+              </Button>
+            </div>
+          </div>
+        ))}
+        <p className="sr-only">{month}</p>
+      </CardContent>
+    </Card>
   );
 }

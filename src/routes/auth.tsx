@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getOwnerAccess } from "@/lib/owner.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
 import { cn } from "@/lib/utils";
@@ -36,6 +38,24 @@ type Mode = "login" | "signup";
 function AuthPage() {
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
+  const fetchAccess = useServerFn(getOwnerAccess);
+
+  /**
+   * Role-based landing: owners and staff go to the dashboard, customers keep
+   * the existing customer landing. Access itself is decided on the server.
+   */
+  const goToLanding = useCallback(async () => {
+    try {
+      const access = await fetchAccess();
+      if (access.isManager || (access.permissions ?? []).length > 0) {
+        await navigate({ to: "/owner", replace: true });
+        return;
+      }
+    } catch {
+      // fall through to the customer landing
+    }
+    await navigate({ to: "/account/orders", replace: true });
+  }, [fetchAccess, navigate]);
 
   const [mode, setMode] = useState<Mode>("login");
   const [phone, setPhone] = useState("");
@@ -48,9 +68,9 @@ function AuthPage() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      void navigate({ to: "/account/orders", replace: true });
+      void goToLanding();
     }
-  }, [loading, isAuthenticated, navigate]);
+  }, [loading, isAuthenticated, goToLanding]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -140,7 +160,7 @@ function AuthPage() {
         }
         toast.success("Signed in");
       }
-      await navigate({ to: "/account/orders", replace: true });
+      await goToLanding();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setError(message);
