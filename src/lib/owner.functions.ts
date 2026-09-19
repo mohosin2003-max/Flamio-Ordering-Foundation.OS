@@ -663,8 +663,9 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "settings");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
 
-    const { error } = await supabaseAdmin
+    const { error } = await looseDb(supabaseAdmin)
       .from("restaurant_settings")
       .update({
         name: data.name,
