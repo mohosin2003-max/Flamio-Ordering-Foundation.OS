@@ -121,6 +121,7 @@ function CheckoutPage() {
       ...current,
       fullName: current.fullName || (profile.fullName ?? ""),
       phone: current.phone || (profile.phone ?? ""),
+      addressLine: current.addressLine || (profile.addressLine ?? ""),
     }));
   }, [profile]);
 
