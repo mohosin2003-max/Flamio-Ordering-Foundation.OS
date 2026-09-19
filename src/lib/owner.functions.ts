@@ -78,7 +78,10 @@ export interface RestaurantSettings {
   recommendationsCount: number;
   reviewsEnabled: boolean;
   reviewPhotosEnabled: boolean;
-
+  reviewReminderDelayMinutes: number;
+  staffAckTimeoutMinutes: number;
+  staffOrderSoundEnabled: boolean;
+  ownerEscalationEnabled: boolean;
 }
 
 /**
@@ -586,7 +589,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { data } = await supabaseAdmin
       .from("restaurant_settings")
       .select(
-        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled",
+        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled, review_reminder_delay_minutes, staff_ack_timeout_minutes, staff_order_sound_enabled, owner_escalation_enabled",
       )
       .order("created_at")
       .limit(1)
@@ -616,7 +619,10 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
       recommendationsCount: Number(data.recommendations_count ?? 6) || 6,
       reviewsEnabled: data.reviews_enabled !== false,
       reviewPhotosEnabled: data.review_photos_enabled !== false,
-
+      reviewReminderDelayMinutes: Number(data.review_reminder_delay_minutes ?? 5) || 5,
+      staffAckTimeoutMinutes: Number(data.staff_ack_timeout_minutes ?? 2) || 2,
+      staffOrderSoundEnabled: data.staff_order_sound_enabled !== false,
+      ownerEscalationEnabled: data.owner_escalation_enabled !== false,
     };
   });
 
@@ -645,7 +651,10 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         recommendationsCount: z.number().int().min(1).max(12),
         reviewsEnabled: z.boolean(),
         reviewPhotosEnabled: z.boolean(),
-
+        reviewReminderDelayMinutes: z.number().int().min(0).max(1440),
+        staffAckTimeoutMinutes: z.number().int().min(1).max(120),
+        staffOrderSoundEnabled: z.boolean(),
+        ownerEscalationEnabled: z.boolean(),
       })
       .parse(input),
   )
@@ -676,7 +685,10 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         recommendations_count: data.recommendationsCount,
         reviews_enabled: data.reviewsEnabled,
         review_photos_enabled: data.reviewPhotosEnabled,
-
+        review_reminder_delay_minutes: data.reviewReminderDelayMinutes,
+        staff_ack_timeout_minutes: data.staffAckTimeoutMinutes,
+        staff_order_sound_enabled: data.staffOrderSoundEnabled,
+        owner_escalation_enabled: data.ownerEscalationEnabled,
       })
       .eq("id", data.id);
 
