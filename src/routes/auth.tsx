@@ -42,6 +42,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,6 +114,19 @@ function AuthPage() {
             password,
           });
           if (postSignIn) throw postSignIn;
+        }
+        // Save phone + delivery location to the customer profile so checkout
+        // can pre-fill them. Never blocks sign-up if this fails.
+        const userId = data.user?.id ?? (await supabase.auth.getUser()).data.user?.id;
+        if (userId) {
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            id: userId,
+            full_name: fullName.trim(),
+            phone: normalizePhone(phone),
+            email: email.trim() || null,
+            address_line: address.trim() || null,
+          });
+          if (profileError) console.error("[auth] saving profile failed", profileError);
         }
         toast.success("Welcome to Flamio!");
       } else {
@@ -200,6 +214,19 @@ function AuthPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+            />
+          </div>
+        )}
+
+        {mode === "signup" && (
+          <div className="space-y-2">
+            <Label htmlFor="address">Delivery location (optional)</Label>
+            <Input
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              autoComplete="street-address"
+              placeholder="House / road / area"
             />
           </div>
         )}
