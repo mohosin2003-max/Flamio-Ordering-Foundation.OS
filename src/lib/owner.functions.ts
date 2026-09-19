@@ -146,7 +146,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, payment_label, rider_id, riders(name)",
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, payment_label, rider_id, riders(name)",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -156,10 +156,27 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       throw new Error("We couldn't load orders. Please try again.");
     }
 
+    // Unread customer messages per order, from the existing message threads.
+    const ids = (data ?? []).map((o) => o.id);
+    const unread = new Map<string, number>();
+    if (ids.length > 0) {
+      const { data: messageRows } = await supabaseAdmin
+        .from("order_messages")
+        .select("order_id")
+        .in("order_id", ids)
+        .eq("sender_role", "customer")
+        .eq("read_by_staff", false);
+      for (const m of messageRows ?? []) {
+        unread.set(m.order_id, (unread.get(m.order_id) ?? 0) + 1);
+      }
+    }
+
     return (data ?? []).map((o) => ({
       id: o.id,
       code: o.code,
       status: o.status,
+      channel: (o.channel ?? "online") as "online" | "counter" | "platform",
+      unreadMessages: unread.get(o.id) ?? 0,
       fulfillment: o.fulfillment as "delivery" | "pickup",
       customerName: o.customer_name,
       customerPhone: o.customer_phone,
@@ -173,7 +190,12 @@ export const ownerListOrders = createServerFn({ method: "GET" })
     }));
   });
 
-/** Updates the status on the existing orders table — DB triggers still fire. */
+/**
+ * Advances an order ONE step through the existing status lifecycle, or cancels
+ * it. Forward-only: the caller sends the order id and the intended status, and
+ * anything that is not the immediate next status (or a cancellation) is
+ * rejected here. The same rules are enforced by a database trigger.
+ */
 export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -196,11 +218,45 @@ export const ownerUpdateOrderStatus = createServerFn({ method: "POST" })
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "order_management");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { canCancelOrder, isForwardTransition, isOnlineChannel } = await import(
+      "@/lib/order-flow"
+    );
+
+    const { data: order, error: loadError } = await supabaseAdmin
+      .from("orders")
+      .select("id, status, channel, fulfillment")
+      .eq("id", data.orderId)
+      .maybeSingle();
+
+    if (loadError) {
+      console.error("Owner status update lookup failed", loadError);
+      throw new Error("We couldn't update this order. Please try again.");
+    }
+    if (!order) throw new Error("This order no longer exists.");
+
+    const fulfillment = order.fulfillment as "delivery" | "pickup";
+
+    if (!isOnlineChannel(order.channel)) {
+      throw new Error("Counter and platform sales are already completed sales.");
+    }
+    if (order.status === data.status) return { ok: true, status: order.status };
+    if (order.status === "completed" || order.status === "cancelled") {
+      throw new Error("This order is already closed and can't be changed.");
+    }
+
+    if (data.status === "cancelled") {
+      if (!canCancelOrder(order.status, order.channel)) {
+        throw new Error("This order can no longer be cancelled.");
+      }
+    } else if (!isForwardTransition(order.status, data.status, fulfillment)) {
+      throw new Error("Order status can only move forward one step.");
+    }
 
     const { error } = await supabaseAdmin
       .from("orders")
       .update({ status: data.status })
-      .eq("id", data.orderId);
+      .eq("id", data.orderId)
+      .eq("status", order.status);
 
     if (error) {
       console.error("Owner status update failed", error);
