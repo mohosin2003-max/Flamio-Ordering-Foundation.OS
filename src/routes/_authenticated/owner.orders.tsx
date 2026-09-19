@@ -32,7 +32,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/owner/orders")({
   validateSearch: (search: Record<string, unknown>) => ({
-    order: typeof search.order === "string" ? search.order : undefined,
+    order: typeof search["order"] === "string" ? (search["order"] as string) : undefined,
   }),
   component: OwnerOrders,
 });
