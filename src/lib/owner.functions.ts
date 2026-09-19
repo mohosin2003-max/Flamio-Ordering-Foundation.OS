@@ -585,8 +585,9 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "settings");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
 
-    const { data } = await supabaseAdmin
+    const { data } = await looseDb(supabaseAdmin)
       .from("restaurant_settings")
       .select(
         "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled, review_reminder_delay_minutes, staff_ack_timeout_minutes, staff_order_sound_enabled, owner_escalation_enabled",
