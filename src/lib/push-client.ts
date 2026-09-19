@@ -9,13 +9,13 @@ const VAPID_PUBLIC_KEY = import.meta.env["VITE_VAPID_PUBLIC_KEY"] as string | un
 
 export type PushState = "unsupported" | "unconfigured" | "default" | "granted" | "denied";
 
-function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+function urlBase64ToUint8Array(base64: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const normalized = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = window.atob(normalized);
   const output = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
-  return output;
+  return output.buffer;
 }
 
 export function pushSupported(): boolean {
