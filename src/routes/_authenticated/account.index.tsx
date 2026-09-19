@@ -382,6 +382,21 @@ function AccountPage() {
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="addressLine">Delivery location (optional)</Label>
+          <Input
+            id="addressLine"
+            value={addressLine}
+            onChange={(e) => setAddressLine(e.target.value)}
+            autoComplete="street-address"
+            placeholder="House / road / area"
+            disabled={loading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Saved here and pre-filled at checkout. You can still edit it when ordering.
+          </p>
+        </div>
+
         <Button type="submit" className="w-full sm:w-auto" disabled={saving} aria-busy={saving}>
           {saving && <Loader2 className="animate-spin" aria-hidden="true" />}
           {saving ? "Saving..." : "Save changes"}
