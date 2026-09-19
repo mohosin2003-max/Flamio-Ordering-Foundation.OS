@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Clock, ListChecks, MapPin, Receipt, Wallet } from "lucide-react";
+import { CheckCircle2, Clock, ListChecks, MapPin, MessageCircle, Receipt, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
@@ -9,6 +9,8 @@ import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { isCancelled, statusLabel } from "@/lib/order-status";
 import { cn } from "@/lib/utils";
 import { useOrder } from "@/lib/use-order";
+import { OrderMessages } from "@/components/order/OrderMessages";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/order/$orderId")({
   head: () => ({
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/order/$orderId")({
 function OrderSuccessPage() {
   const { orderId } = Route.useParams();
   const { order, ready } = useOrder(orderId);
+  const { isAuthenticated } = useAuth();
 
   if (!ready) {
     return (
@@ -98,19 +101,35 @@ function OrderSuccessPage() {
         </div>
       </section>
 
-      <section className="mt-6 rounded-2xl border border-border/70 bg-card p-4 shadow-card sm:p-6">
-        <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">
-          <ListChecks className="h-4 w-4 text-primary" /> Order status
-        </h2>
-        <div className="mt-4">
-          <OrderTimeline status={order.status} fulfillment={order.fulfillment} compact />
-        </div>
-        <Button asChild variant="outline" size="sm" className="mt-4 w-full sm:w-auto">
-          <Link to="/track/$orderId" params={{ orderId: order.id }}>
-            Live tracking
-          </Link>
-        </Button>
-      </section>
+      {(order.channel ?? "online") === "online" ? (
+        <section className="mt-6 rounded-2xl border border-border/70 bg-card p-4 shadow-card sm:p-6">
+          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">
+            <ListChecks className="h-4 w-4 text-primary" /> Order status
+          </h2>
+          <div className="mt-4">
+            <OrderTimeline status={order.status} fulfillment={order.fulfillment} compact />
+          </div>
+          <Button asChild variant="outline" size="sm" className="mt-4 w-full sm:w-auto">
+            <Link to="/track/$orderId" params={{ orderId: order.id }}>
+              Live tracking
+            </Link>
+          </Button>
+        </section>
+      ) : null}
+
+      {isAuthenticated && (order.channel ?? "online") === "online" ? (
+        <section className="mt-6 rounded-2xl border border-border/70 bg-card p-4 shadow-card sm:p-6">
+          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">
+            <MessageCircle className="h-4 w-4 text-primary" /> Message about this order
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            This conversation stays attached to {order.code} only.
+          </p>
+          <div className="mt-4">
+            <OrderMessages orderId={order.id} />
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-6 rounded-2xl border border-border/70 bg-card p-5 shadow-card sm:p-6">
         <h2 className="flex items-center gap-2 font-display text-lg font-extrabold">

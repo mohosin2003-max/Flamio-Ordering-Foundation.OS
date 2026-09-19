@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ChevronRight, MessageCircle, Phone, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,33 +17,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ownerListOrders, ownerUpdateOrderStatus } from "@/lib/owner.functions";
+import { OrderMessages } from "@/components/order/OrderMessages";
+import { ownerListOrders, ownerUpdateOrderStatus, type OwnerOrderRow } from "@/lib/owner.functions";
 import { ownerAssignRider, ownerListRiders } from "@/lib/riders.functions";
 import { formatBDT } from "@/lib/format";
 import { statusLabel } from "@/lib/order-status";
+import {
+  canCancelOrder,
+  channelLabel,
+  isOnlineChannel,
+  nextActionLabel,
+  nextOrderStatus,
+} from "@/lib/order-flow";
 
 export const Route = createFileRoute("/_authenticated/owner/orders")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    order: typeof search["order"] === "string" ? (search["order"] as string) : undefined,
+  }),
   component: OwnerOrders,
 });
 
-const STATUSES = [
-  "placed",
-  "confirmed",
-  "preparing",
-  "ready",
-  "out_for_delivery",
-  "completed",
-  "cancelled",
-] as const;
-
 function OwnerOrders() {
+  const { order: focusOrderId } = Route.useSearch();
   const listOrders = useServerFn(ownerListOrders);
-  const updateStatus = useServerFn(ownerUpdateOrderStatus);
   const listRiders = useServerFn(ownerListRiders);
   const assignRider = useServerFn(ownerAssignRider);
   const queryClient = useQueryClient();
-  const [pending, setPending] = useState<string | null>(null);
   const [riderPending, setRiderPending] = useState<string | null>(null);
+  const [openThread, setOpenThread] = useState<string | null>(focusOrderId ?? null);
+
+  useEffect(() => {
+    if (focusOrderId) setOpenThread(focusOrderId);
+  }, [focusOrderId]);
 
   const orders = useQuery({
     queryKey: ["owner-orders"],
@@ -110,42 +116,35 @@ function OwnerOrders() {
               </p>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge>{statusLabel(order.status, order.fulfillment)}</Badge>
-              <Select
-                value={order.status}
-                disabled={pending === order.id}
-                onValueChange={async (value) => {
-                  setPending(order.id);
-                  try {
-                    await updateStatus({
-                      data: { orderId: order.id, status: value as (typeof STATUSES)[number] },
-                    });
-                    await queryClient.invalidateQueries({ queryKey: ["owner-orders"] });
-                    toast.success("Order updated");
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Couldn't update this order",
-                    );
-                  } finally {
-                    setPending(null);
-                  }
-                }}
-              >
-                <SelectTrigger className="h-9 w-[190px]">
-                  <SelectValue placeholder="Update status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabel(status, order.fulfillment)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <StatusRow order={order} />
 
-            {order.fulfillment === "delivery" ? (
+            {isOnlineChannel(order.channel) ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <a href={`tel:${order.customerPhone}`}>
+                    <Phone aria-hidden="true" /> Call customer
+                  </a>
+                </Button>
+                <Button
+                  size="sm"
+                  variant={order.unreadMessages > 0 ? "default" : "outline"}
+                  onClick={() => setOpenThread((id) => (id === order.id ? null : order.id))}
+                  aria-expanded={openThread === order.id}
+                >
+                  <MessageCircle aria-hidden="true" />
+                  Messages
+                  {order.unreadMessages > 0 ? ` (${order.unreadMessages})` : ""}
+                </Button>
+              </div>
+            ) : null}
+
+            {openThread === order.id ? (
+              <div className="rounded-xl border border-border/70 bg-secondary/30 p-3">
+                <OrderMessages orderId={order.id} autoFocus={focusOrderId === order.id} />
+              </div>
+            ) : null}
+
+            {order.fulfillment === "delivery" && isOnlineChannel(order.channel) ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Rider</span>
                 <Select
@@ -190,6 +189,69 @@ function OwnerOrders() {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Current status plus the single appropriate next step. Status is forward-only,
+ * so there is no status list and no way back; cancelling is a separate action.
+ */
+function StatusRow({ order }: { order: OwnerOrderRow }) {
+  const updateStatus = useServerFn(ownerUpdateOrderStatus);
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState(false);
+
+  const counterSale = !isOnlineChannel(order.channel);
+  const next = counterSale ? null : nextOrderStatus(order.status, order.fulfillment);
+  const cancellable = canCancelOrder(order.status, order.channel);
+
+  const move = async (status: "cancelled" | NonNullable<typeof next>) => {
+    setPending(true);
+    try {
+      await updateStatus({ data: { orderId: order.id, status } });
+      await queryClient.invalidateQueries({ queryKey: ["owner-orders"] });
+      toast.success(status === "cancelled" ? "Order cancelled" : "Order updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't update this order");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge>{statusLabel(order.status, order.fulfillment)}</Badge>
+      {counterSale ? (
+        <span className="text-xs text-muted-foreground">
+          {channelLabel(order.channel)} — completed sale
+        </span>
+      ) : (
+        <>
+          {next ? (
+            <Button size="sm" disabled={pending} onClick={() => void move(next)}>
+              {nextActionLabel(next, order.fulfillment)}
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">No further steps</span>
+          )}
+          {cancellable ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                if (window.confirm(`Cancel order ${order.code}? This can't be undone.`)) {
+                  void move("cancelled");
+                }
+              }}
+            >
+              <XCircle aria-hidden="true" /> Cancel
+            </Button>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

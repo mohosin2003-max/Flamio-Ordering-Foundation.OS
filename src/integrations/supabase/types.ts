@@ -904,6 +904,50 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          order_id: string
+          read_by_customer: boolean
+          read_by_staff: boolean
+          sender_name: string | null
+          sender_role: string
+          sender_user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          order_id: string
+          read_by_customer?: boolean
+          read_by_staff?: boolean
+          sender_name?: string | null
+          sender_role: string
+          sender_user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          read_by_customer?: boolean
+          read_by_staff?: boolean
+          sender_name?: string | null
+          sender_role?: string
+          sender_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           combo_key: string | null
@@ -1018,6 +1062,7 @@ export type Database = {
         Row: {
           address_line: string | null
           area: string | null
+          channel: string
           code: string
           commission_amount: number
           commission_rate: number
@@ -1053,6 +1098,7 @@ export type Database = {
         Insert: {
           address_line?: string | null
           area?: string | null
+          channel?: string
           code: string
           commission_amount?: number
           commission_rate?: number
@@ -1088,6 +1134,7 @@ export type Database = {
         Update: {
           address_line?: string | null
           area?: string | null
+          channel?: string
           code?: string
           commission_amount?: number
           commission_rate?: number

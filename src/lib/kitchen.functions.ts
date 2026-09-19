@@ -59,6 +59,7 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
         "id, code, status, fulfillment, created_at, delivery_notes, order_items(product_name, variant_name, quantity)",
       )
       .in("status", ["placed", "confirmed", "preparing", "ready"])
+      .eq("channel", "online")
       .order("created_at", { ascending: true })
       .limit(80);
 
@@ -101,11 +102,34 @@ export const kitchenUpdateOrderStatus = createServerFn({ method: "POST" })
     const { assertKitchen } = await import("@/lib/kitchen.server");
     await assertKitchen(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { isForwardTransition, isOnlineChannel } = await import("@/lib/order-flow");
+
+    const { data: order, error: loadError } = await supabaseAdmin
+      .from("orders")
+      .select("id, status, channel, fulfillment")
+      .eq("id", data.orderId)
+      .maybeSingle();
+
+    if (loadError) {
+      console.error("Kitchen status lookup failed", loadError);
+      throw new Error("We couldn't update this order. Please try again.");
+    }
+    if (!order) throw new Error("This order no longer exists.");
+
+    if (!isOnlineChannel(order.channel)) {
+      throw new Error("Counter and platform sales are already completed sales.");
+    }
+    if (order.status === data.status) return { ok: true, status: order.status };
+    // Forward-only: only the immediate next status is accepted.
+    if (!isForwardTransition(order.status, data.status, order.fulfillment as "delivery" | "pickup")) {
+      throw new Error("Order status can only move forward one step.");
+    }
 
     const { error } = await supabaseAdmin
       .from("orders")
       .update({ status: data.status })
-      .eq("id", data.orderId);
+      .eq("id", data.orderId)
+      .eq("status", order.status);
 
     if (error) {
       console.error("Kitchen status update failed", error);

@@ -23,6 +23,7 @@ export interface PlacedOrder {
   address: CustomerAddress | null;
   pickupNote: string | null;
   status: string;
+  channel?: "online" | "counter" | "platform";
 }
 
 export function generateOrderCode(date = new Date()): string {

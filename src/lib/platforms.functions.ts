@@ -402,7 +402,9 @@ export const ownerPlacePlatformSale = createServerFn({ method: "POST" })
         .insert({
           code: orderCode(new Date()),
           user_id: null,
-          status: "placed",
+          channel: "platform",
+          // Platform sales are recorded as completed sales, like counter sales.
+          status: "completed",
           fulfillment: "pickup",
           payment_method: "platform",
           payment_label: `${platform.name} (platform)`,
