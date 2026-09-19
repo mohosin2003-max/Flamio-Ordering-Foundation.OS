@@ -269,6 +269,16 @@ export const placeOrder = createServerFn({ method: "POST" })
       if (stockError) console.error("Inventory consumption failed", stockError);
     }
 
+    // The database already queued the staff new-order alert (and its
+    // escalation timer). Run the due queue now so the alert is instant instead
+    // of waiting for the next scheduled run. Never blocks the order.
+    try {
+      const { dispatchDueNotificationJobs } = await import("@/lib/push.server");
+      await dispatchDueNotificationJobs(10);
+    } catch (notifyError) {
+      console.error("New order alert failed", notifyError);
+    }
+
     return { id: inserted.id, code: inserted.code, createdAt: inserted.created_at };
   });
 
