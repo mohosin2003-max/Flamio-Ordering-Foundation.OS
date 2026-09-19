@@ -65,6 +65,7 @@ function AccountPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [addressLine, setAddressLine] = useState("");
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -91,6 +92,7 @@ function AccountPage() {
     setFullName(profile.fullName ?? "");
     setPhone(profile.phone ?? "");
     setEmail(profile.email ?? "");
+    setAddressLine(profile.addressLine ?? "");
     setHydrated(true);
   }, [profile, hydrated]);
 
@@ -181,6 +183,7 @@ function AccountPage() {
       full_name: fullName.trim(),
       phone: profile.phone ?? nextPhone,
       email: email.trim() || null,
+      address_line: addressLine.trim() || null,
     });
     setSaving(false);
 
@@ -377,6 +380,21 @@ function AccountPage() {
             autoComplete="email"
             disabled={loading}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="addressLine">Delivery location (optional)</Label>
+          <Input
+            id="addressLine"
+            value={addressLine}
+            onChange={(e) => setAddressLine(e.target.value)}
+            autoComplete="street-address"
+            placeholder="House / road / area"
+            disabled={loading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Saved here and pre-filled at checkout. You can still edit it when ordering.
+          </p>
         </div>
 
         <Button type="submit" className="w-full sm:w-auto" disabled={saving} aria-busy={saving}>
