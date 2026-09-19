@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { MarkAllReadButton, NotificationList } from "@/components/layout/NotificationList";
+import { PushToggle } from "@/components/notifications/PushToggle";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 
@@ -34,9 +35,11 @@ function NotificationsPage() {
         />
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
-        Updates for every stage of your orders — placed, confirmed, preparing, ready, on the way,
-        completed or cancelled.
+        Follow each order live on its order page. Here you&apos;ll find your review reminders and
+        messages from Flamio.
       </p>
+
+      <PushToggle className="mt-4" />
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
         <NotificationList

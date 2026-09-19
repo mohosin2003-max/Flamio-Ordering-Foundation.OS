@@ -21,6 +21,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { formatBDT } from "@/lib/format";
+import {
+  ownerListNotifiableCustomers,
+  ownerSendCustomerNotification,
+} from "@/lib/push.functions";
 import { ownerListCustomers, ownerSendPromotion } from "@/lib/reports.functions";
 
 /**
@@ -36,15 +40,49 @@ type Segment = "all" | "new" | "returning" | "frequent" | "inactive";
 function OwnerCustomers() {
   const listCustomers = useServerFn(ownerListCustomers);
   const sendPromotion = useServerFn(ownerSendPromotion);
+  const listAccounts = useServerFn(ownerListNotifiableCustomers);
+  const sendCustomerNotification = useServerFn(ownerSendCustomerNotification);
 
   const [segment, setSegment] = useState<Segment>("all");
   const [promo, setPromo] = useState({ title: "", body: "" });
   const [sending, setSending] = useState(false);
+  const [personal, setPersonal] = useState({ userId: "", title: "", body: "" });
+  const [sendingPersonal, setSendingPersonal] = useState(false);
 
   const customers = useQuery({
     queryKey: ["owner-customers"],
     queryFn: () => listCustomers(),
   });
+
+  const accounts = useQuery({
+    queryKey: ["owner-customer-accounts"],
+    queryFn: () => listAccounts(),
+    retry: false,
+  });
+
+  const sendPersonal = async () => {
+    setSendingPersonal(true);
+    try {
+      const result = await sendCustomerNotification({
+        data: {
+          userId: personal.userId,
+          title: personal.title.trim(),
+          body: personal.body.trim(),
+        },
+      });
+      toast.success(
+        result.pushed > 0
+          ? "Sent to their phone."
+          : "Saved in their notifications — no phone registered yet.",
+      );
+      setPersonal({ userId: "", title: "", body: "" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send this message");
+    } finally {
+      setSendingPersonal(false);
+    }
+  };
+
 
   if (customers.isLoading) return <Skeleton className="h-96 w-full" />;
 
@@ -141,6 +179,66 @@ function OwnerCustomers() {
           </p>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <h2 className="font-display text-base font-bold">Message one customer</h2>
+          <p className="text-xs text-muted-foreground">
+            A personal notification, separate from order updates and promotions. It reaches the
+            customer&apos;s phone when they have turned phone notifications on.
+          </p>
+          <div className="space-y-1.5">
+            <Label>Customer</Label>
+            <Select
+              value={personal.userId}
+              onValueChange={(value) => setPersonal({ ...personal, userId: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {(accounts.data ?? []).map((c) => (
+                  <SelectItem key={c.userId} value={c.userId}>
+                    {c.name}
+                    {c.hasDevice ? " · phone ready" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pn-title">Title</Label>
+            <Input
+              id="pn-title"
+              value={personal.title}
+              onChange={(e) => setPersonal({ ...personal, title: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pn-body">Message</Label>
+            <Textarea
+              id="pn-body"
+              rows={3}
+              value={personal.body}
+              onChange={(e) => setPersonal({ ...personal, body: e.target.value })}
+            />
+          </div>
+          <Button
+            disabled={
+              sendingPersonal ||
+              !personal.userId ||
+              personal.title.trim().length < 3 ||
+              personal.body.trim().length < 3
+            }
+            onClick={() => void sendPersonal()}
+          >
+            {sendingPersonal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Send to this customer
+          </Button>
+        </CardContent>
+      </Card>
+
+
 
       <div className="space-y-3">
         <h2 className="font-display text-base font-bold">

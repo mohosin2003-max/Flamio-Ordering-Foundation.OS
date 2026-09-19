@@ -150,30 +150,53 @@ export const sendOrderMessage = createServerFn({ method: "POST" })
       throw new Error("We couldn't send this message. Please try again.");
     }
 
-    // Notifications reuse the EXISTING notifications table.
+    // Notifications reuse the EXISTING notifications table; notifyUsers adds
+    // the real phone push on top of the same row.
+    const { notifyUsers } = await import("@/lib/push.server");
+    const preview = data.body.slice(0, 160);
+
     if (viewerRole === "customer") {
       const recipients = await staffRecipients();
       if (recipients.length > 0) {
-        await supabaseAdmin.from("notifications").insert(
+        await notifyUsers(
           recipients.map((userId) => ({
-            user_id: userId,
-            order_id: order.id,
-            order_code: order.code,
+            userId,
+            kind: "order_message" as const,
             status: "order_message_staff",
             title: `New message — ${order.code}`,
-            body: data.body.slice(0, 160),
+            body: preview,
+            orderId: order.id,
+            orderCode: order.code,
           })),
+          {
+            title: `New message — ${order.code}`,
+            body: preview,
+            url: `/owner/orders?order=${order.id}`,
+            tag: `order-message-${order.id}`,
+            urgency: "high",
+          },
         );
       }
     } else if (order.user_id) {
-      await supabaseAdmin.from("notifications").insert({
-        user_id: order.user_id,
-        order_id: order.id,
-        order_code: order.code,
-        status: "order_message",
-        title: `Flamio replied — ${order.code}`,
-        body: data.body.slice(0, 160),
-      });
+      await notifyUsers(
+        [
+          {
+            userId: order.user_id,
+            kind: "order_message",
+            status: "order_message",
+            title: `Flamio replied — ${order.code}`,
+            body: preview,
+            orderId: order.id,
+            orderCode: order.code,
+          },
+        ],
+        {
+          title: `Flamio replied — ${order.code}`,
+          body: preview,
+          url: `/order/${order.id}`,
+          tag: `order-message-${order.id}`,
+        },
+      );
     }
 
     return {

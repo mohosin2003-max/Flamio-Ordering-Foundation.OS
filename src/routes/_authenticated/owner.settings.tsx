@@ -143,6 +143,70 @@ function OwnerSettings() {
             )}
           </div>
 
+          <div className="space-y-3 rounded-lg border border-border p-3">
+            <div>
+              <p className="font-medium">Phone notifications</p>
+              <p className="text-sm text-muted-foreground">
+                Customers are not pushed for every status change — they follow the order on the
+                order page. Only the review reminder and your personal messages are pushed.
+              </p>
+            </div>
+            <Field label="Review reminder delay after delivery (minutes)">
+              <Input
+                type="number"
+                min={0}
+                max={1440}
+                value={form.reviewReminderDelayMinutes}
+                onChange={(e) =>
+                  set(
+                    "reviewReminderDelayMinutes",
+                    Math.min(Math.max(Number(e.target.value) || 0, 0), 1440),
+                  )
+                }
+              />
+            </Field>
+            <Field label="Staff must accept a new order within (minutes)">
+              <Input
+                type="number"
+                min={1}
+                max={120}
+                value={form.staffAckTimeoutMinutes}
+                onChange={(e) =>
+                  set(
+                    "staffAckTimeoutMinutes",
+                    Math.min(Math.max(Number(e.target.value) || 1, 1), 120),
+                  )
+                }
+              />
+            </Field>
+            <div className="flex items-center justify-between">
+              <div className="pr-3">
+                <p className="font-medium">New order sound for staff</p>
+                <p className="text-sm text-muted-foreground">
+                  Sound and vibration where the phone supports it.
+                </p>
+              </div>
+              <Switch
+                checked={form.staffOrderSoundEnabled}
+                onCheckedChange={(v) => set("staffOrderSoundEnabled", v)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-3">
+                <p className="font-medium">Alert me when staff don&apos;t accept</p>
+                <p className="text-sm text-muted-foreground">
+                  One alert per order after the time above.
+                </p>
+              </div>
+              <Switch
+                checked={form.ownerEscalationEnabled}
+                onCheckedChange={(v) => set("ownerEscalationEnabled", v)}
+              />
+            </div>
+          </div>
+
+
+
           <Field label="Restaurant name">
 
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
