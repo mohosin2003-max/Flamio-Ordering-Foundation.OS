@@ -142,6 +142,66 @@ function OwnerCustomers() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <h2 className="font-display text-base font-bold">Message one customer</h2>
+          <p className="text-xs text-muted-foreground">
+            A personal notification, separate from order updates and promotions. It reaches the
+            customer&apos;s phone when they have turned phone notifications on.
+          </p>
+          <div className="space-y-1.5">
+            <Label>Customer</Label>
+            <Select
+              value={personal.userId}
+              onValueChange={(value) => setPersonal({ ...personal, userId: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {(accounts.data ?? []).map((c) => (
+                  <SelectItem key={c.userId} value={c.userId}>
+                    {c.name}
+                    {c.hasDevice ? " · phone ready" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pn-title">Title</Label>
+            <Input
+              id="pn-title"
+              value={personal.title}
+              onChange={(e) => setPersonal({ ...personal, title: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pn-body">Message</Label>
+            <Textarea
+              id="pn-body"
+              rows={3}
+              value={personal.body}
+              onChange={(e) => setPersonal({ ...personal, body: e.target.value })}
+            />
+          </div>
+          <Button
+            disabled={
+              sendingPersonal ||
+              !personal.userId ||
+              personal.title.trim().length < 3 ||
+              personal.body.trim().length < 3
+            }
+            onClick={() => void sendPersonal()}
+          >
+            {sendingPersonal ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Send to this customer
+          </Button>
+        </CardContent>
+      </Card>
+
+
+
       <div className="space-y-3">
         <h2 className="font-display text-base font-bold">
           Customers {segment === "all" ? "" : `· ${segment}`}
