@@ -183,6 +183,7 @@ function AccountPage() {
       full_name: fullName.trim(),
       phone: profile.phone ?? nextPhone,
       email: email.trim() || null,
+      address_line: addressLine.trim() || null,
     });
     setSaving(false);
 
