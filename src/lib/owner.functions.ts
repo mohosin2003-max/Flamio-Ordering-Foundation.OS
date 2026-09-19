@@ -16,6 +16,10 @@ export interface OwnerOrderRow {
   id: string;
   code: string;
   status: string;
+  /** Where the sale came from: online order, counter sale or platform sale. */
+  channel: "online" | "counter" | "platform";
+  /** Unread customer messages in this order's thread. */
+  unreadMessages: number;
   fulfillment: "delivery" | "pickup";
   customerName: string;
   customerPhone: string;
