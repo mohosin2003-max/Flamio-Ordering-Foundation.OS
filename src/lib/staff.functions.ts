@@ -198,8 +198,8 @@ export const ownerSetStaffRole = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), role: rolesEnum }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Only a full owner may create or change another owner.
@@ -261,8 +261,8 @@ export const ownerRevokeStaff = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     if (data.userId === context.userId) {
@@ -345,8 +345,8 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const wanted = Array.from(new Set(data.permissions));

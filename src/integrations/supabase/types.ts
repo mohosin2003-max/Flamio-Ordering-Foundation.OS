@@ -1949,6 +1949,12 @@ export type Database = {
       staff_ledger_entries: {
         Row: {
           amount: number
+          status: string
+          reason: string | null
+          submitted_by: string | null
+          approved_by: string | null
+          approved_at: string | null
+          decision_note: string | null
           created_at: string
           entry_date: string
           entry_type: string
@@ -1962,6 +1968,12 @@ export type Database = {
         }
         Insert: {
           amount: number
+          status?: string
+          reason?: string | null
+          submitted_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          decision_note?: string | null
           created_at?: string
           entry_date?: string
           entry_type: string
@@ -1975,6 +1987,12 @@ export type Database = {
         }
         Update: {
           amount?: number
+          status?: string
+          reason?: string | null
+          submitted_by?: string | null
+          approved_by?: string | null
+          approved_at?: string | null
+          decision_note?: string | null
           created_at?: string
           entry_date?: string
           entry_type?: string

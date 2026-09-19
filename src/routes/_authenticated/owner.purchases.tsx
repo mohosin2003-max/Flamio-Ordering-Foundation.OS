@@ -86,10 +86,12 @@ function OwnerPurchases() {
   const inventory = useQuery({
     queryKey: ["owner-inventory"],
     queryFn: () => listInventory(),
+    retry: false,
   });
   const suppliers = useQuery({
     queryKey: ["owner-suppliers"],
     queryFn: () => listSuppliers(),
+    retry: false,
   });
 
   const items = inventory.data?.items ?? [];
@@ -143,7 +145,7 @@ function OwnerPurchases() {
     };
   }, [rows]);
 
-  if (purchases.isLoading || inventory.isLoading) {
+  if (purchases.isLoading) {
     return (
       <div className="space-y-3">
         <Skeleton className="h-40 w-full" />

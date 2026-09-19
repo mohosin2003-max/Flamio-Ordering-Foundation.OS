@@ -56,6 +56,9 @@ export type SalaryProfile = {
   isActive: boolean;
 };
 
+export const LEDGER_STATUSES = ["pending", "approved", "rejected"] as const;
+export type LedgerStatus = (typeof LEDGER_STATUSES)[number];
+
 export type LedgerEntry = {
   id: string;
   userId: string;
@@ -67,6 +70,9 @@ export type LedgerEntry = {
   createdAt: string;
   updatedAt: string | null;
   wasCorrected: boolean;
+  status: LedgerStatus;
+  reason: string | null;
+  submittedByStaff: boolean;
 };
 
 export type LedgerSnapshot = {
@@ -128,8 +134,8 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
       data,
       context,
     }): Promise<{ accounts: StaffAccount[]; payrollPaid: number; month: string }> => {
-      const { assertPermission } = await import("@/lib/owner.server");
-      await assertPermission(context.userId, "staff_finance");
+      const { assertOwner } = await import("@/lib/owner.server");
+      await assertOwner(context.userId);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { data: roleRows, error: roleError } = await supabaseAdmin
@@ -149,7 +155,7 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
         supabaseAdmin.from("staff_salary_profiles").select("*").in("user_id", userIds),
         supabaseAdmin
           .from("staff_ledger_entries")
-          .select("user_id, entry_type, amount, entry_date")
+          .select("user_id, entry_type, amount, entry_date, status")
           .in("user_id", userIds),
       ]);
 
@@ -160,7 +166,9 @@ export const ownerListStaffAccounts = createServerFn({ method: "POST" })
       const accounts: StaffAccount[] = userIds.map((userId) => {
         const p = profileById.get(userId);
         const s = salaryById.get(userId);
-        const all = (entryRows ?? []).filter((e) => e.user_id === userId);
+        const all = (entryRows ?? []).filter(
+          (e) => e.user_id === userId && (e.status ?? "approved") === "approved",
+        );
         const inMonth = all.filter((e) => e.entry_date >= from && e.entry_date < to);
 
         // Salary advance is money against this month's salary, so it counts as paid.
@@ -241,14 +249,14 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }): Promise<LedgerEntry[]> => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let query = supabaseAdmin
       .from("staff_ledger_entries")
       .select(
-        "id, user_id, entry_type, amount, entry_date, payment_method, note, created_at, updated_at, updated_by",
+        "id, user_id, entry_type, amount, entry_date, payment_method, note, created_at, updated_at, updated_by, status, reason, submitted_by",
       )
       .eq("user_id", data.userId)
       .order("entry_date", { ascending: false })
@@ -280,6 +288,9 @@ export const ownerListLedgerEntries = createServerFn({ method: "POST" })
       createdAt: r.created_at,
       updatedAt: r.updated_at ?? null,
       wasCorrected: Boolean((r as { updated_by?: string | null }).updated_by),
+      status: ((r as { status?: string }).status ?? "approved") as LedgerStatus,
+      reason: (r as { reason?: string | null }).reason ?? null,
+      submittedByStaff: Boolean((r as { submitted_by?: string | null }).submitted_by),
     }));
   });
 
@@ -288,8 +299,8 @@ export const ownerListLedgerAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<LedgerAuditRow[]> => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rows, error } = await supabaseAdmin
@@ -346,8 +357,8 @@ export const ownerSaveSalaryProfile = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin.from("staff_salary_profiles").upsert(
@@ -386,8 +397,8 @@ export const ownerCreateLedgerEntry = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), ...entryFields }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error } = await supabaseAdmin
@@ -400,6 +411,9 @@ export const ownerCreateLedgerEntry = createServerFn({ method: "POST" })
         payment_method: data.paymentMethod,
         note: data.note,
         recorded_by: context.userId,
+        status: "approved",
+        approved_by: context.userId,
+        approved_at: new Date().toISOString(),
       })
       .select("id, entry_type, amount, entry_date, payment_method, note")
       .single();
@@ -433,8 +447,8 @@ export const ownerUpdateLedgerEntry = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: before, error: loadError } = await supabaseAdmin
@@ -488,8 +502,8 @@ export const ownerDeleteLedgerEntry = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "staff_finance");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: before } = await supabaseAdmin
@@ -514,6 +528,300 @@ export const ownerDeleteLedgerEntry = createServerFn({ method: "POST" })
         changed_by: context.userId,
       });
     }
+
+    return { ok: true };
+  });
+
+/* ------------------------------------------------------------------ */
+/* Money-taken approval (owner) + staff self-service (own data only)  */
+/* ------------------------------------------------------------------ */
+
+export type PendingMoneyEntry = {
+  id: string;
+  userId: string;
+  staffName: string | null;
+  amount: number;
+  entryDate: string;
+  reason: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+/** Money-taken requests waiting for the owner's decision. Owner/manager only. */
+export const ownerListPendingMoneyEntries = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PendingMoneyEntry[]> => {
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .select("id, user_id, amount, entry_date, reason, note, created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Pending money list failed", error);
+      throw new Error("We couldn't load the pending requests. Please try again.");
+    }
+
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
+    const names = new Map<string, string | null>();
+    if (ids.length) {
+      const { data: people } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ids);
+      for (const p of people ?? []) names.set(p.id as string, p.full_name);
+    }
+
+    return (rows ?? []).map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      staffName: names.get(r.user_id) ?? null,
+      amount: Number(r.amount),
+      entryDate: r.entry_date,
+      reason: (r as { reason?: string | null }).reason ?? null,
+      note: r.note,
+      createdAt: r.created_at,
+    }));
+  });
+
+/** Approves or rejects one pending money-taken request. Owner/manager only. */
+export const ownerDecideMoneyEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        decision: z.enum(["approved", "rejected"]),
+        decisionNote: z.string().trim().max(300).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: before } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .select("id, user_id, entry_type, amount, entry_date, payment_method, note, status")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (!before) throw new Error("We couldn't find this request.");
+    if ((before as { status?: string }).status !== "pending") {
+      throw new Error("This request has already been decided.");
+    }
+
+    const { data: after, error } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .update({
+        status: data.decision,
+        approved_by: context.userId,
+        approved_at: new Date().toISOString(),
+        decision_note: data.decisionNote ?? null,
+      })
+      .eq("id", data.id)
+      .eq("status", "pending")
+      .select("id, entry_type, amount, entry_date, payment_method, note, status")
+      .single();
+
+    if (error || !after) {
+      console.error("Decide money entry failed", error);
+      throw new Error("We couldn't save this decision. Please try again.");
+    }
+
+    await supabaseAdmin.from("staff_ledger_audit").insert({
+      entry_id: data.id,
+      user_id: before.user_id,
+      action: "update",
+      before_data: before,
+      after_data: after,
+      reason: data.decision === "approved" ? "Money request approved" : "Money request rejected",
+      changed_by: context.userId,
+    });
+
+    return { ok: true };
+  });
+
+export type MyFinance = {
+  month: string;
+  profile: SalaryProfile | null;
+  monthlySalary: number;
+  paidThisMonth: number;
+  salaryDue: number;
+  outstandingAdvance: number;
+  outstandingLoan: number;
+  lifetimePaid: number;
+  bonusThisMonth: number;
+  overtimeThisMonth: number;
+  deductionThisMonth: number;
+  pendingTotal: number;
+  entries: LedgerEntry[];
+  canSubmitMoney: boolean;
+};
+
+/**
+ * One staff member's OWN money record. Reads are hard-scoped to
+ * `context.userId`, so no request can surface another person's finances.
+ */
+export const staffGetMyFinance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ month: monthSchema }).parse(input))
+  .handler(async ({ data, context }): Promise<MyFinance> => {
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    const access = await assertAnyPermission(context.userId, ["own_salary", "own_money_taken"]);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const canSeeSalary = access.isManager || access.permissions.includes("own_salary");
+    const canSubmitMoney = access.isManager || access.permissions.includes("own_money_taken");
+
+    const [{ data: salaryRow }, { data: rows }] = await Promise.all([
+      supabaseAdmin
+        .from("staff_salary_profiles")
+        .select("*")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("staff_ledger_entries")
+        .select(
+          "id, user_id, entry_type, amount, entry_date, payment_method, note, created_at, updated_at, updated_by, status, reason, submitted_by",
+        )
+        .eq("user_id", context.userId)
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ]);
+
+    const entries: LedgerEntry[] = (rows ?? []).map((r) => ({
+      id: r.id,
+      userId: r.user_id,
+      entryType: r.entry_type as LedgerType,
+      amount: Number(r.amount),
+      entryDate: r.entry_date,
+      paymentMethod: (r.payment_method as PaymentMethod | null) ?? null,
+      note: r.note,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at ?? null,
+      wasCorrected: Boolean((r as { updated_by?: string | null }).updated_by),
+      status: ((r as { status?: string }).status ?? "approved") as LedgerStatus,
+      reason: (r as { reason?: string | null }).reason ?? null,
+      submittedByStaff: Boolean((r as { submitted_by?: string | null }).submitted_by),
+    }));
+
+    const { from, to } = monthBounds(data.month);
+    const confirmed = entries
+      .filter((e) => e.status === "approved")
+      .map((e) => ({ entry_type: e.entryType, amount: e.amount, entry_date: e.entryDate }));
+    const inMonth = confirmed.filter((e) => e.entry_date >= from && e.entry_date < to);
+
+    const monthlyRate = salaryRow ? Number(salaryRow.monthly_rate) : 0;
+    const paidThisMonth = sum(inMonth, ["salary_payment", "salary_advance", "overtime", "bonus"]);
+    const salaryDue =
+      salaryRow && salaryRow.pay_type === "monthly" && salaryRow.is_active
+        ? Math.max(
+            monthlyRate -
+              sum(inMonth, ["salary_payment", "salary_advance"]) -
+              sum(inMonth, ["deduction"]),
+            0,
+          )
+        : 0;
+
+    return {
+      month: data.month,
+      profile:
+        canSeeSalary && salaryRow
+          ? {
+              payType: salaryRow.pay_type as "monthly" | "daily",
+              monthlyRate,
+              dailyRate: Number(salaryRow.daily_rate),
+              overtimeHourlyRate: Number(salaryRow.overtime_hourly_rate),
+              payday: salaryRow.payday,
+              startsOn: salaryRow.starts_on,
+              isActive: salaryRow.is_active,
+            }
+          : null,
+      monthlySalary: canSeeSalary ? monthlyRate : 0,
+      paidThisMonth: canSeeSalary ? paidThisMonth : 0,
+      salaryDue: canSeeSalary ? salaryDue : 0,
+      outstandingAdvance: Math.max(
+        sum(confirmed, ["personal_advance", "advance"]) - sum(confirmed, ["deduction"]),
+        0,
+      ),
+      outstandingLoan: Math.max(
+        sum(confirmed, ["loan"]) - sum(confirmed, ["loan_repayment"]),
+        0,
+      ),
+      lifetimePaid: canSeeSalary
+        ? sum(confirmed, ["salary_payment", "salary_advance", "overtime", "bonus"])
+        : 0,
+      bonusThisMonth: canSeeSalary ? sum(inMonth, ["bonus"]) : 0,
+      overtimeThisMonth: canSeeSalary ? sum(inMonth, ["overtime"]) : 0,
+      deductionThisMonth: canSeeSalary ? sum(inMonth, ["deduction"]) : 0,
+      pendingTotal: entries
+        .filter((e) => e.status === "pending")
+        .reduce((acc, e) => acc + e.amount, 0),
+      entries: canSeeSalary ? entries : entries.filter((e) => e.submittedByStaff),
+      canSubmitMoney,
+    };
+  });
+
+/**
+ * A staff member records money they took. The account is taken from the
+ * verified session — it can never be chosen — and the entry stays `pending`
+ * until the owner approves it, so confirmed balances are unaffected.
+ */
+export const staffSubmitMoneyTaken = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        amount: z.number().positive().max(100000000),
+        reason: z.string().trim().min(2).max(200),
+        entryDate: dateSchema,
+        note: z.string().trim().max(300).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "own_money_taken");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: created, error } = await supabaseAdmin
+      .from("staff_ledger_entries")
+      .insert({
+        user_id: context.userId,
+        entry_type: "personal_advance",
+        amount: data.amount,
+        entry_date: data.entryDate,
+        payment_method: null,
+        reason: data.reason,
+        note: data.note ?? null,
+        status: "pending",
+        submitted_by: context.userId,
+        recorded_by: context.userId,
+      })
+      .select("id, entry_type, amount, entry_date, note, status")
+      .single();
+
+    if (error || !created) {
+      console.error("Submit money taken failed", error);
+      throw new Error("We couldn't send this request. Please try again.");
+    }
+
+    await supabaseAdmin.from("staff_ledger_audit").insert({
+      entry_id: created.id,
+      user_id: context.userId,
+      action: "create",
+      after_data: created,
+      reason: "Money-taken request submitted by staff",
+      changed_by: context.userId,
+    });
 
     return { ok: true };
   });

@@ -84,7 +84,15 @@ export const placeOrder = createServerFn({ method: "POST" })
       const { assertPermission } = await import("@/lib/owner.server");
       await assertPermission(userId, "pos");
       channel = "counter";
+    } else if (userId) {
+      // Staff accounts use the counter till, not the customer cart.
+      const { getAccessProfile } = await import("@/lib/owner.server");
+      const access = await getAccessProfile(userId);
+      if (access.isStaff && !access.isManager) {
+        throw new Error("Staff accounts can't place customer orders. Use Counter sale instead.");
+      }
     }
+
 
     // Combo lines are re-checked against the owner's configuration and the live
     // menu, then re-priced here. Availability, selection rules and combo prices

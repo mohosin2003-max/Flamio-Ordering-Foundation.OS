@@ -8,17 +8,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ownerListOrders } from "@/lib/owner.functions";
 import { formatBDT } from "@/lib/format";
 import { isActiveOrder } from "@/lib/order-status";
+import { getOwnerAccess } from "@/lib/owner.functions";
+import { hasPermission, type StaffPermission } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/owner/")({
   component: OwnerHome,
 });
 
 function OwnerHome() {
+  const fetchAccess = useServerFn(getOwnerAccess);
+  const access = useQuery({
+    queryKey: ["owner-access"],
+    queryFn: () => fetchAccess(),
+    staleTime: 60_000,
+  });
+  const can = (permission: StaffPermission) => hasPermission(access.data, permission);
+  const canSeeOrders = can("online_orders") || can("order_management");
+
   const listOrders = useServerFn(ownerListOrders);
   const orders = useQuery({
     queryKey: ["owner-orders"],
     queryFn: () => listOrders(),
     refetchInterval: 30_000,
+    enabled: canSeeOrders,
   });
 
   const data = orders.data ?? [];
@@ -29,7 +41,7 @@ function OwnerHome() {
 
   return (
     <div className="space-y-6">
-      {orders.isLoading ? (
+      {!canSeeOrders ? null : orders.isLoading ? (
         <Skeleton className="h-28 w-full" />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -40,9 +52,15 @@ function OwnerHome() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <QuickLink to="/owner/orders" icon={<ClipboardList className="h-5 w-5" />} label="Orders" />
-        <QuickLink to="/owner/menu" icon={<UtensilsCrossed className="h-5 w-5" />} label="Menu" />
-        <QuickLink to="/owner/settings" icon={<Settings2 className="h-5 w-5" />} label="Settings" />
+        {canSeeOrders ? (
+          <QuickLink to="/owner/orders" icon={<ClipboardList className="h-5 w-5" />} label="Orders" />
+        ) : null}
+        {can("menu") ? (
+          <QuickLink to="/owner/menu" icon={<UtensilsCrossed className="h-5 w-5" />} label="Menu" />
+        ) : null}
+        {can("settings") ? (
+          <QuickLink to="/owner/settings" icon={<Settings2 className="h-5 w-5" />} label="Settings" />
+        ) : null}
       </div>
     </div>
   );

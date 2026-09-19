@@ -1,4 +1,4 @@
-import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -37,7 +37,7 @@ const TABS: {
   to: string;
   label: string;
   exact: boolean;
-  permission: StaffPermission | null;
+  permission: StaffPermission | StaffPermission[] | null;
 }[] = [
   { to: "/owner", label: "Home", exact: true, permission: null },
   { to: "/owner/orders", label: "Orders", exact: false, permission: "online_orders" },
@@ -66,10 +66,27 @@ const TABS: {
     exact: false,
     permission: "staff_finance",
   },
+  {
+    to: "/owner/my-account",
+    label: "My account",
+    exact: false,
+    permission: ["own_salary", "own_money_taken"],
+  },
   { to: "/owner/settings", label: "Settings", exact: false, permission: "settings" },
 ];
 
+/** Owners/managers pass; staff need at least one of the tab's permissions. */
+function allows(
+  access: { isManager?: boolean; permissions?: string[] } | null | undefined,
+  permission: StaffPermission | StaffPermission[] | null,
+): boolean {
+  if (permission === null) return true;
+  const list = Array.isArray(permission) ? permission : [permission];
+  return list.some((p) => hasPermission(access, p));
+}
+
 function OwnerLayout() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const fetchAccess = useServerFn(getOwnerAccess);
   const claim = useServerFn(claimOwnership);
   const queryClient = useQueryClient();
@@ -160,19 +177,24 @@ function OwnerLayout() {
   }
 
 
+  // Direct-URL protection for the UI. Every server function re-checks the
+  // caller, so this only replaces a section the person may not open.
+  const match = TABS.filter((tab) => tab.to !== "/owner")
+    .filter((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`))
+    .sort((a, b) => b.to.length - a.to.length)[0];
+  const sectionAllowed = !match || allows(access.data, match.permission);
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
       <header className="mb-5">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" /> Owner
+          <ShieldCheck className="h-4 w-4" /> {access.data.isManager ? "Owner" : "Staff"}
         </p>
         <h1 className="font-display text-2xl font-bold">Dashboard</h1>
       </header>
 
       <nav className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {TABS.filter(
-          (tab) => tab.permission === null || hasPermission(access.data, tab.permission),
-        ).map((tab) => (
+        {TABS.filter((tab) => allows(access.data, tab.permission)).map((tab) => (
           <Link
             key={tab.to}
             to={tab.to as never}
@@ -188,7 +210,24 @@ function OwnerLayout() {
         ))}
       </nav>
 
-      <Outlet />
+      {sectionAllowed ? (
+        <Outlet />
+      ) : (
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 px-6 py-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Lock className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="mt-4 font-display text-lg font-bold">Access restricted</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+            You don't have permission for this section. Ask the owner to switch it on for you.
+          </p>
+          <div className="mt-6">
+            <Button asChild variant="outline">
+              <Link to="/owner">Back to dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

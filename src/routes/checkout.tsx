@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/states";
+import { StaffCartNotice } from "@/components/account/StaffCartNotice";
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { useCart } from "@/context/cart";
 import { useAuth } from "@/hooks/use-auth";
 import { useSavedAddresses } from "@/hooks/use-saved-addresses";
@@ -55,6 +57,7 @@ export const Route = createFileRoute("/checkout")({
 function CheckoutPage() {
   const { lines, subtotal, isHydrated, clear } = useCart();
   const { profile } = useAuth();
+  const { isStaffOnly } = useDashboardAccess();
 
   const { data } = useSuspenseQuery(deliveryQueryOptions());
   const { settings, zones } = data;
@@ -244,6 +247,8 @@ function CheckoutPage() {
       </div>
     );
   }
+
+  if (isStaffOnly) return <StaffCartNotice />;
 
   const isDelivery = fulfillment === "delivery";
   const blocked = isDelivery && (!quote.meetsMinimumOrder || outOfRange);

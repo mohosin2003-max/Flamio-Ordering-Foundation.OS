@@ -34,8 +34,9 @@ const mapRow = (row: {
 export const ownerListSuppliers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SupplierRecord[]> => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "suppliers");
+    // Purchase recording needs the supplier names too.
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["suppliers", "purchases"]);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

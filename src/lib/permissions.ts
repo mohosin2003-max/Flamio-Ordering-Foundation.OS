@@ -21,6 +21,8 @@ export const STAFF_PERMISSIONS = [
   "reports",
   "staff",
   "staff_finance",
+  "own_salary",
+  "own_money_taken",
   "settings",
 ] as const;
 
@@ -41,6 +43,8 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   reports: "Reports",
   staff: "Staff Management",
   staff_finance: "Staff Accounts",
+  own_salary: "Own Salary",
+  own_money_taken: "Own Money-Taken",
   settings: "Settings",
 };
 
@@ -48,6 +52,8 @@ export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
   order_management: "Also covers riders and delivery assignment",
   menu: "Also covers promo banners",
   settings: "Also covers delivery zones and payment setup",
+  own_salary: "Lets this person see only their own salary and money records",
+  own_money_taken: "Lets this person submit money-taken requests for owner approval",
 };
 
 export function isStaffPermission(value: string): value is StaffPermission {
