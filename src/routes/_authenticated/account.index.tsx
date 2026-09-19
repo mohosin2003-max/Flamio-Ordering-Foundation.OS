@@ -65,6 +65,7 @@ function AccountPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [addressLine, setAddressLine] = useState("");
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [editing, setEditing] = useState(false);
