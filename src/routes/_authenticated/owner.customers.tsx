@@ -21,6 +21,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { formatBDT } from "@/lib/format";
+import {
+  ownerListNotifiableCustomers,
+  ownerSendCustomerNotification,
+} from "@/lib/push.functions";
 import { ownerListCustomers, ownerSendPromotion } from "@/lib/reports.functions";
 
 /**
@@ -36,15 +40,49 @@ type Segment = "all" | "new" | "returning" | "frequent" | "inactive";
 function OwnerCustomers() {
   const listCustomers = useServerFn(ownerListCustomers);
   const sendPromotion = useServerFn(ownerSendPromotion);
+  const listAccounts = useServerFn(ownerListNotifiableCustomers);
+  const sendCustomerNotification = useServerFn(ownerSendCustomerNotification);
 
   const [segment, setSegment] = useState<Segment>("all");
   const [promo, setPromo] = useState({ title: "", body: "" });
   const [sending, setSending] = useState(false);
+  const [personal, setPersonal] = useState({ userId: "", title: "", body: "" });
+  const [sendingPersonal, setSendingPersonal] = useState(false);
 
   const customers = useQuery({
     queryKey: ["owner-customers"],
     queryFn: () => listCustomers(),
   });
+
+  const accounts = useQuery({
+    queryKey: ["owner-customer-accounts"],
+    queryFn: () => listAccounts(),
+    retry: false,
+  });
+
+  const sendPersonal = async () => {
+    setSendingPersonal(true);
+    try {
+      const result = await sendCustomerNotification({
+        data: {
+          userId: personal.userId,
+          title: personal.title.trim(),
+          body: personal.body.trim(),
+        },
+      });
+      toast.success(
+        result.pushed > 0
+          ? "Sent to their phone."
+          : "Saved in their notifications — no phone registered yet.",
+      );
+      setPersonal({ userId: "", title: "", body: "" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send this message");
+    } finally {
+      setSendingPersonal(false);
+    }
+  };
+
 
   if (customers.isLoading) return <Skeleton className="h-96 w-full" />;
 
