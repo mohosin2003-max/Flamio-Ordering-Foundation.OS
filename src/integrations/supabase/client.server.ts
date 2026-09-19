@@ -31,7 +31,12 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env['SUPABASE_URL'];
-  const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+  // The external Supabase project's service-role key is stored as a secret under
+  // EXTERNAL_SUPABASE_SERVICE_ROLE_KEY (the SUPABASE_ prefix is reserved for managed
+  // secrets), so it takes precedence over any inherited SUPABASE_SERVICE_ROLE_KEY.
+  const SUPABASE_SERVICE_ROLE_KEY =
+    process.env['EXTERNAL_SUPABASE_SERVICE_ROLE_KEY'] ||
+    process.env['SUPABASE_SERVICE_ROLE_KEY'];
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
