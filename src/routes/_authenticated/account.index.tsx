@@ -92,6 +92,7 @@ function AccountPage() {
     setFullName(profile.fullName ?? "");
     setPhone(profile.phone ?? "");
     setEmail(profile.email ?? "");
+    setAddressLine(profile.addressLine ?? "");
     setHydrated(true);
   }, [profile, hydrated]);
 
