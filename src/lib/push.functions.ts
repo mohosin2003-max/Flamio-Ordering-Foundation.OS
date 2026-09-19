@@ -21,8 +21,9 @@ export const registerPushSubscription = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => subscriptionSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
 
-    const { error } = await supabaseAdmin.from("push_tokens").upsert(
+    const { error } = await looseDb(supabaseAdmin).from("push_tokens").upsert(
       {
         user_id: context.userId,
         token: data.endpoint,
@@ -50,7 +51,8 @@ export const disablePushSubscription = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
+    const { error } = await looseDb(supabaseAdmin)
       .from("push_tokens")
       .update({ is_active: false })
       .eq("token", data.endpoint)
@@ -90,7 +92,8 @@ export const ownerListNotifiableCustomers = createServerFn({ method: "GET" })
       const ids = [...byUser.keys()];
       if (ids.length === 0) return [];
 
-      const { data: tokens } = await supabaseAdmin
+      const { looseDb } = await import("@/integrations/supabase/loose.server");
+      const { data: tokens } = await looseDb(supabaseAdmin)
         .from("push_tokens")
         .select("user_id")
         .in("user_id", ids)
