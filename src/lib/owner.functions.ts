@@ -82,6 +82,15 @@ export interface RestaurantSettings {
   staffAckTimeoutMinutes: number;
   staffOrderSoundEnabled: boolean;
   ownerEscalationEnabled: boolean;
+  ownerPhone: string | null;
+  messengerUrl: string | null;
+  whatsappNumber: string | null;
+  contactCallRestaurantEnabled: boolean;
+  contactCallOwnerEnabled: boolean;
+  contactInboxEnabled: boolean;
+  contactFacebookEnabled: boolean;
+  contactMessengerEnabled: boolean;
+  contactWhatsappEnabled: boolean;
 }
 
 /**
@@ -590,7 +599,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
     const { data } = await looseDb(supabaseAdmin)
       .from("restaurant_settings")
       .select(
-        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled, review_reminder_delay_minutes, staff_ack_timeout_minutes, staff_order_sound_enabled, owner_escalation_enabled",
+        "id, name, tagline, phone, email, address_line, city, country, is_open, inventory_mode, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, recommendations_enabled, recommendations_count, reviews_enabled, review_photos_enabled, review_reminder_delay_minutes, staff_ack_timeout_minutes, staff_order_sound_enabled, owner_escalation_enabled, owner_phone, messenger_url, whatsapp_number, contact_call_restaurant_enabled, contact_call_owner_enabled, contact_inbox_enabled, contact_facebook_enabled, contact_messenger_enabled, contact_whatsapp_enabled",
       )
       .order("created_at")
       .limit(1)
@@ -624,6 +633,15 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
       staffAckTimeoutMinutes: Number(data.staff_ack_timeout_minutes ?? 2) || 2,
       staffOrderSoundEnabled: data.staff_order_sound_enabled !== false,
       ownerEscalationEnabled: data.owner_escalation_enabled !== false,
+      ownerPhone: data.owner_phone,
+      messengerUrl: data.messenger_url,
+      whatsappNumber: data.whatsapp_number,
+      contactCallRestaurantEnabled: data.contact_call_restaurant_enabled !== false,
+      contactCallOwnerEnabled: data.contact_call_owner_enabled === true,
+      contactInboxEnabled: data.contact_inbox_enabled !== false,
+      contactFacebookEnabled: data.contact_facebook_enabled !== false,
+      contactMessengerEnabled: data.contact_messenger_enabled === true,
+      contactWhatsappEnabled: data.contact_whatsapp_enabled === true,
     };
   });
 
@@ -656,6 +674,15 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         staffAckTimeoutMinutes: z.number().int().min(1).max(120),
         staffOrderSoundEnabled: z.boolean(),
         ownerEscalationEnabled: z.boolean(),
+        ownerPhone: z.string().trim().max(30).nullable(),
+        messengerUrl: z.string().trim().max(500).nullable(),
+        whatsappNumber: z.string().trim().max(30).nullable(),
+        contactCallRestaurantEnabled: z.boolean(),
+        contactCallOwnerEnabled: z.boolean(),
+        contactInboxEnabled: z.boolean(),
+        contactFacebookEnabled: z.boolean(),
+        contactMessengerEnabled: z.boolean(),
+        contactWhatsappEnabled: z.boolean(),
       })
       .parse(input),
   )
@@ -691,6 +718,15 @@ export const ownerUpdateSettings = createServerFn({ method: "POST" })
         staff_ack_timeout_minutes: data.staffAckTimeoutMinutes,
         staff_order_sound_enabled: data.staffOrderSoundEnabled,
         owner_escalation_enabled: data.ownerEscalationEnabled,
+        owner_phone: data.ownerPhone,
+        messenger_url: data.messengerUrl,
+        whatsapp_number: data.whatsappNumber,
+        contact_call_restaurant_enabled: data.contactCallRestaurantEnabled,
+        contact_call_owner_enabled: data.contactCallOwnerEnabled,
+        contact_inbox_enabled: data.contactInboxEnabled,
+        contact_facebook_enabled: data.contactFacebookEnabled,
+        contact_messenger_enabled: data.contactMessengerEnabled,
+        contact_whatsapp_enabled: data.contactWhatsappEnabled,
       })
       .eq("id", data.id);
 
