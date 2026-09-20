@@ -56,6 +56,7 @@ import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
+import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
 
 const IndexRoute = IndexRouteImport.update({
@@ -320,6 +321,11 @@ const AuthenticatedAccountReviewOrderIdRoute =
     path: '/account/review/$orderId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicAuthSmsHookRoute = ApiPublicAuthSmsHookRouteImport.update({
+  id: '/api/public/auth/sms-hook',
+  path: '/api/public/auth/sms-hook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotificationsDispatchRoute =
   ApiPublicNotificationsDispatchRouteImport.update({
     id: '/api/public/notifications/dispatch',
@@ -374,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
 export interface FileRoutesByTo {
@@ -422,6 +429,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
 export interface FileRoutesById {
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/_authenticated/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
 export interface FileRouteTypes {
@@ -524,6 +533,7 @@ export interface FileRouteTypes {
     | '/account/'
     | '/owner/'
     | '/account/review/$orderId'
+    | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/owner'
     | '/account/review/$orderId'
+    | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   id:
     | '__root__'
@@ -622,6 +633,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
     | '/_authenticated/account/review/$orderId'
+    | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   fileRoutesById: FileRoutesById
 }
@@ -639,6 +651,7 @@ export interface RootRouteChildren {
   OrderOrderIdRoute: typeof OrderOrderIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   MenuIndexRoute: typeof MenuIndexRoute
+  ApiPublicAuthSmsHookRoute: typeof ApiPublicAuthSmsHookRoute
   ApiPublicNotificationsDispatchRoute: typeof ApiPublicNotificationsDispatchRoute
 }
 
@@ -973,6 +986,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountReviewOrderIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/auth/sms-hook': {
+      id: '/api/public/auth/sms-hook'
+      path: '/api/public/auth/sms-hook'
+      fullPath: '/api/public/auth/sms-hook'
+      preLoaderRoute: typeof ApiPublicAuthSmsHookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notifications/dispatch': {
       id: '/api/public/notifications/dispatch'
       path: '/api/public/notifications/dispatch'
@@ -1085,6 +1105,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrderOrderIdRoute: OrderOrderIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
   MenuIndexRoute: MenuIndexRoute,
+  ApiPublicAuthSmsHookRoute: ApiPublicAuthSmsHookRoute,
   ApiPublicNotificationsDispatchRoute: ApiPublicNotificationsDispatchRoute,
 }
 export const routeTree = rootRouteImport
