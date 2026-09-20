@@ -50,7 +50,15 @@ export const Route = createFileRoute("/api/public/auth/sms-hook")({
     handlers: {
       POST: async ({ request }) => {
         const secret = process.env["AUTH_SMS_HOOK_SECRET"];
-        if (!secret) return json({ error: { http_code: 500, message: "Hook not configured" } }, 500);
+        if (!secret) {
+          // Not an application fault: SMS delivery simply isn't set up yet.
+          // 503 keeps this out of the error telemetry and tells the auth
+          // service to fall back instead of retrying forever.
+          return json(
+            { error: { http_code: 503, message: "SMS delivery is not configured yet" } },
+            503,
+          );
+        }
 
         const body = await request.text();
         const id = request.headers.get("webhook-id") ?? "";
