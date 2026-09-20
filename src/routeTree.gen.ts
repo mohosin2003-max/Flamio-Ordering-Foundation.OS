@@ -28,6 +28,7 @@ import { Route as AuthenticatedAccountIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedAccountAddressesRouteImport } from './routes/_authenticated/account.addresses'
 import { Route as AuthenticatedAccountChallengesRouteImport } from './routes/_authenticated/account.challenges'
 import { Route as AuthenticatedAccountFavoritesRouteImport } from './routes/_authenticated/account.favorites'
+import { Route as AuthenticatedAccountInboxRouteImport } from './routes/_authenticated/account.inbox'
 import { Route as AuthenticatedAccountNotificationsRouteImport } from './routes/_authenticated/account.notifications'
 import { Route as AuthenticatedAccountOrdersRouteImport } from './routes/_authenticated/account.orders'
 import { Route as AuthenticatedAccountRewardsRouteImport } from './routes/_authenticated/account.rewards'
@@ -39,6 +40,7 @@ import { Route as AuthenticatedOwnerCombosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
+import { Route as AuthenticatedOwnerInboxRouteImport } from './routes/_authenticated/owner.inbox'
 import { Route as AuthenticatedOwnerInventoryRouteImport } from './routes/_authenticated/owner.inventory'
 import { Route as AuthenticatedOwnerMenuRouteImport } from './routes/_authenticated/owner.menu'
 import { Route as AuthenticatedOwnerMyAccountRouteImport } from './routes/_authenticated/owner.my-account'
@@ -157,6 +159,12 @@ const AuthenticatedAccountFavoritesRoute =
     path: '/account/favorites',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAccountInboxRoute =
+  AuthenticatedAccountInboxRouteImport.update({
+    id: '/account/inbox',
+    path: '/account/inbox',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAccountNotificationsRoute =
   AuthenticatedAccountNotificationsRouteImport.update({
     id: '/account/notifications',
@@ -222,6 +230,11 @@ const AuthenticatedOwnerDeliveryRoute =
     path: '/delivery',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerInboxRoute = AuthenticatedOwnerInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedOwnerRoute,
+} as any)
 const AuthenticatedOwnerInventoryRoute =
   AuthenticatedOwnerInventoryRouteImport.update({
     id: '/inventory',
@@ -351,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
   '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
+  '/account/inbox': typeof AuthenticatedAccountInboxRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
@@ -361,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
@@ -400,6 +415,7 @@ export interface FileRoutesByTo {
   '/account/addresses': typeof AuthenticatedAccountAddressesRoute
   '/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/account/favorites': typeof AuthenticatedAccountFavoritesRoute
+  '/account/inbox': typeof AuthenticatedAccountInboxRoute
   '/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
@@ -410,6 +426,7 @@ export interface FileRoutesByTo {
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
@@ -452,6 +469,7 @@ export interface FileRoutesById {
   '/_authenticated/account/addresses': typeof AuthenticatedAccountAddressesRoute
   '/_authenticated/account/challenges': typeof AuthenticatedAccountChallengesRoute
   '/_authenticated/account/favorites': typeof AuthenticatedAccountFavoritesRoute
+  '/_authenticated/account/inbox': typeof AuthenticatedAccountInboxRoute
   '/_authenticated/account/notifications': typeof AuthenticatedAccountNotificationsRoute
   '/_authenticated/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/_authenticated/account/rewards': typeof AuthenticatedAccountRewardsRoute
@@ -462,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/_authenticated/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/_authenticated/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/_authenticated/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/_authenticated/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
@@ -504,6 +523,7 @@ export interface FileRouteTypes {
     | '/account/addresses'
     | '/account/challenges'
     | '/account/favorites'
+    | '/account/inbox'
     | '/account/notifications'
     | '/account/orders'
     | '/account/rewards'
@@ -514,6 +534,7 @@ export interface FileRouteTypes {
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
+    | '/owner/inbox'
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/my-account'
@@ -553,6 +574,7 @@ export interface FileRouteTypes {
     | '/account/addresses'
     | '/account/challenges'
     | '/account/favorites'
+    | '/account/inbox'
     | '/account/notifications'
     | '/account/orders'
     | '/account/rewards'
@@ -563,6 +585,7 @@ export interface FileRouteTypes {
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
+    | '/owner/inbox'
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/my-account'
@@ -604,6 +627,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/addresses'
     | '/_authenticated/account/challenges'
     | '/_authenticated/account/favorites'
+    | '/_authenticated/account/inbox'
     | '/_authenticated/account/notifications'
     | '/_authenticated/account/orders'
     | '/_authenticated/account/rewards'
@@ -614,6 +638,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/delivery'
+    | '/_authenticated/owner/inbox'
     | '/_authenticated/owner/inventory'
     | '/_authenticated/owner/menu'
     | '/_authenticated/owner/my-account'
@@ -790,6 +815,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountFavoritesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/account/inbox': {
+      id: '/_authenticated/account/inbox'
+      path: '/account/inbox'
+      fullPath: '/account/inbox'
+      preLoaderRoute: typeof AuthenticatedAccountInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/account/notifications': {
       id: '/_authenticated/account/notifications'
       path: '/account/notifications'
@@ -865,6 +897,13 @@ declare module '@tanstack/react-router' {
       path: '/delivery'
       fullPath: '/owner/delivery'
       preLoaderRoute: typeof AuthenticatedOwnerDeliveryRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
+    '/_authenticated/owner/inbox': {
+      id: '/_authenticated/owner/inbox'
+      path: '/inbox'
+      fullPath: '/owner/inbox'
+      preLoaderRoute: typeof AuthenticatedOwnerInboxRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
     '/_authenticated/owner/inventory': {
@@ -1010,6 +1049,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
+  AuthenticatedOwnerInboxRoute: typeof AuthenticatedOwnerInboxRoute
   AuthenticatedOwnerInventoryRoute: typeof AuthenticatedOwnerInventoryRoute
   AuthenticatedOwnerMenuRoute: typeof AuthenticatedOwnerMenuRoute
   AuthenticatedOwnerMyAccountRoute: typeof AuthenticatedOwnerMyAccountRoute
@@ -1036,6 +1076,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
+  AuthenticatedOwnerInboxRoute: AuthenticatedOwnerInboxRoute,
   AuthenticatedOwnerInventoryRoute: AuthenticatedOwnerInventoryRoute,
   AuthenticatedOwnerMenuRoute: AuthenticatedOwnerMenuRoute,
   AuthenticatedOwnerMyAccountRoute: AuthenticatedOwnerMyAccountRoute,
@@ -1064,6 +1105,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountAddressesRoute: typeof AuthenticatedAccountAddressesRoute
   AuthenticatedAccountChallengesRoute: typeof AuthenticatedAccountChallengesRoute
   AuthenticatedAccountFavoritesRoute: typeof AuthenticatedAccountFavoritesRoute
+  AuthenticatedAccountInboxRoute: typeof AuthenticatedAccountInboxRoute
   AuthenticatedAccountNotificationsRoute: typeof AuthenticatedAccountNotificationsRoute
   AuthenticatedAccountOrdersRoute: typeof AuthenticatedAccountOrdersRoute
   AuthenticatedAccountRewardsRoute: typeof AuthenticatedAccountRewardsRoute
@@ -1078,6 +1120,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountAddressesRoute: AuthenticatedAccountAddressesRoute,
   AuthenticatedAccountChallengesRoute: AuthenticatedAccountChallengesRoute,
   AuthenticatedAccountFavoritesRoute: AuthenticatedAccountFavoritesRoute,
+  AuthenticatedAccountInboxRoute: AuthenticatedAccountInboxRoute,
   AuthenticatedAccountNotificationsRoute:
     AuthenticatedAccountNotificationsRoute,
   AuthenticatedAccountOrdersRoute: AuthenticatedAccountOrdersRoute,
