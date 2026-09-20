@@ -28,7 +28,8 @@ const verifySignature = (
   signatureHeader: string,
 ): boolean => {
   // Secret format: "v1,whsec_<base64>" or plain "whsec_<base64>"/base64.
-  const secretPart = secretRaw.includes(",") ? secretRaw.split(",")[1]! : secretRaw;
+  const secretParts = secretRaw.split(",");
+  const secretPart = secretRaw.includes(",") ? (secretParts[1] ?? secretRaw) : secretRaw;
   const base64 = secretPart.replace(/^whsec_/, "");
   const key = Buffer.from(base64, "base64");
   const expected = createHmac("sha256", key.length > 0 ? key : Buffer.from(secretRaw))
@@ -37,7 +38,10 @@ const verifySignature = (
 
   return signatureHeader
     .split(" ")
-    .map((part) => (part.includes(",") ? part.split(",")[1]! : part))
+    .map((part) => {
+      const parts = part.split(",");
+      return part.includes(",") ? (parts[1] ?? part) : part;
+    })
     .some((candidate) => {
       const a = Buffer.from(candidate);
       const b = Buffer.from(expected);
@@ -51,12 +55,18 @@ export const Route = createFileRoute("/api/public/auth/sms-hook")({
       POST: async ({ request }) => {
         const secret = process.env["AUTH_SMS_HOOK_SECRET"];
         if (!secret) {
-          // Not an application fault: SMS delivery simply isn't set up yet.
-          // 503 keeps this out of the error telemetry and tells the auth
-          // service to fall back instead of retrying forever.
+          // This is an incomplete dependency, not an application crash or
+          // transient outage. Do not return 5xx: the auth service could retry
+          // it, and the preview would incorrectly report a runtime failure.
           return json(
-            { error: { http_code: 503, message: "SMS delivery is not configured yet" } },
-            503,
+            {
+              error: {
+                http_code: 424,
+                message: "SMS delivery is not configured yet",
+                configuration_required: true,
+              },
+            },
+            424,
           );
         }
 
