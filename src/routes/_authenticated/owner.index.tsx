@@ -32,13 +32,13 @@ function OwnerHome() {
     <div className="space-y-6">
       <PushToggle />
       <SummarySection title="TODAY">
-        {canSeeOrders || can("pos") || can("platform_sales") ? <SummaryLink to="/owner/orders" label="Today's sales" value={formatBDT(s?.todaySales ?? 0)} /> : null}
-        {canSeeOrders ? <SummaryLink to="/owner/orders" label="Today's customers / orders" value={`${s?.todayCustomers ?? 0} / ${s?.todayOrders ?? 0}`} /> : null}
+        {canSeeOrders || can("pos") || can("platform_sales") ? <SummaryLink to="/owner/orders" search={{ date: s?.today }} label="Today's sales" value={formatBDT(s?.todaySales ?? 0)} /> : null}
+        {canSeeOrders ? <SummaryLink to="/owner/orders" search={{ date: s?.today }} label="Today's customers / orders" value={`${s?.todayCustomers ?? 0} / ${s?.todayOrders ?? 0}`} /> : null}
         {can("purchases") ? <SummaryLink to="/owner/purchases" label="Today's expenses" value={formatBDT(s?.todayExpenses ?? 0)} /> : null}
         {can("staff_finance") ? <SummaryLink to="/owner/staff-accounts" label="Staff money activity" value={formatBDT(s?.todayStaffActivity ?? 0)} /> : null}
       </SummarySection>
       <SummarySection title="OPERATIONS">
-        {canSeeOrders ? <SummaryLink to="/owner/orders" label="Active online orders" value={String(s?.activeOnlineOrders ?? 0)} /> : null}
+        {canSeeOrders ? <SummaryLink to="/owner/orders" search={{ activeOnline: true }} label="Active online orders" value={String(s?.activeOnlineOrders ?? 0)} /> : null}
         {can("inventory") ? <SummaryLink to="/owner/inventory" label="Current inventory" value={`${s?.inventory.totalItems ?? 0} items · ${s?.inventory.lowStock ?? 0} low · ${s?.inventory.outOfStock ?? 0} out`} /> : null}
       </SummarySection>
       {can("reports") ? <SummarySection title="REPORT SUMMARY">
@@ -67,8 +67,8 @@ function SummarySection({ title, children }: { title: string; children: React.Re
   return <section><h2 className="mb-2 text-xs font-semibold tracking-widest text-muted-foreground">{title}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{children}</div></section>;
 }
 
-function SummaryLink({ to, label, value }: { to: "/owner/orders" | "/owner/purchases" | "/owner/staff-accounts" | "/owner/inventory" | "/owner/reports"; label: string; value: string }) {
-  return <Link to={to} className="rounded-xl border border-border bg-card p-4 shadow-card transition-colors hover:bg-muted"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-display text-lg font-bold">{value}</p></Link>;
+function SummaryLink({ to, search, label, value }: { to: "/owner/orders" | "/owner/purchases" | "/owner/staff-accounts" | "/owner/inventory" | "/owner/reports"; search?: Record<string, string | boolean | undefined>; label: string; value: string }) {
+  return <Link to={to} search={search} className="rounded-xl border border-border bg-card p-4 shadow-card transition-colors hover:bg-muted"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-display text-lg font-bold">{value}</p></Link>;
 }
 
 function QuickLink({

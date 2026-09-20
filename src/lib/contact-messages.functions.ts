@@ -34,6 +34,14 @@ async function profileName(userId: string): Promise<string | null> {
   return data?.full_name ?? null;
 }
 
+async function assertCustomer(userId: string): Promise<void> {
+  const database = await db();
+  const { data } = await database.from("user_roles").select("role").eq("user_id", userId);
+  if ((data ?? []).some((row) => ["owner", "admin", "staff"].includes(row.role))) {
+    throw new Error("This inbox is for customer accounts.");
+  }
+}
+
 async function threadMessages(conversationId: string, viewerId: string): Promise<ContactMessage[]> {
   const database = await db();
   const { data, error } = await database
@@ -56,6 +64,7 @@ async function threadMessages(conversationId: string, viewerId: string): Promise
 export const getMyContactThread = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContactThread> => {
+    await assertCustomer(context.userId);
     const database = await db();
     const [{ data: conversation }, { data: profile }] = await Promise.all([
       database
@@ -96,6 +105,7 @@ export const sendMyContactMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ body: z.string().trim().min(1).max(1000) }).parse(input))
   .handler(async ({ data, context }) => {
+    await assertCustomer(context.userId);
     const database = await db();
     const { data: conversation, error: conversationError } = await database
       .from("customer_conversations")

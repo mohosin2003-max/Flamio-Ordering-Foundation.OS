@@ -33,12 +33,14 @@ import {
 export const Route = createFileRoute("/_authenticated/owner/orders")({
   validateSearch: (search: Record<string, unknown>) => ({
     order: typeof search["order"] === "string" ? (search["order"] as string) : undefined,
+    date: typeof search["date"] === "string" ? (search["date"] as string) : undefined,
+    activeOnline: search["activeOnline"] === true || search["activeOnline"] === "true",
   }),
   component: OwnerOrders,
 });
 
 function OwnerOrders() {
-  const { order: focusOrderId } = Route.useSearch();
+  const { order: focusOrderId, date, activeOnline } = Route.useSearch();
   const listOrders = useServerFn(ownerListOrders);
   const listRiders = useServerFn(ownerListRiders);
   const assignRider = useServerFn(ownerAssignRider);
@@ -88,7 +90,11 @@ function OwnerOrders() {
 
   return (
     <div className="space-y-3">
-      {orders.data.map((order) => (
+      {orders.data.filter((order) => {
+        if (date && new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(order.createdAt)) !== date) return false;
+        if (activeOnline && (!isOnlineChannel(order.channel) || order.status === "completed" || order.status === "cancelled")) return false;
+        return true;
+      }).map((order) => (
         <Card key={order.id}>
           <CardContent className="space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
