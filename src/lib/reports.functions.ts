@@ -22,6 +22,8 @@ export interface SalesReport {
   byStatus: { status: string; orders: number }[];
   topProducts: { name: string; quantity: number; revenue: number }[];
   topCategories: { name: string; quantity: number; revenue: number }[];
+  expenses: number;
+  net: number;
 }
 
 const rangeSchema = z.object({
@@ -40,8 +42,8 @@ export const ownerGetSalesReport = createServerFn({ method: "POST" })
     await assertPermission(context.userId, "reports");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const fromIso = `${data.from}T00:00:00.000Z`;
-    const toIso = `${data.to}T23:59:59.999Z`;
+    const fromIso = new Date(`${data.from}T00:00:00+06:00`).toISOString();
+    const toIso = new Date(new Date(`${data.to}T00:00:00+06:00`).getTime() + 86_400_000 - 1).toISOString();
 
     const { data: orders, error } = await supabaseAdmin
       .from("orders")
@@ -58,6 +60,18 @@ export const ownerGetSalesReport = createServerFn({ method: "POST" })
 
     const rows = orders ?? [];
     const ids = rows.map((o) => o.id);
+
+    const { data: purchaseRows, error: purchaseError } = await supabaseAdmin
+      .from("purchases")
+      .select("total_price")
+      .gte("purchased_on", data.from)
+      .lte("purchased_on", data.to)
+      .limit(5000);
+    if (purchaseError) {
+      console.error("Report expenses failed", purchaseError);
+      throw new Error("We couldn't build this report. Please try again.");
+    }
+    const expenses = (purchaseRows ?? []).reduce((sum, row) => sum + Number(row.total_price), 0);
 
     let items: { order_id: string; product_id: string; product_name: string; quantity: number; unit_price: number }[] =
       [];
@@ -161,6 +175,8 @@ export const ownerGetSalesReport = createServerFn({ method: "POST" })
         .sort((a, b) => b.orders - a.orders),
       topProducts: sortTop(productTotals),
       topCategories: sortTop(categoryTotals),
+      expenses: Number(expenses.toFixed(2)),
+      net: Number((paidRevenue - expenses).toFixed(2)),
     };
   });
 
