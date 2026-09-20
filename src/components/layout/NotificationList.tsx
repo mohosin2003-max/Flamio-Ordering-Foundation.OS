@@ -93,6 +93,12 @@ export function NotificationList({
                   await navigate({ to: "/order/$orderId", params: { orderId: n.orderId } });
                 }
                 onAfterNavigate?.();
+              } else if (n.status === "contact_message_staff") {
+                await navigate({ to: "/owner/inbox" });
+                onAfterNavigate?.();
+              } else if (n.status === "contact_message") {
+                await navigate({ to: "/account/inbox" });
+                onAfterNavigate?.();
               }
             }}
 

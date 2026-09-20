@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
+import { looseDb } from "@/integrations/supabase/loose.server";
 
 export interface PublicRestaurantInfo {
   name: string;
@@ -18,6 +19,15 @@ export interface PublicRestaurantInfo {
   facebookUrl: string | null;
   instagramUrl: string | null;
   googleMapsUrl: string | null;
+  ownerPhone: string | null;
+  messengerUrl: string | null;
+  whatsappNumber: string | null;
+  contactCallRestaurantEnabled: boolean;
+  contactCallOwnerEnabled: boolean;
+  contactInboxEnabled: boolean;
+  contactFacebookEnabled: boolean;
+  contactMessengerEnabled: boolean;
+  contactWhatsappEnabled: boolean;
 }
 
 /** Public, read-only restaurant profile for customer pages. Never throws —
@@ -30,10 +40,10 @@ export const getPublicRestaurantInfo = createServerFn({ method: "GET" }).handler
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
 
-    const { data, error } = await supabasePublic
+    const { data, error } = await looseDb(supabasePublic)
       .from("restaurant_settings")
       .select(
-        "name, tagline, phone, email, address_line, city, country, is_open, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url",
+        "name, tagline, phone, email, address_line, city, country, is_open, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, owner_phone, messenger_url, whatsapp_number, contact_call_restaurant_enabled, contact_call_owner_enabled, contact_inbox_enabled, contact_facebook_enabled, contact_messenger_enabled, contact_whatsapp_enabled",
       )
       .order("created_at")
       .limit(1)
@@ -59,6 +69,15 @@ export const getPublicRestaurantInfo = createServerFn({ method: "GET" }).handler
       facebookUrl: data.facebook_url,
       instagramUrl: data.instagram_url,
       googleMapsUrl: data.google_maps_url,
+      ownerPhone: data.owner_phone,
+      messengerUrl: data.messenger_url,
+      whatsappNumber: data.whatsapp_number,
+      contactCallRestaurantEnabled: data.contact_call_restaurant_enabled !== false,
+      contactCallOwnerEnabled: data.contact_call_owner_enabled === true,
+      contactInboxEnabled: data.contact_inbox_enabled !== false,
+      contactFacebookEnabled: data.contact_facebook_enabled !== false,
+      contactMessengerEnabled: data.contact_messenger_enabled === true,
+      contactWhatsappEnabled: data.contact_whatsapp_enabled === true,
     };
   },
 );

@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronRight, Clock3, Facebook, Flame, MapPin } from "lucide-react";
+import { ChevronRight, Clock3, Facebook, Flame, MapPin, MessageCircle, MessagesSquare, Phone, UserRound, } from "lucide-react";
 
 import { restaurant } from "@/data/restaurant";
 import { getPublicRestaurantInfo } from "@/lib/restaurant.functions";
@@ -53,6 +53,7 @@ function ContactPage() {
   ]
     .filter(Boolean)
     .join(" · ");
+  const whatsappDigits = info?.whatsappNumber?.replace(/\D/g, "") ?? "";
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col px-4 py-6 pb-28 text-foreground sm:px-6 sm:py-8">
@@ -82,15 +83,20 @@ function ContactPage() {
           subtitle={hoursText ?? "—"}
         />
 
-        {facebookUrl ? (
+        {info?.contactCallRestaurantEnabled ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info.phone || "Not configured yet"} href={info.phone ? `tel:${info.phone}` : undefined} /> : null}
+        {info?.contactCallOwnerEnabled ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info.ownerPhone || "Not configured yet"} href={info.ownerPhone ? `tel:${info.ownerPhone}` : undefined} /> : null}
+        {info?.contactInboxEnabled ? <ContactRow icon={<MessagesSquare aria-hidden="true" className="size-5 text-primary" />} title="Customer Message / Inbox" subtitle="Message the Flamio team" to="/account/inbox" /> : null}
+        {info?.contactFacebookEnabled ? (
           <ContactRow
-            icon={<Facebook aria-hidden="true" className="size-5 shrink-0 text-[#1877F2]" />}
-            title={facebookPageName}
-            subtitle=""
-            href={facebookUrl}
+            icon={<Facebook aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+            title="Facebook Page"
+            subtitle={facebookUrl ? facebookPageName : "Not configured yet"}
+            href={facebookUrl ?? undefined}
             external
           />
         ) : null}
+        {info?.contactMessengerEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="Message on Facebook / Messenger" subtitle={info.messengerUrl ? facebookPageName : "Not configured yet"} href={info.messengerUrl ?? undefined} external /> : null}
+        {info?.contactWhatsappEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={info.whatsappNumber || "Not configured yet"} href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined} external /> : null}
       </div>
     </div>
   );
@@ -102,12 +108,14 @@ function ContactRow({
   subtitle,
   href,
   external,
+  to,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   href?: string | undefined;
   external?: boolean;
+  to?: "/account/inbox";
 }) {
   const content = (
     <div className="flex items-center gap-3 py-4">
@@ -137,6 +145,8 @@ function ContactRow({
       </a>
     );
   }
+
+  if (to) return <Link to={to} className={classes}>{content}</Link>;
 
   return <div className={classes}>{content}</div>;
 }

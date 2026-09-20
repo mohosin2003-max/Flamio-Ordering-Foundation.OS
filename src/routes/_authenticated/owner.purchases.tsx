@@ -42,12 +42,14 @@ import { ownerListSuppliers } from "@/lib/suppliers.functions";
  * simple client-side summaries of that same data — no separate expense system.
  */
 export const Route = createFileRoute("/_authenticated/owner/purchases")({
+  validateSearch: (search: Record<string, unknown>) => ({ date: typeof search["date"] === "string" ? search["date"] : undefined }),
   component: OwnerPurchases,
 });
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function OwnerPurchases() {
+  const { date } = Route.useSearch();
   const listPurchases = useServerFn(ownerListPurchases);
   const listInventory = useServerFn(ownerListInventory);
   const createPurchase = useServerFn(ownerCreatePurchase);
@@ -95,7 +97,7 @@ function OwnerPurchases() {
   });
 
   const items = inventory.data?.items ?? [];
-  const rows = purchases.data ?? [];
+  const rows = (purchases.data ?? []).filter((row) => !date || row.purchasedOn === date);
   const supplierNames = (suppliers.data ?? []).filter((s) => s.isActive).map((s) => s.name);
 
   const quantity = Number(form.quantity) || 0;

@@ -17,17 +17,22 @@ import { ownerGetSalesReport } from "@/lib/reports.functions";
  * derives everything from orders and order_items.
  */
 export const Route = createFileRoute("/_authenticated/owner/reports")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: typeof search["from"] === "string" ? search["from"] : undefined,
+    to: typeof search["to"] === "string" ? search["to"] : undefined,
+  }),
   component: OwnerReports,
 });
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function OwnerReports() {
+  const search = Route.useSearch();
   const getReport = useServerFn(ownerGetSalesReport);
 
   const today = iso(new Date());
   const monthAgo = iso(new Date(Date.now() - 29 * 86_400_000));
-  const [range, setRange] = useState({ from: monthAgo, to: today });
+  const [range, setRange] = useState({ from: search.from ?? monthAgo, to: search.to ?? today });
 
   const report = useQuery({
     queryKey: ["owner-sales-report", range.from, range.to],
@@ -90,6 +95,8 @@ function OwnerReports() {
             <Stat label="Order value" value={formatBDT(report.data.orderTotal)} />
             <Stat label="Completed revenue" value={formatBDT(report.data.paidRevenue)} />
             <Stat label="Average order" value={formatBDT(report.data.averageOrderValue)} />
+            <Stat label="Expenses" value={formatBDT(report.data.expenses)} />
+            <Stat label="Net / profit" value={formatBDT(report.data.net)} />
           </div>
 
           {report.data.orderCount === 0 ? (
