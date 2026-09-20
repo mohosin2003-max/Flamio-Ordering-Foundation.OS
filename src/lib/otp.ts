@@ -12,7 +12,7 @@ import { formatPhone } from "@/lib/phone";
 export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
 export const SMS_PROVIDER_REQUIRED_MESSAGE =
-  "SMS verification isn't active yet. An SMS provider (e.g. Twilio, MessageBird or Vonage) must be enabled for this project's authentication before OTP codes can be delivered.";
+  "SMS verification isn't active yet. Turn on the SMS/OTP provider in Owner → Settings (and store its API key) before verification codes can be delivered.";
 
 const UNAVAILABLE_PATTERNS = [
   /sms provider/i,
