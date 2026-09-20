@@ -56,6 +56,7 @@ import type {
  * in the app changes.
  */
 export const Route = createFileRoute("/_authenticated/owner/staff-accounts")({
+  validateSearch: (search: Record<string, unknown>) => ({ date: typeof search["date"] === "string" ? search["date"] : undefined }),
   head: () => ({
     meta: [
       { title: "Staff Accounts — Flamio" },
@@ -85,8 +86,9 @@ const methodLabel = (m: string) =>
 const memberName = (m: StaffAccount) => m.fullName ?? m.phone ?? m.email ?? "Unnamed team member";
 
 function OwnerStaffAccounts() {
+  const { date } = Route.useSearch();
   const listAccounts = useServerFn(ownerListStaffAccounts);
-  const [month, setMonth] = useState(thisMonth());
+  const [month, setMonth] = useState(date?.slice(0, 7) ?? thisMonth());
   const [openUser, setOpenUser] = useState<string | null>(null);
 
   const accounts = useQuery({

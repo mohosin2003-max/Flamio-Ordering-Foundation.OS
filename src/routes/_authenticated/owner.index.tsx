@@ -34,17 +34,17 @@ function OwnerHome() {
       <SummarySection title="TODAY">
         {canSeeOrders || can("pos") || can("platform_sales") ? <SummaryLink to="/owner/orders" search={{ date: s?.today }} label="Today's sales" value={formatBDT(s?.todaySales ?? 0)} /> : null}
         {canSeeOrders ? <SummaryLink to="/owner/orders" search={{ date: s?.today }} label="Today's customers / orders" value={`${s?.todayCustomers ?? 0} / ${s?.todayOrders ?? 0}`} /> : null}
-        {can("purchases") ? <SummaryLink to="/owner/purchases" label="Today's expenses" value={formatBDT(s?.todayExpenses ?? 0)} /> : null}
-        {can("staff_finance") ? <SummaryLink to="/owner/staff-accounts" label="Staff money activity" value={formatBDT(s?.todayStaffActivity ?? 0)} /> : null}
+        {can("purchases") ? <SummaryLink to="/owner/purchases" search={{ date: s?.today }} label="Today's expenses" value={formatBDT(s?.todayExpenses ?? 0)} /> : null}
+        {can("staff_finance") ? <SummaryLink to="/owner/staff-accounts" search={{ date: s?.today }} label="Staff money activity" value={formatBDT(s?.todayStaffActivity ?? 0)} /> : null}
       </SummarySection>
       <SummarySection title="OPERATIONS">
         {canSeeOrders ? <SummaryLink to="/owner/orders" search={{ activeOnline: true }} label="Active online orders" value={String(s?.activeOnlineOrders ?? 0)} /> : null}
         {can("inventory") ? <SummaryLink to="/owner/inventory" label="Current inventory" value={`${s?.inventory.totalItems ?? 0} items · ${s?.inventory.lowStock ?? 0} low · ${s?.inventory.outOfStock ?? 0} out`} /> : null}
       </SummarySection>
       {can("reports") ? <SummarySection title="REPORT SUMMARY">
-        <SummaryLink to="/owner/reports" label="Total sales" value={formatBDT(s?.reports.sales ?? 0)} />
-        <SummaryLink to="/owner/reports" label="Total expenses" value={formatBDT(s?.reports.expenses ?? 0)} />
-        <SummaryLink to="/owner/reports" label="Current net / profit" value={formatBDT(s?.reports.net ?? 0)} />
+        <SummaryLink to="/owner/reports" search={{ from: "2000-01-01", to: s?.today }} label="Total sales" value={formatBDT(s?.reports.sales ?? 0)} />
+        <SummaryLink to="/owner/reports" search={{ from: "2000-01-01", to: s?.today }} label="Total expenses" value={formatBDT(s?.reports.expenses ?? 0)} />
+        <SummaryLink to="/owner/reports" search={{ from: "2000-01-01", to: s?.today }} label="Current net / profit" value={formatBDT(s?.reports.net ?? 0)} />
       </SummarySection> : null}
       {summary.isLoading ? <Skeleton className="h-28 w-full" /> : null}
 
