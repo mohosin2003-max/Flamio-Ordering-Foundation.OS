@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
+import { looseDb } from "@/integrations/supabase/loose.server";
 
 export interface PublicRestaurantInfo {
   name: string;
@@ -39,7 +40,7 @@ export const getPublicRestaurantInfo = createServerFn({ method: "GET" }).handler
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
 
-    const { data, error } = await supabasePublic
+    const { data, error } = await looseDb(supabasePublic)
       .from("restaurant_settings")
       .select(
         "name, tagline, phone, email, address_line, city, country, is_open, opens_at, closes_at, facebook_page_name, facebook_url, instagram_url, google_maps_url, owner_phone, messenger_url, whatsapp_number, contact_call_restaurant_enabled, contact_call_owner_enabled, contact_inbox_enabled, contact_facebook_enabled, contact_messenger_enabled, contact_whatsapp_enabled",
