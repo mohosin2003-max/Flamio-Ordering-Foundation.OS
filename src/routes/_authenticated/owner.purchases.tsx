@@ -42,7 +42,7 @@ import { ownerListSuppliers } from "@/lib/suppliers.functions";
  * simple client-side summaries of that same data — no separate expense system.
  */
 export const Route = createFileRoute("/_authenticated/owner/purchases")({
-  validateSearch: (search: Record<string, unknown>) => ({ date: typeof search["date"] === "string" ? search["date"] : undefined }),
+  validateSearch: (search: Record<string, unknown>): { date?: string } => typeof search["date"] === "string" ? { date: search["date"] } : {},
   component: OwnerPurchases,
 });
 

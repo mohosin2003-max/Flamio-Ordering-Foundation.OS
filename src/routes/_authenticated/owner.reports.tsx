@@ -17,10 +17,12 @@ import { ownerGetSalesReport } from "@/lib/reports.functions";
  * derives everything from orders and order_items.
  */
 export const Route = createFileRoute("/_authenticated/owner/reports")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    from: typeof search["from"] === "string" ? search["from"] : undefined,
-    to: typeof search["to"] === "string" ? search["to"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { from?: string; to?: string } => {
+    const parsed: { from?: string; to?: string } = {};
+    if (typeof search["from"] === "string") parsed.from = search["from"];
+    if (typeof search["to"] === "string") parsed.to = search["to"];
+    return parsed;
+  },
   component: OwnerReports,
 });
 
