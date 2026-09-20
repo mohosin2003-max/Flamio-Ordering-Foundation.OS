@@ -56,7 +56,7 @@ import type {
  * in the app changes.
  */
 export const Route = createFileRoute("/_authenticated/owner/staff-accounts")({
-  validateSearch: (search: Record<string, unknown>) => ({ date: typeof search["date"] === "string" ? search["date"] : undefined }),
+  validateSearch: (search: Record<string, unknown>): { date?: string } => typeof search["date"] === "string" ? { date: search["date"] } : {},
   head: () => ({
     meta: [
       { title: "Staff Accounts — Flamio" },

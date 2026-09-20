@@ -68,7 +68,7 @@ function SummarySection({ title, children }: { title: string; children: React.Re
 }
 
 function SummaryLink({ to, search, label, value }: { to: "/owner/orders" | "/owner/purchases" | "/owner/staff-accounts" | "/owner/inventory" | "/owner/reports"; search?: Record<string, string | boolean | undefined>; label: string; value: string }) {
-  return <Link to={to} search={search} className="rounded-xl border border-border bg-card p-4 shadow-card transition-colors hover:bg-muted"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-display text-lg font-bold">{value}</p></Link>;
+  return <Link to={to} search={search ?? {}} className="rounded-xl border border-border bg-card p-4 shadow-card transition-colors hover:bg-muted"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-1 font-display text-lg font-bold">{value}</p></Link>;
 }
 
 function QuickLink({
