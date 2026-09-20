@@ -90,6 +90,8 @@ function OwnerReports() {
             <Stat label="Order value" value={formatBDT(report.data.orderTotal)} />
             <Stat label="Completed revenue" value={formatBDT(report.data.paidRevenue)} />
             <Stat label="Average order" value={formatBDT(report.data.averageOrderValue)} />
+            <Stat label="Expenses" value={formatBDT(report.data.expenses)} />
+            <Stat label="Net / profit" value={formatBDT(report.data.net)} />
           </div>
 
           {report.data.orderCount === 0 ? (
