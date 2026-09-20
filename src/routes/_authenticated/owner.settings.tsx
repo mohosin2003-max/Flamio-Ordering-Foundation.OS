@@ -301,6 +301,22 @@ function OwnerSettings() {
             />
           </Field>
 
+          <div className="space-y-4 rounded-lg border border-border p-3">
+            <div>
+              <p className="font-medium">Contact Center</p>
+              <p className="text-sm text-muted-foreground">Choose which contact options customers can see.</p>
+            </div>
+            <ContactToggle label="Call Restaurant" checked={form.contactCallRestaurantEnabled} onCheckedChange={(value) => set("contactCallRestaurantEnabled", value)} />
+            <ContactToggle label="Call Owner" checked={form.contactCallOwnerEnabled} onCheckedChange={(value) => set("contactCallOwnerEnabled", value)} />
+            {form.contactCallOwnerEnabled ? <Field label="Owner phone"><Input value={form.ownerPhone ?? ""} onChange={(e) => set("ownerPhone", e.target.value || null)} /></Field> : null}
+            <ContactToggle label="Customer Message / Inbox" checked={form.contactInboxEnabled} onCheckedChange={(value) => set("contactInboxEnabled", value)} />
+            <ContactToggle label="Facebook Page" checked={form.contactFacebookEnabled} onCheckedChange={(value) => set("contactFacebookEnabled", value)} />
+            <ContactToggle label="Message on Facebook / Messenger" checked={form.contactMessengerEnabled} onCheckedChange={(value) => set("contactMessengerEnabled", value)} />
+            {form.contactMessengerEnabled ? <Field label="Messenger URL"><Input type="url" placeholder="https://m.me/…" value={form.messengerUrl ?? ""} onChange={(e) => set("messengerUrl", e.target.value || null)} /></Field> : null}
+            <ContactToggle label="WhatsApp" checked={form.contactWhatsappEnabled} onCheckedChange={(value) => set("contactWhatsappEnabled", value)} />
+            {form.contactWhatsappEnabled ? <Field label="WhatsApp number"><Input placeholder="8801XXXXXXXXX" value={form.whatsappNumber ?? ""} onChange={(e) => set("whatsappNumber", e.target.value || null)} /></Field> : null}
+          </div>
+
           <Button
             disabled={saving}
             onClick={async () => {
@@ -336,4 +352,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   );
+}
+
+function ContactToggle({ label, checked, onCheckedChange }: { label: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+  return <div className="flex items-center justify-between gap-4"><Label>{label}</Label><Switch checked={checked} onCheckedChange={onCheckedChange} /></div>;
 }

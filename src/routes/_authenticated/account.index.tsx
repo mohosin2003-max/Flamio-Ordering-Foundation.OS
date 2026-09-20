@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -282,13 +283,14 @@ function AccountPage() {
     .join("")
     .toUpperCase();
   const avatarUrl = photoPreview ?? profile?.avatarUrl ?? undefined;
-  const services: { to: "/account/orders" | "/account/addresses" | "/account/favorites" | "/account/vouchers" | "/account/rewards" | "/account/challenges"; title: string; description: string; icon: LucideIcon }[] = [
+  const services: { to: "/account/orders" | "/account/addresses" | "/account/favorites" | "/account/vouchers" | "/account/rewards" | "/account/challenges" | "/account/inbox"; title: string; description: string; icon: LucideIcon }[] = [
     { to: "/account/orders", title: "My Orders", description: "View and track orders", icon: ReceiptText },
     { to: "/account/addresses", title: "Addresses", description: "Manage delivery addresses", icon: MapPin },
     { to: "/account/favorites", title: "Favorites", description: "Your saved dishes", icon: Heart },
     { to: "/account/vouchers", title: "Vouchers", description: "Available coupons", icon: Gift },
     { to: "/account/rewards", title: "Rewards", description: "Earn and view points", icon: Crown },
     { to: "/account/challenges", title: "Challenges", description: "Play games, win rewards", icon: Gamepad2 },
+    { to: "/account/inbox", title: "Inbox", description: "Message the Flamio team", icon: MessageCircle },
   ];
 
   return (
