@@ -6,9 +6,7 @@ import { ClipboardList, UtensilsCrossed, Settings2 } from "lucide-react";
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ownerListOrders } from "@/lib/owner.functions";
 import { formatBDT } from "@/lib/format";
-import { isActiveOrder } from "@/lib/order-status";
 import { getOwnerAccess } from "@/lib/owner.functions";
 import { hasPermission, type StaffPermission } from "@/lib/permissions";
 import { ownerGetDashboardSummary } from "@/lib/dashboard.functions";
@@ -29,16 +27,6 @@ function OwnerHome() {
   const getSummary = useServerFn(ownerGetDashboardSummary);
   const summary = useQuery({ queryKey: ["owner-dashboard-summary"], queryFn: () => getSummary(), enabled: Boolean(access.data), refetchInterval: 30_000 });
 
-  const listOrders = useServerFn(ownerListOrders);
-  const orders = useQuery({
-    queryKey: ["owner-orders"],
-    queryFn: () => listOrders(),
-    refetchInterval: 30_000,
-    enabled: canSeeOrders,
-  });
-
-  const data = orders.data ?? [];
-  const active = data.filter((o) => isActiveOrder(o.status));
   const s = summary.data;
 
   return (
@@ -59,15 +47,7 @@ function OwnerHome() {
         <SummaryLink to="/owner/reports" label="Total expenses" value={formatBDT(s?.reports.expenses ?? 0)} />
         <SummaryLink to="/owner/reports" label="Current net / profit" value={formatBDT(s?.reports.net ?? 0)} />
       </SummarySection> : null}
-      {!canSeeOrders ? null : orders.isLoading ? (
-        <Skeleton className="h-28 w-full" />
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Stat label="Active orders" value={String(active.length)} />
-          <Stat label="Orders today" value={String(todays.length)} />
-          <Stat label="Revenue today" value={formatBDT(revenue)} />
-        </div>
-      )}
+      {summary.isLoading ? <Skeleton className="h-28 w-full" /> : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         {canSeeOrders ? (
@@ -81,17 +61,6 @@ function OwnerHome() {
         ) : null}
       </div>
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 font-display text-xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
   );
 }
 

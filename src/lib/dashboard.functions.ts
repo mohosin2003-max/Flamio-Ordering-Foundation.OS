@@ -47,7 +47,7 @@ export const ownerGetDashboardSummary = createServerFn({ method: "GET" })
         ? supabaseAdmin.from("staff_ledger_entries").select("amount").eq("entry_date", today).eq("status", "approved")
         : Promise.resolve({ data: [] }),
       can("online_orders") || can("order_management")
-        ? supabaseAdmin.from("orders").select("id").eq("channel", "online").not("status", "in", '("completed","cancelled")')
+        ? supabaseAdmin.from("orders").select("id").eq("channel", "online").not("status", "in", "(completed,cancelled)")
         : Promise.resolve({ data: [] }),
     ]);
 

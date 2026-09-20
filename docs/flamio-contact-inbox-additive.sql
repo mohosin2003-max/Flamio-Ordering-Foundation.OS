@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS public.customer_conversation_messages (
   read_by_staff boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
 );
-GRANT SELECT, INSERT, UPDATE ON public.customer_conversation_messages TO authenticated;
+GRANT SELECT, INSERT ON public.customer_conversation_messages TO authenticated;
+GRANT UPDATE (read_by_customer) ON public.customer_conversation_messages TO authenticated;
 GRANT ALL ON public.customer_conversation_messages TO service_role;
 ALTER TABLE public.customer_conversation_messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Customers can view messages in their conversation" ON public.customer_conversation_messages;
