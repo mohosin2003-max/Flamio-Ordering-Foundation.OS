@@ -198,6 +198,12 @@ function MenuPage() {
           })}
         </div>
       )}
+
+      <div className="pt-10">
+        <LocationSection restaurant={info.restaurant} />
+      </div>
+
+      <CustomerReviewsSection signInRedirectTo="/menu#write-review" />
     </div>
   );
 }
