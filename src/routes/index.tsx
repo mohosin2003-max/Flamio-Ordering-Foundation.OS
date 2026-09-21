@@ -1,12 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
 import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
 import { PromoBannerArea } from "@/components/home/PromoBannerArea";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
-import { ProductCard } from "@/components/menu/ProductCard";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 
 export const Route = createFileRoute("/")({
@@ -95,59 +95,32 @@ function HomePage() {
         </ul>
       </section>
 
-      <RecommendedSection products={menu.products} />
-
-      {showcase.length > 0 && (
+      {info.banners.length > 0 && (
         <section
-          aria-labelledby="popular-heading"
+          aria-labelledby="promos-heading"
           className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6"
         >
           <div className="flex items-end justify-between gap-4">
-            <h2 id="popular-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-              Popular
+            <h2 id="promos-heading" className="font-display text-xl font-extrabold sm:text-2xl">
+              Offers
             </h2>
             <Link
-              to="/menu"
-              search={{}}
+              to="/offers"
               className="text-sm font-medium text-primary transition-smooth hover:opacity-80"
             >
-              Full menu
+              See offers
             </Link>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {showcase.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="mt-4">
+            <PromoBannerArea banners={info.banners} />
           </div>
         </section>
       )}
 
-      <section aria-labelledby="offers-heading" className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 id="offers-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-            Offers
-          </h2>
-          <Link
-            to="/offers"
-            className="text-sm font-medium text-primary transition-smooth hover:opacity-80"
-          >
-            See offers
-          </Link>
-        </div>
-        <div className="mt-4">
-          {info.banners.length > 0 ? (
-            <PromoBannerArea banners={info.banners} />
-          ) : featured.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {featured.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No offers running right now.</p>
-          )}
-        </div>
-      </section>
+      <FeaturedSection products={menu.products} />
+
+      <RecommendedSection products={menu.products} excludeIds={shownIds} />
+
 
       <RemainingMenuSection
         products={menu.products}
