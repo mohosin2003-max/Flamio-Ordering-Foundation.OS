@@ -4,8 +4,10 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { WinnerTicker } from "@/components/challenges/WinnerTicker";
 import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { HomeCarousel } from "@/components/home/HomeCarousel";
+import { LocationSection } from "@/components/home/LocationSection";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
+import { CustomerReviewsSection } from "@/components/reviews/CustomerReviewsSection";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 
 export const Route = createFileRoute("/")({
@@ -101,6 +103,12 @@ function HomePage() {
         products={menu.products}
         categories={menu.categories}
       />
+
+      <div className="pt-10">
+        <LocationSection restaurant={info.restaurant} />
+      </div>
+
+      <CustomerReviewsSection />
     </>
   );
 }
