@@ -197,7 +197,7 @@ export function CustomerReviewsSection({ signInRedirectTo = "/#write-review" }: 
                   </p>
                 </div>
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                  <a href="/auth?redirect=%2F%23write-review">Sign in to continue</a>
+                  <a href={`/auth?redirect=${encodeURIComponent(signInRedirectTo)}`}>Sign in to continue</a>
                 </Button>
               </div>
             ) : (
