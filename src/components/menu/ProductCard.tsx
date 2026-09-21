@@ -10,18 +10,30 @@ import { displayPrice, hasVariants, primaryImage } from "@/lib/menu-repository";
 import type { Product } from "@/types/menu";
 
 const badgeLabels: Record<string, string> = {
+  offer: "Offer",
   popular: "Popular",
   new: "New",
   spicy: "Spicy",
 };
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  showOfferBadge = false,
+}: {
+  product: Product;
+  /** Adds an "Offer" badge for owner-selected offer items (Featured section). */
+  showOfferBadge?: boolean;
+}) {
   const { addItem } = useCart();
   const image = primaryImage(product);
   const price = displayPrice(product);
   const needsChoice = hasVariants(product);
 
-  const badges = product.isPopular ? ["popular", ...product.badges] : product.badges;
+  const badges = [
+    ...(showOfferBadge && product.isFeatured ? ["offer"] : []),
+    ...(product.isPopular ? ["popular"] : []),
+    ...product.badges,
+  ];
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card transition-smooth hover:border-primary/50">
