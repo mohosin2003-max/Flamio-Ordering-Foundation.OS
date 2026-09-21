@@ -1,13 +1,15 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 
 import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
-import { PromoBannerArea } from "@/components/home/PromoBannerArea";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
 import { ProductCard } from "@/components/menu/ProductCard";
+import { useAuth } from "@/hooks/use-auth";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
+import { getRecommendations } from "@/lib/recommendations.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,6 +25,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Burgers, meat boxes, pizza, pasta and shawarma cooked to order at Flamio.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   loader: ({ context }) => {
@@ -35,16 +39,29 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { data: menu } = useSuspenseQuery(menuQueryOptions());
   const { data: info } = useSuspenseQuery(restaurantQueryOptions());
+  const { user, loading } = useAuth();
+  const fetchRecommendations = useServerFn(getRecommendations);
+  const { data: recommendations } = useQuery({
+    queryKey: ["recommendations", user?.id ?? "guest"],
+    queryFn: () => fetchRecommendations(),
+    enabled: !loading,
+    staleTime: 60 * 1000,
+  });
 
   const featured = menu.products.filter((p) => p.isFeatured);
   const popular = menu.products.filter((p) => p.isPopular);
   const carouselProducts = (featured.length ? featured : popular.length ? popular : menu.products).slice(0, 5);
-  const showcase = (popular.length ? popular : menu.products).slice(0, 8);
-  // IDs already rendered by the carousel, Popular showcase and Offers sections,
-  // so the "Explore the full menu" section never duplicates them.
-  const shownIds = new Set(
-    [...carouselProducts, ...showcase, ...featured.slice(0, 4)].map((p) => p.id),
-  );
+  const featuredProducts = menu.products
+    .filter((product) => product.isAvailable && (product.isFeatured || product.isPopular))
+    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || a.sortOrder - b.sortOrder);
+  const featuredIds = new Set(featuredProducts.map((product) => product.id));
+  const recommendationIds = new Set<string>();
+  if (recommendations?.enabled) {
+    for (const id of [...recommendations.orderAgain, ...recommendations.tryNew]) {
+      if (!featuredIds.has(id)) recommendationIds.add(id);
+    }
+  }
+  const excludedIds = new Set([...featuredIds, ...recommendationIds]);
 
   return (
     <>
@@ -95,64 +112,47 @@ function HomePage() {
         </ul>
       </section>
 
-      <RecommendedSection products={menu.products} />
-
-      {showcase.length > 0 && (
+      {featuredProducts.length > 0 && (
         <section
-          aria-labelledby="popular-heading"
+          aria-labelledby="featured-heading"
           className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6"
         >
           <div className="flex items-end justify-between gap-4">
-            <h2 id="popular-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-              Popular
+            <h2 id="featured-heading" className="font-display text-xl font-extrabold sm:text-2xl">
+              Popular &amp; Offers
             </h2>
             <Link
-              to="/menu"
-              search={{}}
+              to="/offers"
               className="text-sm font-medium text-primary transition-smooth hover:opacity-80"
             >
-              Full menu
+              See offers
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {showcase.map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                displayBadges={[
+                  ...(product.isFeatured ? ["offer"] : []),
+                  ...(product.isPopular ? ["popular"] : []),
+                ]}
+              />
             ))}
           </div>
         </section>
       )}
 
-      <section aria-labelledby="offers-heading" className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
-        <div className="flex items-end justify-between gap-4">
-          <h2 id="offers-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-            Offers
-          </h2>
-          <Link
-            to="/offers"
-            className="text-sm font-medium text-primary transition-smooth hover:opacity-80"
-          >
-            See offers
-          </Link>
-        </div>
-        <div className="mt-4">
-          {info.banners.length > 0 ? (
-            <PromoBannerArea banners={info.banners} />
-          ) : featured.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {featured.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No offers running right now.</p>
-          )}
-        </div>
-      </section>
+      <RecommendedSection
+        products={menu.products}
+        recommendations={recommendations}
+        excludedIds={featuredIds}
+      />
 
       <RemainingMenuSection
         products={menu.products}
         categories={menu.categories}
-        shownIds={shownIds}
+        excludedIds={excludedIds}
       />
 
       <div className="pt-10">

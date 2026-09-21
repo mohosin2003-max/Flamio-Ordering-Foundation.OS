@@ -1,9 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-
 import { ProductCard } from "@/components/menu/ProductCard";
-import { useAuth } from "@/hooks/use-auth";
-import { getRecommendations } from "@/lib/recommendations.functions";
 import type { Category, Product } from "@/types/menu";
 
 /**
@@ -15,36 +10,19 @@ import type { Category, Product } from "@/types/menu";
 export function RemainingMenuSection({
   products,
   categories,
-  shownIds,
+  excludedIds,
 }: {
   products: Product[];
   categories: Category[];
-  /** IDs already rendered by other Home Page sections (carousel, Popular, Offers). */
-  shownIds: Set<string>;
+  /** IDs already rendered in Featured or Recommended on the Home Page. */
+  excludedIds: Set<string>;
 }) {
-  const { user, loading } = useAuth();
-  const fetchRecommendations = useServerFn(getRecommendations);
-
-  const { data: recs } = useQuery({
-    queryKey: ["recommendations", user?.id ?? "guest"],
-    queryFn: () => fetchRecommendations(),
-    enabled: !loading,
-    staleTime: 60 * 1000,
-  });
-
-  // Also exclude anything the Recommended section renders, so no item is
-  // displayed twice on the Home Page.
-  const excluded = new Set(shownIds);
-  if (recs?.enabled) {
-    for (const id of [...recs.orderAgain, ...recs.tryNew]) excluded.add(id);
-  }
-
   const visibleCategories = categories.filter((c) => c.isVisible);
   const groups = visibleCategories
     .map((category) => ({
       category,
       items: products.filter(
-        (p) => p.categoryId === category.id && p.isAvailable && !excluded.has(p.id),
+        (p) => p.categoryId === category.id && p.isAvailable && !excludedIds.has(p.id),
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -57,7 +35,7 @@ export function RemainingMenuSection({
       className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6"
     >
       <h2 id="more-menu-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-        Explore the full menu
+        All Menu
       </h2>
       <div className="mt-6 space-y-8">
         {groups.map(({ category, items }) => (
