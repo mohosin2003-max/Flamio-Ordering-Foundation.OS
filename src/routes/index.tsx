@@ -39,12 +39,12 @@ function HomePage() {
   const featured = menu.products.filter((p) => p.isFeatured);
   const popular = menu.products.filter((p) => p.isPopular);
   const carouselProducts = (featured.length ? featured : popular.length ? popular : menu.products).slice(0, 5);
-  const showcase = (popular.length ? popular : menu.products).slice(0, 8);
-  // IDs already rendered by the carousel, Popular showcase and Offers sections,
-  // so the "Explore the full menu" section never duplicates them.
-  const shownIds = new Set(
-    [...carouselProducts, ...showcase, ...featured.slice(0, 4)].map((p) => p.id),
-  );
+  // IDs rendered by the carousel and the single "Popular & Offers" section, so
+  // no product is shown twice further down the page.
+  const shownIds = new Set([
+    ...carouselProducts.map((p) => p.id),
+    ...featuredIds(menu.products),
+  ]);
 
   return (
     <>
