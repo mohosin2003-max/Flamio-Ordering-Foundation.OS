@@ -88,10 +88,10 @@ WITH CHECK (
 );
 
 -- ---------------------------------------------------------------------------
--- 7. STORAGE — private bucket `review-photos` for review PHOTOS only.
---    Create it in Storage as: name `review-photos`, Public = OFF,
---    file size limit 5 MB, allowed MIME types image/jpeg, image/png,
---    image/webp. Then run the policies below.
+-- 7. STORAGE — uses the EXISTING private bucket `review-photos`.
+--    Do NOT create a new bucket. This bucket already exists in the project
+--    and already enforces image-only MIME types, so only the policies below
+--    are (re)applied. Photos only — no video bucket, path or policy.
 -- ---------------------------------------------------------------------------
 
 DROP POLICY IF EXISTS "Customers upload their own review photos" ON storage.objects;
