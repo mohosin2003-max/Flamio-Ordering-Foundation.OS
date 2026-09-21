@@ -118,7 +118,7 @@ function ContactRow({
   to?: "/account/inbox";
 }) {
   const content = (
-    <div className="flex items-center gap-3 py-4">
+    <div className="flex w-full min-w-0 items-center gap-3 py-4">
       {icon}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-foreground">{title}</p>
@@ -130,7 +130,7 @@ function ContactRow({
     </div>
   );
 
-  const classes = "group flex cursor-pointer border-b border-border/40 transition-smooth hover:bg-muted/30";
+  const classes = "group flex w-full min-w-0 cursor-pointer border-b border-border/40 transition-smooth hover:bg-muted/30";
 
   if (href) {
     return (
