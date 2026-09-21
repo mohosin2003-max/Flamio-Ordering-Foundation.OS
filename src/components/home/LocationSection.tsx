@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Facebook, Instagram, Phone } from "lucide-react";
+import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
 
 import { ContactRow } from "@/routes/contact";
 import { getPublicRestaurantInfo } from "@/lib/restaurant.functions";
