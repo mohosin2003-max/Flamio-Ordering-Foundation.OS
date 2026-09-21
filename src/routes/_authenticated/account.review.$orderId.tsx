@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Camera, Loader2, Video, X } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -39,12 +39,6 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
 };
 
-const VIDEO_EXTENSIONS: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-  "video/quicktime": "mov",
-};
-
 function ReviewOrderPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate();
@@ -53,15 +47,12 @@ function ReviewOrderPage() {
   const save = useServerFn(submitReview);
 
   const photoRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [productId, setProductId] = useState<string | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [videoPath, setVideoPath] = useState<string | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<"photo" | "video" | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -87,8 +78,6 @@ function ReviewOrderPage() {
       setProductId(existing.productId);
       setPhotoPath(existing.photoPath);
       setPhotoPreview(existing.photoUrl);
-      setVideoPath(existing.videoPath);
-      setVideoPreview(existing.videoUrl);
     } else if (order && order.items.length === 1) {
       const onlyItem = order.items[0];
       if (onlyItem) setProductId(onlyItem.productId);
@@ -99,9 +88,8 @@ function ReviewOrderPage() {
   useEffect(() => {
     return () => {
       if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
-      if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
     };
-  }, [photoPreview, videoPreview]);
+  }, [photoPreview]);
 
   if (reviewQuery.isLoading) {
     return (
@@ -158,19 +146,19 @@ function ReviewOrderPage() {
 
   const photosAllowed = settingsQuery.data?.photosEnabled !== false;
 
-  async function handleMedia(kind: "photo" | "video", file: File | undefined) {
+  async function handlePhoto(file: File | undefined) {
     if (!file || uploading) return;
-    const extension = kind === "photo" ? IMAGE_EXTENSIONS[file.type] : VIDEO_EXTENSIONS[file.type];
+    const extension = IMAGE_EXTENSIONS[file.type];
     if (!extension) {
-      toast.error(kind === "photo" ? "Choose a JPG, PNG, or WebP image." : "Choose an MP4, WebM, or MOV video.");
+      toast.error("Choose a JPG, PNG, or WebP image.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error(kind === "photo" ? "Choose an image smaller than 5 MB." : "Choose a video smaller than 5 MB.");
+      toast.error("Choose an image smaller than 5 MB.");
       return;
     }
 
-    setUploading(kind);
+    setUploading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
@@ -181,22 +169,15 @@ function ReviewOrderPage() {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw error;
       const preview = URL.createObjectURL(file);
-      if (kind === "photo") {
-        if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
-        setPhotoPath(path);
-        setPhotoPreview(preview);
-      } else {
-        if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
-        setVideoPath(path);
-        setVideoPreview(preview);
-      }
-      toast.success(kind === "photo" ? "Photo added" : "Video added");
+      if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+      setPhotoPath(path);
+      setPhotoPreview(preview);
+      toast.success("Photo added");
     } catch {
-      toast.error(kind === "photo" ? "We couldn't add that photo. Please try again." : "We couldn't add that video. Please try again.");
+      toast.error("We couldn't add that photo. Please try again.");
     } finally {
-      setUploading(null);
+      setUploading(false);
       if (photoRef.current) photoRef.current.value = "";
-      if (videoRef.current) videoRef.current.value = "";
     }
   }
 
@@ -216,7 +197,6 @@ function ReviewOrderPage() {
           rating,
           comment: comment.trim().length > 0 ? comment.trim() : null,
           photoPath: photosAllowed ? photoPath : null,
-          videoPath: photosAllowed ? videoPath : null,
         },
       });
       toast.success("Thanks for your feedback! ❤️");
@@ -288,16 +268,11 @@ function ReviewOrderPage() {
 
             {photosAllowed && (
               <div className="space-y-2">
-                <Label>Food photo or video (optional)</Label>
+                <Label>Food photo (optional)</Label>
                 <div className="flex flex-wrap items-center gap-3">
                   {photoPreview ? (
                     <MediaPreview onRemove={() => { setPhotoPath(null); setPhotoPreview(null); }} label="Remove photo">
                       <img src={photoPreview} alt="Your review photo" className="size-full object-cover" />
-                    </MediaPreview>
-                  ) : null}
-                  {videoPreview ? (
-                    <MediaPreview onRemove={() => { setVideoPath(null); setVideoPreview(null); }} label="Remove video">
-                      <video src={videoPreview} controls className="size-full object-cover" />
                     </MediaPreview>
                   ) : null}
                   <input
@@ -305,47 +280,27 @@ function ReviewOrderPage() {
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
-                    onChange={(e) => void handleMedia("photo", e.target.files?.[0])}
-                  />
-                  <input
-                    ref={videoRef}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
-                    className="hidden"
-                    onChange={(e) => void handleMedia("video", e.target.files?.[0])}
+                    onChange={(e) => void handlePhoto(e.target.files?.[0])}
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={uploading !== null}
+                    disabled={uploading}
                     onClick={() => photoRef.current?.click()}
                   >
-                    {uploading === "photo" ? (
+                    {uploading ? (
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                     ) : (
                       <Camera aria-hidden="true" className="size-4" />
                     )}
                     {photoPreview ? "Change photo" : "Add a photo"}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={uploading !== null}
-                    onClick={() => videoRef.current?.click()}
-                  >
-                    {uploading === "video" ? (
-                      <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                    ) : (
-                      <Video aria-hidden="true" className="size-4" />
-                    )}
-                    {videoPreview ? "Change video" : "Add a video"}
-                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">JPG, PNG, WebP, MP4, WebM or MOV, up to 5 MB.</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 5 MB.</p>
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={saving || uploading !== null}>
+            <Button type="submit" size="lg" className="w-full" disabled={saving || uploading}>
               {saving ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
               {existing ? "Update my review" : "Send my review"}
             </Button>

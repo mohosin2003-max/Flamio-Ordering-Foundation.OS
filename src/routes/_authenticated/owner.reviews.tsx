@@ -141,25 +141,16 @@ function OwnerReviews() {
 
                   {review.comment ? <p className="text-sm">{review.comment}</p> : null}
 
-                  {(review.photoUrl || review.videoUrl) ? (
+                  {review.photoUrl ? (
                     <div className="flex flex-wrap gap-3">
-                      {review.photoUrl ? (
-                        <img
-                          src={review.photoUrl}
-                          alt={`Photo shared by ${review.customerName}`}
-                          className="size-32 rounded-2xl border border-border/70 object-cover"
-                        />
-                      ) : null}
-                      {review.videoUrl ? (
-                        <video
-                          src={review.videoUrl}
-                          controls
-                          preload="metadata"
-                          className="h-32 w-48 max-w-full rounded-2xl border border-border/70 object-cover"
-                        />
-                      ) : null}
+                      <img
+                        src={review.photoUrl}
+                        alt={`Photo shared by ${review.customerName}`}
+                        className="size-32 rounded-2xl border border-border/70 object-cover"
+                      />
                     </div>
                   ) : null}
+
 
                   <div className="flex flex-wrap gap-2">
                     {review.status !== "approved" && (
