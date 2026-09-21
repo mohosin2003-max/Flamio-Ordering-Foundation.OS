@@ -4,11 +4,13 @@ import { Search } from "lucide-react";
 import { z } from "zod";
 
 import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
+import { LocationSection } from "@/components/home/LocationSection";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
-import { menuQueryOptions } from "@/lib/menu-repository";
+import { CustomerReviewsSection } from "@/components/reviews/CustomerReviewsSection";
+import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
