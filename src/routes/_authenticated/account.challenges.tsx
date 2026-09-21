@@ -145,12 +145,13 @@ function ChallengesPage() {
 
       <div className="mt-6 grid gap-4">
         {challenges.data.challenges.map((challenge) => (
-          <ChallengeCard
-            key={challenge.id}
-            challenge={challenge}
-            busy={starting === challenge.id}
-            onPlay={() => void handlePlay(challenge)}
-          />
+          <div key={challenge.id} id={`challenge-${challenge.slug}`} className="scroll-mt-24">
+            <ChallengeCard
+              challenge={challenge}
+              busy={starting === challenge.id}
+              onPlay={() => void handlePlay(challenge)}
+            />
+          </div>
         ))}
       </div>
 

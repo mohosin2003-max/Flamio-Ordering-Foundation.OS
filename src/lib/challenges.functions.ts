@@ -154,7 +154,6 @@ export const claimChallengeWin = createServerFn({ method: "POST" })
 
 /** Winner ticker feed: display name and photo only, never contact details. */
 export const listWinnerTicker = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
   .handler(async () => {
     const { getChallengeSettings } = await import("@/lib/challenges.server");
     const settings = await getChallengeSettings();
@@ -164,7 +163,7 @@ export const listWinnerTicker = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("challenge_winners")
-      .select("id, reward_name, won_at, user_id, challenges(name)")
+      .select("id, reward_name, won_at, user_id, challenges(name, slug)")
       .eq("is_hidden", false)
       .order("won_at", { ascending: false })
       .limit(Math.max(1, settings.ticker_max_winners));
@@ -188,6 +187,7 @@ export const listWinnerTicker = createServerFn({ method: "GET" })
       return {
         id: row.id,
         challengeName: challenge?.name ?? "Challenge",
+        challengeSlug: challenge?.slug ?? "",
         rewardName: row.reward_name,
         displayName: names.get(row.user_id) ?? "A Flamio fan",
         avatarUrl: null,

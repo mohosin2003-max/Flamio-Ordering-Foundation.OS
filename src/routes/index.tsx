@@ -1,10 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
-import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
+import { WinnerTicker } from "@/components/challenges/WinnerTicker";
+import { FeaturedSection } from "@/components/home/FeaturedSection";
 import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
-import { PromoBannerArea } from "@/components/home/PromoBannerArea";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
@@ -39,16 +39,15 @@ function HomePage() {
   const featured = menu.products.filter((p) => p.isFeatured);
   const popular = menu.products.filter((p) => p.isPopular);
   const carouselProducts = (featured.length ? featured : popular.length ? popular : menu.products).slice(0, 5);
-  // IDs rendered by the carousel and the single "Popular & Offers" section, so
-  // no product is shown twice further down the page.
-  const shownIds = new Set([
-    ...carouselProducts.map((p) => p.id),
-    ...featuredIds(menu.products),
-  ]);
-
   return (
     <>
       <HomeCarousel banners={info.banners} products={carouselProducts} />
+
+      <div className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+        <WinnerTicker />
+      </div>
+
+      <RecommendedSection products={menu.products} />
 
       <section
         aria-labelledby="categories-heading"
@@ -95,37 +94,11 @@ function HomePage() {
         </ul>
       </section>
 
-      {info.banners.length > 0 && (
-        <section
-          aria-labelledby="promos-heading"
-          className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6"
-        >
-          <div className="flex items-end justify-between gap-4">
-            <h2 id="promos-heading" className="font-display text-xl font-extrabold sm:text-2xl">
-              Offers
-            </h2>
-            <Link
-              to="/offers"
-              className="text-sm font-medium text-primary transition-smooth hover:opacity-80"
-            >
-              See offers
-            </Link>
-          </div>
-          <div className="mt-4">
-            <PromoBannerArea banners={info.banners} />
-          </div>
-        </section>
-      )}
-
       <FeaturedSection products={menu.products} />
-
-      <RecommendedSection products={menu.products} excludeIds={shownIds} />
-
 
       <RemainingMenuSection
         products={menu.products}
         categories={menu.categories}
-        shownIds={shownIds}
       />
 
       <div className="pt-10">
