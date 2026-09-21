@@ -13,7 +13,7 @@
 - [ ] Owner phone, Messenger link, WhatsApp number for the extra Contact options
 - [ ] Online payment providers (bKash, Nagad, Card) are placeholders; cash is the live method
 - [ ] No installable-app (manifest) file, so phone install + notification sound is limited
-- [ ] Signed-in general reviews (photo only) need the SQL in `docs/sql/review_general_media.sql` applied to the external database (plus the private `review-photos` bucket)
+- [x] Review database update applied (general reviews, photo only) — verified Sep 21
 
 ## Future (separate phases, not started)
 - [ ] Multi-restaurant / multi-tenant SaaS architecture with master admin
