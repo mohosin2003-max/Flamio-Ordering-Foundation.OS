@@ -203,33 +203,43 @@ export function CustomerReviewsSection() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <Card id="write-review" className="scroll-mt-24 rounded-2xl shadow-card">
           <CardContent className="p-4 sm:p-5">
+            {loading ? (
+              <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading…
+              </div>
+            ) : !isAuthenticated ? (
+              <div className="space-y-4 py-2 text-center">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
+                  <LogIn aria-hidden="true" className="size-5 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold">Sign in to write a review</p>
+                  <p className="text-sm text-muted-foreground">
+                    Reviews come from verified Flamio customers. Sign in with your phone number and you will come straight
+                    back to this review section.
+                  </p>
+                </div>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <Link to="/auth" search={{ redirect: "/#write-review" }}>
+                    Sign in to continue
+                  </Link>
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="flex items-center gap-3">
                 <Avatar className="size-12 border border-border/70">
-                  {profile?.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName || "Customer"} /> : null}
+                  {profile?.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName} /> : null}
                   <AvatarFallback>
                     {displayName ? initials(displayName) : <UserRound aria-hidden="true" className="size-5" />}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold">{displayName || "Your Flamio experience"}</p>
+                  <p className="text-sm font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground">Reviews appear after approval.</p>
                 </div>
               </div>
 
-              {!loading && !isAuthenticated ? (
-                <div className="space-y-2">
-                  <Label htmlFor="reviewer-name">Customer name</Label>
-                  <Input
-                    id="reviewer-name"
-                    value={guestName}
-                    onChange={(event) => setGuestName(event.target.value)}
-                    maxLength={80}
-                    placeholder="Your name"
-                    disabled={saving}
-                  />
-                </div>
-              ) : null}
 
               <div className="space-y-2">
                 <Label>Your rating</Label>
@@ -301,6 +311,7 @@ export function CustomerReviewsSection() {
                 Submit Review
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
