@@ -13,6 +13,7 @@
 - [ ] Owner phone, Messenger link, WhatsApp number for the extra Contact options
 - [ ] Online payment providers (bKash, Nagad, Card) are placeholders; cash is the live method
 - [ ] No installable-app (manifest) file, so phone install + notification sound is limited
+- [ ] Customer general reviews/video support needs the external review migration applied to production
 
 ## Future (separate phases, not started)
 - [ ] Multi-restaurant / multi-tenant SaaS architecture with master admin
