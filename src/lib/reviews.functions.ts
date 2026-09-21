@@ -164,7 +164,7 @@ export const listProductReviews = createServerFn({ method: "GET" })
     const avatarPaths = [...new Set([...profiles.values()].map((p) => p.avatar_path).filter((p): p is string => Boolean(p)))];
     const [signed, signedVideos, signedAvatars] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", paths),
-      signedUrlMap(supabaseAdmin, "review-videos", videoPaths),
+      signedUrlMap(supabaseAdmin, "review-photos", videoPaths),
       signedUrlMap(supabaseAdmin, "profile-photos", avatarPaths),
     ]);
 
@@ -223,7 +223,7 @@ export const listPublicReviews = createServerFn({ method: "GET" }).handler(
 
     const [photoUrls, videoUrls, avatarUrls] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", photoPaths),
-      signedUrlMap(supabaseAdmin, "review-videos", videoPaths),
+      signedUrlMap(supabaseAdmin, "review-photos", videoPaths),
       signedUrlMap(supabaseAdmin, "profile-photos", avatarPaths),
     ]);
 
@@ -338,7 +338,7 @@ export const getOrderReview = createServerFn({ method: "GET" })
       let videoUrl: string | null = null;
       if (review?.video_path) {
         const { data: signed } = await context.supabase.storage
-          .from("review-videos")
+          .from("review-photos")
           .createSignedUrl(review.video_path, 60 * 60);
         videoUrl = signed?.signedUrl ?? null;
       }
@@ -471,7 +471,7 @@ export const submitReview = createServerFn({ method: "POST" })
         await context.supabase.storage.from("review-photos").remove([existing.photo_path]);
       }
       if (existing.video_path && existing.video_path !== videoPath) {
-        await context.supabase.storage.from("review-videos").remove([existing.video_path]);
+        await context.supabase.storage.from("review-photos").remove([existing.video_path]);
       }
       return { ok: true, updated: true };
     }
@@ -536,7 +536,7 @@ export const ownerListReviews = createServerFn({ method: "GET" })
     const videoPaths = rows.map((r: ReviewRow) => r.video_path).filter((p: string | null | undefined): p is string => Boolean(p));
     const [signed, signedVideos] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", paths),
-      signedUrlMap(supabaseAdmin, "review-videos", videoPaths),
+      signedUrlMap(supabaseAdmin, "review-photos", videoPaths),
     ]);
 
     return rows.map((r: ReviewRow) => ({
@@ -597,7 +597,7 @@ export const ownerDeleteReview = createServerFn({ method: "POST" })
       await supabaseAdmin.storage.from("review-photos").remove([row.photo_path]);
     }
     if (row?.video_path) {
-      await supabaseAdmin.storage.from("review-videos").remove([row.video_path]);
+      await supabaseAdmin.storage.from("review-photos").remove([row.video_path]);
     }
     return { ok: true };
   });
