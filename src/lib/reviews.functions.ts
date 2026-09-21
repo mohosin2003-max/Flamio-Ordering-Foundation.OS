@@ -62,7 +62,6 @@ type ReviewRow = {
   created_at: string;
   status: string;
   user_id: string | null;
-  guest_name?: string | null;
   order_id?: string | null;
   product_id?: string | null;
   orders?: { code: string } | null;
@@ -96,8 +95,7 @@ async function profileMap(client: unknown, userIds: string[]): Promise<Map<strin
 }
 
 function reviewName(row: ReviewRow, profiles: Map<string, ProfileRow>): string {
-  if (row.user_id) return publicName(profiles.get(row.user_id)?.full_name ?? row.guest_name);
-  return publicName(row.guest_name);
+  return publicName(row.user_id ? (profiles.get(row.user_id)?.full_name ?? null) : null);
 }
 
 function pathBelongsTo(path: string | null, userId: string, label: string): string | null {
@@ -117,7 +115,7 @@ function nonEmptyPaths(paths: Array<string | null | undefined>): string[] {
 function hasNewReviewColumnError(error: unknown): boolean {
   if (!error) return false;
   const text = JSON.stringify(error);
-  return text.includes("guest_name") || text.includes("video_path");
+  return text.includes("video_path");
 }
 
 /**
@@ -153,7 +151,7 @@ export const listProductReviews = createServerFn({ method: "GET" })
       supabaseAdmin.from("restaurant_settings").select("reviews_enabled, review_photos_enabled").limit(1).maybeSingle(),
       loose(supabaseAdmin)
         .from("order_reviews")
-        .select("id, rating, comment, photo_path, video_path, created_at, user_id, guest_name, order_id")
+        .select("id, rating, comment, photo_path, video_path, created_at, user_id, order_id")
         .eq("product_id", data.productId)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
@@ -224,7 +222,7 @@ export const listPublicReviews = createServerFn({ method: "GET" }).handler(
       supabaseAdmin.from("restaurant_settings").select("reviews_enabled, review_photos_enabled").limit(1).maybeSingle(),
       loose(supabaseAdmin)
         .from("order_reviews")
-        .select("id, rating, comment, photo_path, video_path, created_at, user_id, guest_name, order_id")
+        .select("id, rating, comment, photo_path, video_path, created_at, user_id, order_id")
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(40),
@@ -285,12 +283,12 @@ export const listPublicReviews = createServerFn({ method: "GET" }).handler(
   },
 );
 
-/** General customer review, with no order required. Guest reviews are accepted without media. */
+/** General customer review (no order required). Signed-in customers only. */
 export const submitGeneralReview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
     z
       .object({
-        guestName: z.string().trim().max(80).nullable(),
         rating: z.number().int().min(1).max(5),
         comment: z.string().trim().min(2).max(1000),
         photoPath: z.string().trim().max(300).nullable(),
@@ -298,10 +296,9 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { getOptionalUserId } = await import("@/lib/auth.server");
-    const userId = await getOptionalUserId();
+    const userId = context.userId;
 
     const { data: settings } = await supabaseAdmin
       .from("restaurant_settings")
@@ -312,12 +309,9 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
       throw new Error("Reviews are turned off right now.");
     }
 
-    const guestName = data.guestName?.trim() || null;
-    if (!userId && !guestName) throw new Error("Please add your name before sending your review.");
-
-    const mediaAllowed = Boolean(userId) && settings?.review_photos_enabled !== false;
-    const photoPath = mediaAllowed && userId ? pathBelongsTo(data.photoPath, userId, "That photo") : null;
-    const videoPath = mediaAllowed && userId ? pathBelongsTo(data.videoPath, userId, "That video") : null;
+    const mediaAllowed = settings?.review_photos_enabled !== false;
+    const photoPath = mediaAllowed ? pathBelongsTo(data.photoPath, userId, "That photo") : null;
+    const videoPath = mediaAllowed ? pathBelongsTo(data.videoPath, userId, "That video") : null;
 
     const { error } = await loose(supabaseAdmin).from("order_reviews").insert({
       order_id: null,
@@ -325,7 +319,6 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
       product_id: null,
       rating: data.rating,
       comment: data.comment,
-      guest_name: guestName,
       photo_path: photoPath,
       video_path: videoPath,
       status: "pending",
@@ -604,7 +597,7 @@ export const ownerListReviews = createServerFn({ method: "GET" })
     const initialReviews = await loose(supabaseAdmin)
       .from("order_reviews")
       .select(
-        "id, rating, comment, status, created_at, order_id, photo_path, video_path, user_id, guest_name, orders(code), products(name)",
+        "id, rating, comment, status, created_at, order_id, photo_path, video_path, user_id, orders(code), products(name)",
       )
       .order("created_at", { ascending: false })
       .limit(200);
