@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getOptionalUserId } from "@/lib/auth.server";
 
 export interface ReviewSettings {
   reviewsEnabled: boolean;
@@ -265,6 +264,7 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getOptionalUserId } = await import("@/lib/auth.server");
     const userId = await getOptionalUserId();
 
     const { data: settings } = await supabaseAdmin
@@ -322,7 +322,7 @@ export const getOrderReview = createServerFn({ method: "GET" })
 
       const { data: review } = await context.supabase
         .from("order_reviews")
-        .select("id, rating, comment, photo_path, product_id, status, created_at")
+        .select("id, rating, comment, photo_path, video_path, product_id, status, created_at")
         .eq("order_id", data.orderId)
         .eq("user_id", context.userId)
         .maybeSingle();
@@ -333,6 +333,14 @@ export const getOrderReview = createServerFn({ method: "GET" })
           .from("review-photos")
           .createSignedUrl(review.photo_path, 60 * 60);
         photoUrl = signed?.signedUrl ?? null;
+      }
+
+      let videoUrl: string | null = null;
+      if (review?.video_path) {
+        const { data: signed } = await context.supabase.storage
+          .from("review-videos")
+          .createSignedUrl(review.video_path, 60 * 60);
+        videoUrl = signed?.signedUrl ?? null;
       }
 
       const seen = new Set<string>();
@@ -358,6 +366,8 @@ export const getOrderReview = createServerFn({ method: "GET" })
               comment: review.comment,
               photoPath: review.photo_path,
               photoUrl,
+              videoPath: review.video_path ?? null,
+              videoUrl,
               productId: review.product_id,
               status: review.status,
               createdAt: review.created_at,
