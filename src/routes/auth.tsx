@@ -14,11 +14,6 @@ import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
-  /** Optional same-origin destination so a blocked action (e.g. writing a review) can resume after sign-in. */
-  validateSearch: (search: Record<string, unknown>) => {
-    const raw = typeof search.redirect === "string" ? search.redirect : "";
-    return { redirect: raw.startsWith("/") && !raw.startsWith("//") ? raw : undefined };
-  },
   head: () => ({
     meta: [
       { title: "Sign in — Flamio" },
