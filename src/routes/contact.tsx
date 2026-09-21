@@ -52,6 +52,8 @@ function ContactPage() {
   const phoneDigits = info?.phone?.replace(/\D/g, "") ?? "";
   const ownerPhoneDigits = info?.ownerPhone?.replace(/\D/g, "") ?? "";
   const whatsappDigits = info?.whatsappNumber?.replace(/\D/g, "") ?? "";
+  const primaryWhatsappDigits = whatsappDigits || phoneDigits;
+  const primaryWhatsappLabel = info?.whatsappNumber || info?.phone || "WhatsApp";
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col px-4 py-6 pb-28 text-foreground sm:px-6 sm:py-8">
@@ -69,8 +71,7 @@ function ContactPage() {
 
       <div className="flex flex-col">
         {info?.contactCallRestaurantEnabled && info.phone ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info.phone} href={`tel:${info.phone}`} /> : null}
-        {info?.contactWhatsappEnabled && whatsappDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={info.whatsappNumber ?? "WhatsApp"} href={`https://wa.me/${whatsappDigits}`} external /> : null}
-        {info?.contactCallRestaurantEnabled && phoneDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="Restaurant WhatsApp" subtitle={info.phone ?? "WhatsApp"} href={`https://wa.me/${phoneDigits}`} external /> : null}
+        {info?.contactWhatsappEnabled && primaryWhatsappDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappLabel} href={`https://wa.me/${primaryWhatsappDigits}`} external /> : null}
         {info?.contactCallOwnerEnabled && info.ownerPhone ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info.ownerPhone} href={`tel:${info.ownerPhone}`} /> : null}
         {info?.contactCallOwnerEnabled && ownerPhoneDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="Owner WhatsApp" subtitle={info.ownerPhone ?? "WhatsApp"} href={`https://wa.me/${ownerPhoneDigits}`} external /> : null}
         {info?.contactInboxEnabled ? <ContactRow icon={<MessagesSquare aria-hidden="true" className="size-5 text-primary" />} title="Customer Message / Inbox" subtitle="Message the Flamio team" to="/account/inbox" /> : null}
