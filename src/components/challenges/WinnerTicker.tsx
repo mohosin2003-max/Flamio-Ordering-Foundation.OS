@@ -48,7 +48,7 @@ export function WinnerTicker({ className }: { className?: string }) {
   return (
     <Link
       to="/account/challenges"
-      hash={winner.challengeSlug ? `challenge-${winner.challengeSlug}` : undefined}
+      {...(winner.challengeSlug ? { hash: `challenge-${winner.challengeSlug}` } : {})}
       className={
         className ??
         "flex items-center gap-2 overflow-hidden rounded-xl border border-primary/25 bg-secondary/50 px-3 py-2 transition-smooth hover:border-primary/50"

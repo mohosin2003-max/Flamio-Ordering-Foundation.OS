@@ -128,7 +128,7 @@ function MenuPage() {
       {showFeatured ? (
         <div className="-mx-4 sm:-mx-6">
           <FeaturedSection products={menu.products} />
-          <RecommendedSection products={menu.products} excludeIds={featuredSet} />
+          <RecommendedSection products={menu.products} />
         </div>
       ) : null}
 
