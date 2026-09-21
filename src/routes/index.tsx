@@ -101,12 +101,6 @@ function HomePage() {
         products={menu.products}
         categories={menu.categories}
       />
-
-      <div className="pt-10">
-        <LocationSection restaurant={info.restaurant} />
-      </div>
-
-      <CustomerReviewsSection />
     </>
   );
 }
