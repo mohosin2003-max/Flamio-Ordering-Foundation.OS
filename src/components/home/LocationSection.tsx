@@ -1,13 +1,41 @@
-import { Clock, Facebook, Instagram, MapPin, Phone } from "lucide-react";
+import { ChevronRight, Clock, Facebook, Instagram, MapPin, Phone } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
+import { ContactRow } from "@/routes/contact";
 import type { Restaurant } from "@/types/menu";
 
 function PendingValue({ children }: { children: string }) {
   return <span className="text-muted-foreground">{children}</span>;
 }
 
+function InfoRow({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="group flex w-full min-w-0 border-b border-border/40 transition-smooth hover:bg-muted/30">
+      <div className="flex w-full min-w-0 items-start gap-3 py-4">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          {children}
+        </div>
+        <ChevronRight aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
 export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
   const hoursConfigured = restaurant.openingHours.some((h) => h.opensAt && h.closesAt);
+
+  const addressText = [
+    restaurant.addressLine,
+    restaurant.city && restaurant.country ? `${restaurant.city}, ${restaurant.country}` : restaurant.city || restaurant.country,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const hoursText = restaurant.openingHours
+    .map((h) => `${h.day}: ${h.opensAt && h.closesAt ? `${h.opensAt} – ${h.closesAt}` : "Closed"}`)
+    .join(" · ");
 
   return (
     <section
@@ -19,32 +47,18 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
       </h2>
       <p className="mt-3 max-w-xl text-muted-foreground">{restaurant.about}</p>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-          <MapPin aria-hidden="true" className="size-5 text-primary" />
-          <h3 className="mt-3 text-base font-semibold">Location</h3>
-          <address className="mt-2 text-sm not-italic leading-relaxed text-muted-foreground">
-            {restaurant.addressLine}
-            <br />
-            {restaurant.city}, {restaurant.country}
-          </address>
-          <p className="mt-3 text-sm">
-            Map link: {restaurant.googleMapsUrl ? (
-              <a
-                href={restaurant.googleMapsUrl}
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Open in Google Maps
-              </a>
-            ) : (
-              <PendingValue>Not added yet</PendingValue>
-            )}
-          </p>
-        </div>
+      <div className="mt-8 flex flex-col">
+        <ContactRow
+          icon={<MapPin aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Location"
+          subtitle={addressText || "—"}
+          href={restaurant.googleMapsUrl ?? undefined}
+        />
 
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-          <Clock aria-hidden="true" className="size-5 text-primary" />
-          <h3 className="mt-3 text-base font-semibold">Opening hours</h3>
+        <InfoRow
+          icon={<Clock aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Opening Hours"
+        >
           {hoursConfigured ? (
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {restaurant.openingHours.map((h) => (
@@ -61,11 +75,12 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
               Opening hours will be published soon.
             </p>
           )}
-        </div>
+        </InfoRow>
 
-        <div className="rounded-2xl border border-border/70 bg-card p-6 shadow-card">
-          <Phone aria-hidden="true" className="size-5 text-primary" />
-          <h3 className="mt-3 text-base font-semibold">Contact</h3>
+        <InfoRow
+          icon={<Phone aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Contact"
+        >
           <ul className="mt-2 space-y-2 text-sm">
             <li>
               Phone:{" "}
@@ -98,7 +113,7 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
               )}
             </li>
           </ul>
-        </div>
+        </InfoRow>
       </div>
     </section>
   );
