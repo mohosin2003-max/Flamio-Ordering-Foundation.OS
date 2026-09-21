@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, CheckCircle2, Loader2, LogIn, UserRound, Video, X } from "lucide-react";
@@ -220,9 +219,7 @@ export function CustomerReviewsSection() {
                   </p>
                 </div>
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                  <Link to="/auth" search={{ redirect: "/#write-review" }}>
-                    Sign in to continue
-                  </Link>
+                  <a href="/auth?redirect=%2F%23write-review">Sign in to continue</a>
                 </Button>
               </div>
             ) : (
