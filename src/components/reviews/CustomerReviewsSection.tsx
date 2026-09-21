@@ -39,7 +39,7 @@ function initials(name: string): string {
     .join("") || "F";
 }
 
-export function CustomerReviewsSection() {
+export function CustomerReviewsSection({ signInRedirectTo = "/#write-review" }: { signInRedirectTo?: string }) {
   const queryClient = useQueryClient();
   const fetchReviews = useServerFn(listPublicReviews);
   const fetchSettings = useServerFn(getReviewSettings);
@@ -197,7 +197,7 @@ export function CustomerReviewsSection() {
                   </p>
                 </div>
                 <Button asChild size="lg" className="w-full sm:w-auto">
-                  <a href="/auth?redirect=%2F%23write-review">Sign in to continue</a>
+                  <a href={`/auth?redirect=${encodeURIComponent(signInRedirectTo)}`}>Sign in to continue</a>
                 </Button>
               </div>
             ) : (

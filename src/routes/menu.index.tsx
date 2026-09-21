@@ -4,11 +4,13 @@ import { Search } from "lucide-react";
 import { z } from "zod";
 
 import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
+import { LocationSection } from "@/components/home/LocationSection";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
-import { menuQueryOptions } from "@/lib/menu-repository";
+import { CustomerReviewsSection } from "@/components/reviews/CustomerReviewsSection";
+import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -35,6 +37,7 @@ export const Route = createFileRoute("/menu/")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());
+    context.queryClient.ensureQueryData(restaurantQueryOptions());
   },
   component: MenuPage,
 });
@@ -43,6 +46,7 @@ function MenuPage() {
   const { category, q } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: menu } = useSuspenseQuery(menuQueryOptions());
+  const { data: info } = useSuspenseQuery(restaurantQueryOptions());
   const query = (q ?? "").trim().toLowerCase();
   const matches = (p: { name: string; description: string | null }) =>
     !query ||
@@ -194,6 +198,12 @@ function MenuPage() {
           })}
         </div>
       )}
+
+      <div className="pt-10">
+        <LocationSection restaurant={info.restaurant} />
+      </div>
+
+      <CustomerReviewsSection signInRedirectTo="/menu#write-review" />
     </div>
   );
 }
