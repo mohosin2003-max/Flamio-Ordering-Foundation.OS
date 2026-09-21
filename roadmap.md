@@ -16,7 +16,3 @@
 
 ## Future (separate phases, not started)
 - [ ] Multi-restaurant / multi-tenant SaaS architecture with master admin
-
-## Current
-- [x] Clean Home menu organization: one owner-controlled Popular & Offers section,
-      compact recommendations, and one deduplicated category-ordered remaining menu
