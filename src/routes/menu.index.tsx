@@ -159,7 +159,10 @@ function MenuPage() {
       ) : (
         <div className="mt-8 space-y-12">
           {visibleCategories.map((c) => {
-            const items = menu.products.filter((p) => p.categoryId === c.id && matches(p));
+            const items = menu.products.filter(
+              (p) => p.categoryId === c.id && matches(p) && !featuredSet.has(p.id),
+            );
+            if (showFeatured && items.length === 0) return null;
             if (query && items.length === 0) return null;
             return (
               <section key={c.id} aria-labelledby={`cat-${c.slug}`} className="scroll-mt-32">
