@@ -52,6 +52,12 @@ function MenuPage() {
   const activeCategory = menu.categories.find((c) => c.slug === category) ?? null;
   const visibleCategories = activeCategory ? [activeCategory] : menu.categories;
 
+  // Owner-selected Popular / Offer items are shown once in the Featured area at
+  // the top of the full menu, so they are not repeated in the category lists.
+  // While searching or filtering a category, the plain full list is kept.
+  const showFeatured = !activeCategory && !query;
+  const featuredSet = showFeatured ? new Set(featuredIds(menu.products)) : new Set<string>();
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
       <header>
