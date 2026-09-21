@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, CheckCircle2, Loader2, LogIn, UserRound, Video, X } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, LogIn, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -23,14 +23,7 @@ const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
 };
 
-const VIDEO_EXTENSIONS: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-  "video/quicktime": "mov",
-};
-
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 5 * 1024 * 1024;
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -54,15 +47,12 @@ export function CustomerReviewsSection() {
   const { profile, isAuthenticated, loading } = useAuth();
 
   const photoRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [videoPath, setVideoPath] = useState<string | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState<"photo" | "video" | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const settings = useQuery({
@@ -80,9 +70,8 @@ export function CustomerReviewsSection() {
   useEffect(() => {
     return () => {
       if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
-      if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
     };
-  }, [photoPreview, videoPreview]);
+  }, [photoPreview]);
 
   const profileName = profile?.fullName?.trim() || null;
   const displayName = profileName ?? "Flamio customer";
@@ -90,20 +79,19 @@ export function CustomerReviewsSection() {
   const photosAllowed = settings.data?.photosEnabled !== false;
   const mediaAllowed = isAuthenticated && photosAllowed;
 
-  async function uploadMedia(kind: "photo" | "video", file: File | undefined) {
+  async function uploadPhoto(file: File | undefined) {
     if (!file || uploading) return;
-    const extension = kind === "photo" ? IMAGE_EXTENSIONS[file.type] : VIDEO_EXTENSIONS[file.type];
+    const extension = IMAGE_EXTENSIONS[file.type];
     if (!extension) {
-      toast.error(kind === "photo" ? "Choose a JPG, PNG, or WebP image." : "Choose an MP4, WebM, or MOV video.");
+      toast.error("Choose a JPG, PNG, or WebP image.");
       return;
     }
-    const limit = kind === "photo" ? MAX_PHOTO_SIZE : MAX_VIDEO_SIZE;
-    if (file.size > limit) {
-      toast.error(kind === "photo" ? "Choose an image smaller than 5 MB." : "Choose a video smaller than 5 MB.");
+    if (file.size > MAX_PHOTO_SIZE) {
+      toast.error("Choose an image smaller than 5 MB.");
       return;
     }
 
-    setUploading(kind);
+    setUploading(true);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
@@ -115,22 +103,15 @@ export function CustomerReviewsSection() {
       if (error) throw error;
 
       const preview = URL.createObjectURL(file);
-      if (kind === "photo") {
-        if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
-        setPhotoPath(path);
-        setPhotoPreview(preview);
-      } else {
-        if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
-        setVideoPath(path);
-        setVideoPreview(preview);
-      }
-      toast.success(kind === "photo" ? "Photo added" : "Video added");
+      if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+      setPhotoPath(path);
+      setPhotoPreview(preview);
+      toast.success("Photo added");
     } catch {
-      toast.error(kind === "photo" ? "We couldn't add that photo." : "We couldn't add that video.");
+      toast.error("We couldn't add that photo.");
     } finally {
-      setUploading(null);
+      setUploading(false);
       if (photoRef.current) photoRef.current.value = "";
-      if (videoRef.current) videoRef.current.value = "";
     }
   }
 
@@ -154,7 +135,6 @@ export function CustomerReviewsSection() {
           rating,
           comment: comment.trim(),
           photoPath: mediaAllowed ? photoPath : null,
-          videoPath: mediaAllowed ? videoPath : null,
         },
       });
       toast.success("Thanks! Your review is waiting for approval.");
@@ -162,8 +142,6 @@ export function CustomerReviewsSection() {
       setComment("");
       setPhotoPath(null);
       setPhotoPreview(null);
-      setVideoPath(null);
-      setVideoPreview(null);
       await queryClient.invalidateQueries({ queryKey: ["public-reviews"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "We couldn't save your review.");
@@ -258,52 +236,32 @@ export function CustomerReviewsSection() {
 
               {mediaAllowed ? (
                 <div className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <MediaButton
-                      icon={<Camera aria-hidden="true" className="size-4" />}
-                      label={photoPreview ? "Change photo" : "Add photo"}
-                      busy={uploading === "photo"}
-                      onClick={() => photoRef.current?.click()}
-                    />
-                    <MediaButton
-                      icon={<Video aria-hidden="true" className="size-4" />}
-                      label={videoPreview ? "Change video" : "Add video"}
-                      busy={uploading === "video"}
-                      onClick={() => videoRef.current?.click()}
-                    />
-                  </div>
+                  <MediaButton
+                    icon={<Camera aria-hidden="true" className="size-4" />}
+                    label={photoPreview ? "Change photo" : "Add photo"}
+                    busy={uploading}
+                    onClick={() => photoRef.current?.click()}
+                  />
                   <input
                     ref={photoRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
-                    onChange={(event) => void uploadMedia("photo", event.target.files?.[0])}
+                    onChange={(event) => void uploadPhoto(event.target.files?.[0])}
                   />
-                  <input
-                    ref={videoRef}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
-                    className="hidden"
-                    onChange={(event) => void uploadMedia("video", event.target.files?.[0])}
-                  />
-                  {uploading ? <Progress value={70} aria-label="Uploading review media" /> : null}
-                  <div className="flex flex-wrap gap-3">
-                    {photoPreview ? (
+                  {uploading ? <Progress value={70} aria-label="Uploading review photo" /> : null}
+                  {photoPreview ? (
+                    <div className="flex flex-wrap gap-3">
                       <PreviewShell onRemove={() => { setPhotoPath(null); setPhotoPreview(null); }} label="Remove photo">
                         <img src={photoPreview} alt="Review photo preview" className="size-full object-cover" />
                       </PreviewShell>
-                    ) : null}
-                    {videoPreview ? (
-                      <PreviewShell onRemove={() => { setVideoPath(null); setVideoPreview(null); }} label="Remove video">
-                        <video src={videoPreview} controls className="size-full object-cover" />
-                      </PreviewShell>
-                    ) : null}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Media is optional. JPG, PNG, WebP, MP4, WebM or MOV, up to 5 MB.</p>
+                    </div>
+                  ) : null}
+                  <p className="text-xs text-muted-foreground">A photo is optional. JPG, PNG or WebP, up to 5 MB.</p>
                 </div>
               ) : null}
 
-              <Button type="submit" size="lg" className="w-full" disabled={saving || uploading !== null}>
+              <Button type="submit" size="lg" className="w-full" disabled={saving || uploading}>
                 {saving ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
                 Submit Review
               </Button>
@@ -351,24 +309,14 @@ export function CustomerReviewsSection() {
                     <StarRating value={review.rating} />
                   </div>
                   {review.comment ? <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p> : null}
-                  {(review.photoUrl || review.videoUrl) ? (
-                    <div className="mt-3 flex flex-wrap gap-3">
-                      {review.photoUrl ? (
-                        <img
-                          src={review.photoUrl}
-                          alt={`Photo shared by ${review.reviewerName}`}
-                          loading="lazy"
-                          className="h-32 w-32 rounded-2xl border border-border/70 object-cover"
-                        />
-                      ) : null}
-                      {review.videoUrl ? (
-                        <video
-                          src={review.videoUrl}
-                          controls
-                          preload="metadata"
-                          className="h-32 w-48 max-w-full rounded-2xl border border-border/70 object-cover"
-                        />
-                      ) : null}
+                  {review.photoUrl ? (
+                    <div className="mt-3">
+                      <img
+                        src={review.photoUrl}
+                        alt={`Photo shared by ${review.reviewerName}`}
+                        loading="lazy"
+                        className="h-32 w-32 rounded-2xl border border-border/70 object-cover"
+                      />
                     </div>
                   ) : null}
                 </li>
