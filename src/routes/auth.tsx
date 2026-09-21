@@ -42,12 +42,14 @@ type Mode = "login" | "signup";
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const { isAuthenticated, loading } = useAuth();
   const fetchAccess = useServerFn(getOwnerAccess);
 
   /**
    * Role-based landing: owners and staff go to the dashboard, customers keep
    * the existing customer landing. Access itself is decided on the server.
+   * A validated same-origin `redirect` (e.g. the review section) wins for customers.
    */
   const goToLanding = useCallback(async () => {
     try {
@@ -59,8 +61,13 @@ function AuthPage() {
     } catch {
       // fall through to the customer landing
     }
+    if (redirect) {
+      window.location.replace(redirect);
+      return;
+    }
     await navigate({ to: "/account/orders", replace: true });
-  }, [fetchAccess, navigate]);
+  }, [fetchAccess, navigate, redirect]);
+
 
   const [mode, setMode] = useState<Mode>("login");
   const [phone, setPhone] = useState("");
