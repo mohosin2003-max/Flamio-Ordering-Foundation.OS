@@ -125,6 +125,14 @@ function MenuPage() {
         </ul>
       </nav>
 
+      {showFeatured ? (
+        <div className="-mx-4 sm:-mx-6">
+          <FeaturedSection products={menu.products} />
+          <RecommendedSection products={menu.products} excludeIds={featuredSet} />
+        </div>
+      ) : null}
+
+
       {query && visibleCategories.every((c) => menu.products.filter((p) => p.categoryId === c.id && matches(p)).length === 0) ? (
         <div className="mt-8">
           <EmptyState
