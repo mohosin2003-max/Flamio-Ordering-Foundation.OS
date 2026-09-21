@@ -320,7 +320,7 @@ export const getOrderReview = createServerFn({ method: "GET" })
 
       if (!order) return { order: null, review: null };
 
-      const { data: review } = await context.supabase
+      const { data: review } = await loose(context.supabase)
         .from("order_reviews")
         .select("id, rating, comment, photo_path, video_path, product_id, status, created_at")
         .eq("order_id", data.orderId)
@@ -585,7 +585,7 @@ export const ownerDeleteReview = createServerFn({ method: "POST" })
     await assertPermission(context.userId, "customers");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: row } = await supabaseAdmin
+    const { data: row } = await loose(supabaseAdmin)
       .from("order_reviews")
       .select("photo_path, video_path")
       .eq("id", data.id)
