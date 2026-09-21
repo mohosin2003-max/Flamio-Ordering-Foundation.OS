@@ -18,6 +18,23 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/owner/reviews")({
+  head: () => ({
+    meta: [
+      { title: "Customer Review Moderation — Flamio Owner" },
+      {
+        name: "description",
+        content: "Review and moderate Flamio customer feedback before it appears publicly.",
+      },
+      { property: "og:title", content: "Customer Review Moderation — Flamio Owner" },
+      {
+        property: "og:description",
+        content: "Owner tools for approving, hiding, and removing Flamio customer reviews.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerReviews,
 });
 
@@ -114,8 +131,8 @@ function OwnerReviews() {
                     <div>
                       <p className="font-semibold">{review.customerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        Order {review.orderCode}
-                        {review.productName ? ` — ${review.productName}` : " — whole order"} ·{" "}
+                        {review.verifiedOrder ? `Order ${review.orderCode}` : "General review"}
+                        {review.productName ? ` — ${review.productName}` : review.verifiedOrder ? " — whole order" : ""} ·{" "}
                         {new Date(review.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -124,12 +141,24 @@ function OwnerReviews() {
 
                   {review.comment ? <p className="text-sm">{review.comment}</p> : null}
 
-                  {review.photoUrl ? (
-                    <img
-                      src={review.photoUrl}
-                      alt={`Photo shared by ${review.customerName}`}
-                      className="size-32 rounded-2xl border border-border/70 object-cover"
-                    />
+                  {(review.photoUrl || review.videoUrl) ? (
+                    <div className="flex flex-wrap gap-3">
+                      {review.photoUrl ? (
+                        <img
+                          src={review.photoUrl}
+                          alt={`Photo shared by ${review.customerName}`}
+                          className="size-32 rounded-2xl border border-border/70 object-cover"
+                        />
+                      ) : null}
+                      {review.videoUrl ? (
+                        <video
+                          src={review.videoUrl}
+                          controls
+                          preload="metadata"
+                          className="h-32 w-48 max-w-full rounded-2xl border border-border/70 object-cover"
+                        />
+                      ) : null}
+                    </div>
                   ) : null}
 
                   <div className="flex flex-wrap gap-2">

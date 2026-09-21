@@ -7,6 +7,7 @@ import { HomeCarousel } from "@/components/home/HomeCarousel";
 import { LocationSection } from "@/components/home/LocationSection";
 import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { RemainingMenuSection } from "@/components/home/RemainingMenuSection";
+import { CustomerReviewsSection } from "@/components/reviews/CustomerReviewsSection";
 import { menuQueryOptions, restaurantQueryOptions } from "@/lib/menu-repository";
 
 export const Route = createFileRoute("/")({
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Burgers, meat boxes, pizza, pasta and shawarma cooked to order at Flamio.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   loader: ({ context }) => {
@@ -104,6 +107,8 @@ function HomePage() {
       <div className="pt-10">
         <LocationSection restaurant={info.restaurant} />
       </div>
+
+      <CustomerReviewsSection />
     </>
   );
 }

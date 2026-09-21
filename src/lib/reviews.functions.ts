@@ -60,6 +60,7 @@ type ReviewRow = {
   photo_path: string | null;
   video_path?: string | null;
   created_at: string;
+  status: string;
   user_id: string | null;
   guest_name?: string | null;
   order_id?: string | null;
@@ -105,6 +106,20 @@ function pathBelongsTo(path: string | null, userId: string, label: string): stri
   return path;
 }
 
+function uniqueUserIds(rows: ReviewRow[]): string[] {
+  return Array.from(new Set(rows.flatMap((row) => (row.user_id ? [row.user_id] : []))));
+}
+
+function nonEmptyPaths(paths: Array<string | null | undefined>): string[] {
+  return paths.filter((path): path is string => Boolean(path));
+}
+
+function hasNewReviewColumnError(error: unknown): boolean {
+  if (!error) return false;
+  const text = JSON.stringify(error);
+  return text.includes("guest_name") || text.includes("video_path");
+}
+
 /**
  * Reviews on/off and photos on/off, from the existing restaurant settings row.
  * Public because the product page needs it before sign-in.
@@ -134,7 +149,7 @@ export const listProductReviews = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<ProductReviewSummary> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: settings }, { data: rows, error }] = await Promise.all([
+    const [{ data: settings }, initialReviews] = await Promise.all([
       supabaseAdmin.from("restaurant_settings").select("reviews_enabled, review_photos_enabled").limit(1).maybeSingle(),
       loose(supabaseAdmin)
         .from("order_reviews")
@@ -144,24 +159,35 @@ export const listProductReviews = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(30),
     ]);
+    let rows = initialReviews.data;
+    let error = initialReviews.error;
+    if (hasNewReviewColumnError(error)) {
+      const fallback = await loose(supabaseAdmin)
+        .from("order_reviews")
+        .select("id, rating, comment, photo_path, created_at, user_id, order_id")
+        .eq("product_id", data.productId)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(30);
+      rows = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || settings?.reviews_enabled === false) {
       if (error) console.error("Product reviews lookup failed", error);
       return { average: 0, count: 0, reviews: [] };
     }
 
-    const reviews = rows ?? [];
+    const reviews = (rows ?? []) as ReviewRow[];
     if (reviews.length === 0) return { average: 0, count: 0, reviews: [] };
 
-    const userIds = [...new Set(reviews.map((r: ReviewRow) => r.user_id).filter((id: string | null): id is string => Boolean(id)))];
+    const userIds = uniqueUserIds(reviews);
     const profiles = await profileMap(supabaseAdmin, userIds);
 
     const photosOn = settings?.review_photos_enabled !== false;
-    const paths = photosOn
-      ? reviews.map((r: ReviewRow) => r.photo_path).filter((p: string | null): p is string => Boolean(p))
-      : [];
-    const videoPaths = reviews.map((r: ReviewRow) => r.video_path).filter((p: string | null | undefined): p is string => Boolean(p));
-    const avatarPaths = [...new Set([...profiles.values()].map((p) => p.avatar_path).filter((p): p is string => Boolean(p)))];
+    const paths = photosOn ? nonEmptyPaths(reviews.map((r) => r.photo_path)) : [];
+    const videoPaths = photosOn ? nonEmptyPaths(reviews.map((r) => r.video_path)) : [];
+    const avatarPaths = Array.from(new Set(nonEmptyPaths([...profiles.values()].map((p) => p.avatar_path))));
     const [signed, signedVideos, signedAvatars] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", paths),
       signedUrlMap(supabaseAdmin, "review-photos", videoPaths),
@@ -175,16 +201,16 @@ export const listProductReviews = createServerFn({ method: "GET" })
       reviews: reviews.map((r: ReviewRow) => {
         const profile = r.user_id ? profiles.get(r.user_id) : undefined;
         return {
-        id: r.id,
-        rating: r.rating,
-        comment: r.comment,
-        createdAt: r.created_at,
-        reviewerName: reviewName(r, profiles),
-        reviewerAvatarUrl: profile?.avatar_path ? (signedAvatars.get(profile.avatar_path) ?? null) : null,
-        photoUrl: r.photo_path ? (signed.get(r.photo_path) ?? null) : null,
-        videoUrl: r.video_path ? (signedVideos.get(r.video_path) ?? null) : null,
-        verifiedOrder: Boolean(r.order_id),
-      };
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.created_at,
+          reviewerName: reviewName(r, profiles),
+          reviewerAvatarUrl: profile?.avatar_path ? (signedAvatars.get(profile.avatar_path) ?? null) : null,
+          photoUrl: r.photo_path ? (signed.get(r.photo_path) ?? null) : null,
+          videoUrl: r.video_path ? (signedVideos.get(r.video_path) ?? null) : null,
+          verifiedOrder: Boolean(r.order_id),
+        };
       }),
     };
   });
@@ -194,7 +220,7 @@ export const listPublicReviews = createServerFn({ method: "GET" }).handler(
   async (): Promise<ProductReviewSummary> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: settings }, { data: rows, error }] = await Promise.all([
+    const [{ data: settings }, initialReviews] = await Promise.all([
       supabaseAdmin.from("restaurant_settings").select("reviews_enabled, review_photos_enabled").limit(1).maybeSingle(),
       loose(supabaseAdmin)
         .from("order_reviews")
@@ -203,23 +229,33 @@ export const listPublicReviews = createServerFn({ method: "GET" }).handler(
         .order("created_at", { ascending: false })
         .limit(40),
     ]);
+    let rows = initialReviews.data;
+    let error = initialReviews.error;
+    if (hasNewReviewColumnError(error)) {
+      const fallback = await loose(supabaseAdmin)
+        .from("order_reviews")
+        .select("id, rating, comment, photo_path, created_at, user_id, order_id")
+        .eq("status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(40);
+      rows = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || settings?.reviews_enabled === false) {
       if (error) console.error("Public reviews lookup failed", error);
       return { average: 0, count: 0, reviews: [] };
     }
 
-    const reviews: ReviewRow[] = rows ?? [];
+    const reviews = (rows ?? []) as ReviewRow[];
     if (reviews.length === 0) return { average: 0, count: 0, reviews: [] };
 
-    const userIds = [...new Set(reviews.map((r) => r.user_id).filter((id): id is string => Boolean(id)))];
+    const userIds = uniqueUserIds(reviews);
     const profiles = await profileMap(supabaseAdmin, userIds);
     const photosOn = settings?.review_photos_enabled !== false;
-    const photoPaths = photosOn
-      ? reviews.map((r) => r.photo_path).filter((p): p is string => Boolean(p))
-      : [];
-    const videoPaths = reviews.map((r) => r.video_path).filter((p): p is string => Boolean(p));
-    const avatarPaths = [...new Set([...profiles.values()].map((p) => p.avatar_path).filter((p): p is string => Boolean(p)))];
+    const photoPaths = photosOn ? nonEmptyPaths(reviews.map((r) => r.photo_path)) : [];
+    const videoPaths = photosOn ? nonEmptyPaths(reviews.map((r) => r.video_path)) : [];
+    const avatarPaths = Array.from(new Set(nonEmptyPaths([...profiles.values()].map((p) => p.avatar_path))));
 
     const [photoUrls, videoUrls, avatarUrls] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", photoPaths),
@@ -279,10 +315,9 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
     const guestName = data.guestName?.trim() || null;
     if (!userId && !guestName) throw new Error("Please add your name before sending your review.");
 
-    const photoPath = userId && settings?.review_photos_enabled !== false
-      ? pathBelongsTo(data.photoPath, userId, "That photo")
-      : null;
-    const videoPath = userId ? pathBelongsTo(data.videoPath, userId, "That video") : null;
+    const mediaAllowed = Boolean(userId) && settings?.review_photos_enabled !== false;
+    const photoPath = mediaAllowed && userId ? pathBelongsTo(data.photoPath, userId, "That photo") : null;
+    const videoPath = mediaAllowed && userId ? pathBelongsTo(data.videoPath, userId, "That video") : null;
 
     const { error } = await loose(supabaseAdmin).from("order_reviews").insert({
       order_id: null,
@@ -297,6 +332,9 @@ export const submitGeneralReview = createServerFn({ method: "POST" })
     });
     if (error) {
       console.error("General review insert failed", error);
+      if (hasNewReviewColumnError(error) || error.code === "23502") {
+        throw new Error("General reviews need the latest review database update before they can be collected.");
+      }
       throw new Error("We couldn't save your review. Please try again.");
     }
     return { ok: true };
@@ -320,12 +358,23 @@ export const getOrderReview = createServerFn({ method: "GET" })
 
       if (!order) return { order: null, review: null };
 
-      const { data: review } = await loose(context.supabase)
+      const initialReview = await loose(context.supabase)
         .from("order_reviews")
         .select("id, rating, comment, photo_path, video_path, product_id, status, created_at")
         .eq("order_id", data.orderId)
         .eq("user_id", context.userId)
         .maybeSingle();
+      let reviewRow = initialReview.data;
+      if (hasNewReviewColumnError(initialReview.error)) {
+        const fallback = await loose(context.supabase)
+          .from("order_reviews")
+          .select("id, rating, comment, photo_path, product_id, status, created_at")
+          .eq("order_id", data.orderId)
+          .eq("user_id", context.userId)
+          .maybeSingle();
+        reviewRow = fallback.data;
+      }
+      const review = reviewRow as ReviewRow | null;
 
       let photoUrl: string | null = null;
       if (review?.photo_path) {
@@ -368,7 +417,7 @@ export const getOrderReview = createServerFn({ method: "GET" })
               photoUrl,
               videoPath: review.video_path ?? null,
               videoUrl,
-              productId: review.product_id,
+              productId: review.product_id ?? null,
               status: review.status,
               createdAt: review.created_at,
             }
@@ -429,7 +478,9 @@ export const submitReview = createServerFn({ method: "POST" })
       }
     }
 
-    const videoPath = pathBelongsTo(data.videoPath, context.userId, "That video");
+    const videoPath = settings?.review_photos_enabled === false
+      ? null
+      : pathBelongsTo(data.videoPath, context.userId, "That video");
 
     // The order line must really contain the dish being reviewed.
     if (data.productId) {
@@ -443,15 +494,25 @@ export const submitReview = createServerFn({ method: "POST" })
       if (!line) throw new Error("That dish isn't part of this order.");
     }
 
-    const { data: existing } = await loose(context.supabase)
+    const initialExisting = await loose(context.supabase)
       .from("order_reviews")
       .select("id, photo_path, video_path")
       .eq("order_id", data.orderId)
       .eq("user_id", context.userId)
       .maybeSingle();
+    let existing = initialExisting.data;
+    if (hasNewReviewColumnError(initialExisting.error)) {
+      const fallback = await loose(context.supabase)
+        .from("order_reviews")
+        .select("id, photo_path")
+        .eq("order_id", data.orderId)
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      existing = fallback.data;
+    }
 
     if (existing) {
-      const { error } = await loose(context.supabase)
+      let { error } = await loose(context.supabase)
         .from("order_reviews")
         .update({
           rating: data.rating,
@@ -463,6 +524,19 @@ export const submitReview = createServerFn({ method: "POST" })
           status: "pending",
         })
         .eq("id", existing.id);
+      if (hasNewReviewColumnError(error)) {
+        const fallback = await loose(context.supabase)
+          .from("order_reviews")
+          .update({
+            rating: data.rating,
+            comment: data.comment,
+            product_id: data.productId,
+            photo_path: photoPath,
+            status: "pending",
+          })
+          .eq("id", existing.id);
+        error = fallback.error;
+      }
       if (error) {
         console.error("Review update failed", error);
         throw new Error("We couldn't save your review. Please try again.");
@@ -476,7 +550,7 @@ export const submitReview = createServerFn({ method: "POST" })
       return { ok: true, updated: true };
     }
 
-    const { error } = await loose(context.supabase).from("order_reviews").insert({
+    let { error } = await loose(context.supabase).from("order_reviews").insert({
       order_id: data.orderId,
       user_id: context.userId,
       product_id: data.productId,
@@ -485,6 +559,17 @@ export const submitReview = createServerFn({ method: "POST" })
       photo_path: photoPath,
       video_path: videoPath,
     });
+    if (hasNewReviewColumnError(error)) {
+      const fallback = await loose(context.supabase).from("order_reviews").insert({
+        order_id: data.orderId,
+        user_id: context.userId,
+        product_id: data.productId,
+        rating: data.rating,
+        comment: data.comment,
+        photo_path: photoPath,
+      });
+      error = fallback.error;
+    }
     if (error) {
       console.error("Review insert failed", error);
       // 23505 = the unique (order, customer) guard already holds a review.
@@ -516,24 +601,35 @@ export const ownerListReviews = createServerFn({ method: "GET" })
     await assertPermission(context.userId, "customers");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data, error } = await loose(supabaseAdmin)
+    const initialReviews = await loose(supabaseAdmin)
       .from("order_reviews")
       .select(
         "id, rating, comment, status, created_at, order_id, photo_path, video_path, user_id, guest_name, orders(code), products(name)",
       )
       .order("created_at", { ascending: false })
       .limit(200);
+    let data = initialReviews.data;
+    let error = initialReviews.error;
+    if (hasNewReviewColumnError(error)) {
+      const fallback = await loose(supabaseAdmin)
+        .from("order_reviews")
+        .select("id, rating, comment, status, created_at, order_id, photo_path, user_id, orders(code), products(name)")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      data = fallback.data;
+      error = fallback.error;
+    }
     if (error) {
       console.error("Owner reviews lookup failed", error);
       throw new Error("We couldn't load the reviews. Please try again.");
     }
 
-    const rows = data ?? [];
-    const userIds = [...new Set(rows.map((r: ReviewRow) => r.user_id).filter((id: string | null): id is string => Boolean(id)))];
+    const rows = (data ?? []) as ReviewRow[];
+    const userIds = uniqueUserIds(rows);
     const profiles = await profileMap(supabaseAdmin, userIds);
 
-    const paths = rows.map((r: ReviewRow) => r.photo_path).filter((p: string | null): p is string => Boolean(p));
-    const videoPaths = rows.map((r: ReviewRow) => r.video_path).filter((p: string | null | undefined): p is string => Boolean(p));
+    const paths = nonEmptyPaths(rows.map((r) => r.photo_path));
+    const videoPaths = nonEmptyPaths(rows.map((r) => r.video_path));
     const [signed, signedVideos] = await Promise.all([
       signedUrlMap(supabaseAdmin, "review-photos", paths),
       signedUrlMap(supabaseAdmin, "review-photos", videoPaths),
@@ -585,11 +681,21 @@ export const ownerDeleteReview = createServerFn({ method: "POST" })
     await assertPermission(context.userId, "customers");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: row } = await loose(supabaseAdmin)
+    const initialRow = await loose(supabaseAdmin)
       .from("order_reviews")
       .select("photo_path, video_path")
       .eq("id", data.id)
       .maybeSingle();
+    let rowData = initialRow.data;
+    if (hasNewReviewColumnError(initialRow.error)) {
+      const fallback = await loose(supabaseAdmin)
+        .from("order_reviews")
+        .select("photo_path")
+        .eq("id", data.id)
+        .maybeSingle();
+      rowData = fallback.data;
+    }
+    const row = rowData as Pick<ReviewRow, "photo_path" | "video_path"> | null;
 
     const { error } = await supabaseAdmin.from("order_reviews").delete().eq("id", data.id);
     if (error) throw new Error("We couldn't remove this review. Please try again.");
