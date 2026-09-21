@@ -98,6 +98,19 @@ function ContactPage() {
         {info?.contactMessengerEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="Message on Facebook / Messenger" subtitle={info.messengerUrl ? facebookPageName : "Not configured yet"} href={info.messengerUrl ?? undefined} external /> : null}
         {info?.contactWhatsappEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={info.whatsappNumber || "Not configured yet"} href={whatsappDigits ? `https://wa.me/${whatsappDigits}` : undefined} external /> : null}
       </div>
+
+      <div className="flex flex-col">
+        <ContactRow
+          icon={<MapPin aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Location"
+          subtitle="Sholakia Road, Kishoreganj"
+        />
+        <ContactRow
+          icon={<Clock3 aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Opening Time"
+          subtitle="10:00 AM – 10:00 PM"
+        />
+      </div>
     </div>
   );
 }
