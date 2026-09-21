@@ -57,6 +57,7 @@ import { Route as AuthenticatedOwnerSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authenticated/owner.staff'
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
+import { Route as ApiPublicDiagInboxRouteImport } from './routes/api/public/diag-inbox'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
@@ -328,6 +329,11 @@ const AuthenticatedOwnerSuppliersRoute =
     path: '/suppliers',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const ApiPublicDiagInboxRoute = ApiPublicDiagInboxRouteImport.update({
+  id: '/api/public/diag-inbox',
+  path: '/api/public/diag-inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAccountReviewOrderIdRoute =
   AuthenticatedAccountReviewOrderIdRouteImport.update({
     id: '/account/review/$orderId',
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
+  '/api/public/diag-inbox': typeof ApiPublicDiagInboxRoute
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -443,6 +450,7 @@ export interface FileRoutesByTo {
   '/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
+  '/api/public/diag-inbox': typeof ApiPublicDiagInboxRoute
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -497,6 +505,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/staff': typeof AuthenticatedOwnerStaffRoute
   '/_authenticated/owner/staff-accounts': typeof AuthenticatedOwnerStaffAccountsRoute
   '/_authenticated/owner/suppliers': typeof AuthenticatedOwnerSuppliersRoute
+  '/api/public/diag-inbox': typeof ApiPublicDiagInboxRoute
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/_authenticated/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
@@ -551,6 +560,7 @@ export interface FileRouteTypes {
     | '/owner/staff'
     | '/owner/staff-accounts'
     | '/owner/suppliers'
+    | '/api/public/diag-inbox'
     | '/account/'
     | '/owner/'
     | '/account/review/$orderId'
@@ -602,6 +612,7 @@ export interface FileRouteTypes {
     | '/owner/staff'
     | '/owner/staff-accounts'
     | '/owner/suppliers'
+    | '/api/public/diag-inbox'
     | '/account'
     | '/owner'
     | '/account/review/$orderId'
@@ -655,6 +666,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/staff'
     | '/_authenticated/owner/staff-accounts'
     | '/_authenticated/owner/suppliers'
+    | '/api/public/diag-inbox'
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
     | '/_authenticated/account/review/$orderId'
@@ -676,6 +688,7 @@ export interface RootRouteChildren {
   OrderOrderIdRoute: typeof OrderOrderIdRoute
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   MenuIndexRoute: typeof MenuIndexRoute
+  ApiPublicDiagInboxRoute: typeof ApiPublicDiagInboxRoute
   ApiPublicAuthSmsHookRoute: typeof ApiPublicAuthSmsHookRoute
   ApiPublicNotificationsDispatchRoute: typeof ApiPublicNotificationsDispatchRoute
 }
@@ -1018,6 +1031,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerSuppliersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/api/public/diag-inbox': {
+      id: '/api/public/diag-inbox'
+      path: '/api/public/diag-inbox'
+      fullPath: '/api/public/diag-inbox'
+      preLoaderRoute: typeof ApiPublicDiagInboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/account/review/$orderId': {
       id: '/_authenticated/account/review/$orderId'
       path: '/account/review/$orderId'
@@ -1148,6 +1168,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrderOrderIdRoute: OrderOrderIdRoute,
   TrackOrderIdRoute: TrackOrderIdRoute,
   MenuIndexRoute: MenuIndexRoute,
+  ApiPublicDiagInboxRoute: ApiPublicDiagInboxRoute,
   ApiPublicAuthSmsHookRoute: ApiPublicAuthSmsHookRoute,
   ApiPublicNotificationsDispatchRoute: ApiPublicNotificationsDispatchRoute,
 }
