@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Facebook, Instagram, Phone } from "lucide-react";
+import { Facebook, Instagram, MapPin, Phone } from "lucide-react";
 
 import { ContactRow } from "@/routes/contact";
 import { getPublicRestaurantInfo } from "@/lib/restaurant.functions";
@@ -18,6 +18,8 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
   const facebookUrl = info?.facebookUrl ?? restaurant.facebookUrl;
   const facebookPageName = info?.facebookPageName?.trim() || "Facebook";
   const instagramUrl = info?.instagramUrl ?? restaurant.instagramUrl;
+  const googleMapsUrl = info?.googleMapsUrl ?? restaurant.googleMapsUrl;
+  const addressLine = info?.addressLine ?? restaurant.addressLine;
   const facebookEnabled = info ? info.contactFacebookEnabled : Boolean(facebookUrl);
 
   return (
@@ -58,6 +60,14 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
             external
           />
         ) : null}
+
+        <ContactRow
+          icon={<MapPin aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Location"
+          subtitle={addressLine ?? "Not configured yet"}
+          href={googleMapsUrl ?? undefined}
+          external
+        />
       </div>
     </section>
   );
