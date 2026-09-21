@@ -26,6 +26,8 @@ export const Route = createFileRoute("/api/public/diag-inbox")({
             out["linkError"] = link.error?.message ?? null;
           }
           const conv = await db.from("customer_conversations").select("id, customer_user_id");
+          out["settings"] = (await db.from("restaurant_settings").select("contact_inbox_enabled, contact_call_restaurant_enabled").limit(1).maybeSingle()).data;
+          out["roles"] = (await db.from("user_roles").select("user_id, role")).data;
           out["conversations"] = conv.data;
           const msgs = await db
             .from("customer_conversation_messages")
