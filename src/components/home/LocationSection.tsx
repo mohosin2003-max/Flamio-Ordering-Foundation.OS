@@ -33,11 +33,8 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
     .filter(Boolean)
     .join(" · ");
 
-  const hoursText = restaurant.openingHours
-    .map((h) => `${h.day}: ${h.opensAt && h.closesAt ? `${h.opensAt} – ${h.closesAt}` : "Closed"}`)
-    .join(" · ");
-
   return (
+
     <section
       aria-labelledby="location-heading"
       className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6"
