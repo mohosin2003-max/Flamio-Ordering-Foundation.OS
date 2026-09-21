@@ -37,7 +37,16 @@ type Mode = "login" | "signup";
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { isAuthenticated, loading } = useAuth();
+  const fetchAccess = useServerFn(getOwnerAccess);
+
+  /** Same-origin only: anything else is ignored so the link can't be used to send customers off-site. */
+  function safeRedirect(): string | null {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("redirect");
+    if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  }
   const { isAuthenticated, loading } = useAuth();
   const fetchAccess = useServerFn(getOwnerAccess);
 
