@@ -54,6 +54,9 @@ function ContactPage() {
   const whatsappDigits = info?.whatsappNumber?.replace(/\D/g, "") ?? "";
   const primaryWhatsappDigits = whatsappDigits || phoneDigits;
   const primaryWhatsappLabel = info?.whatsappNumber || info?.phone || "WhatsApp";
+  const callRestaurantEnabled = info ? info.contactCallRestaurantEnabled : Boolean(restaurant.phone);
+  const whatsappEnabled = info ? info.contactWhatsappEnabled : false;
+  const callOwnerEnabled = info?.contactCallOwnerEnabled === true;
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col px-4 py-6 pb-28 text-foreground sm:px-6 sm:py-8">
@@ -70,10 +73,9 @@ function ContactPage() {
       <div className="my-2 border-t border-border/40" />
 
       <div className="flex flex-col">
-        {info?.contactCallRestaurantEnabled && info.phone ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info.phone} href={`tel:${info.phone}`} /> : null}
-        {info?.contactWhatsappEnabled && primaryWhatsappDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappLabel} href={`https://wa.me/${primaryWhatsappDigits}`} external /> : null}
-        {info?.contactCallOwnerEnabled && info.ownerPhone ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info.ownerPhone} href={`tel:${info.ownerPhone}`} /> : null}
-        {info?.contactCallOwnerEnabled && ownerPhoneDigits ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="Owner WhatsApp" subtitle={info.ownerPhone ?? "WhatsApp"} href={`https://wa.me/${ownerPhoneDigits}`} external /> : null}
+        {callRestaurantEnabled ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info?.phone ?? "Not configured yet"} href={info?.phone ? `tel:${info.phone}` : undefined} /> : null}
+        {whatsappEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappDigits ? primaryWhatsappLabel : "Not configured yet"} href={primaryWhatsappDigits ? `https://wa.me/${primaryWhatsappDigits}` : undefined} external /> : null}
+        {callOwnerEnabled ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info?.ownerPhone ?? "Not configured yet"} href={ownerPhoneDigits ? `tel:${info?.ownerPhone}` : undefined} /> : null}
         {info?.contactInboxEnabled ? <ContactRow icon={<MessagesSquare aria-hidden="true" className="size-5 text-primary" />} title="Customer Message / Inbox" subtitle="Message the Flamio team" to="/account/inbox" /> : null}
         {info?.contactFacebookEnabled ? (
           <ContactRow
@@ -119,7 +121,8 @@ export function ContactRow({
     </div>
   );
 
-  const classes = "group flex w-full min-w-0 cursor-pointer border-b border-border/40 transition-smooth hover:bg-muted/30";
+  const hasAction = Boolean(href || to);
+  const classes = `group flex w-full min-w-0 border-b border-border/40 transition-smooth ${hasAction ? "cursor-pointer hover:bg-muted/30" : "cursor-default"}`;
 
   if (href) {
     return (

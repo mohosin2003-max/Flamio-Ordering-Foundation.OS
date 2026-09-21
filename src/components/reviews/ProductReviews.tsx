@@ -47,7 +47,7 @@ export function ProductReviews({ productId }: { productId: string }) {
           {photos.map((review) => (
             <li key={`photo-${review.id}`} className="shrink-0">
               <img
-                src={review.photoUrl!}
+                src={review.photoUrl ?? undefined}
                 alt={`Food photo shared by ${review.reviewerName}`}
                 loading="lazy"
                 className="size-28 rounded-2xl border border-border/70 object-cover sm:size-32"
