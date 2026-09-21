@@ -18,6 +18,8 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
   const facebookUrl = info?.facebookUrl ?? restaurant.facebookUrl;
   const facebookPageName = info?.facebookPageName?.trim() || "Facebook";
   const instagramUrl = info?.instagramUrl ?? restaurant.instagramUrl;
+  const googleMapsUrl = info?.googleMapsUrl ?? restaurant.googleMapsUrl;
+  const addressLine = info?.addressLine ?? restaurant.addressLine;
   const facebookEnabled = info ? info.contactFacebookEnabled : Boolean(facebookUrl);
 
   return (
