@@ -14,16 +14,12 @@ import type { Product } from "@/types/menu";
  * already loaded on the page.
  *
  * Kept deliberately compact (a single horizontal strip of small cards) so it
- * stays visually secondary to the Popular & Offers section, and it never shows
- * an item already displayed there.
+ * stays visually secondary to the primary menu.
  */
 export function RecommendedSection({
   products,
-  excludeIds,
 }: {
   products: Product[];
-  /** IDs already shown by the Featured section. */
-  excludeIds?: Set<string>;
 }) {
   const { user, loading } = useAuth();
   const fetchRecommendations = useServerFn(getRecommendations);
@@ -41,7 +37,7 @@ export function RecommendedSection({
   const seen = new Set<string>();
   const items: Product[] = [];
   for (const id of [...data.orderAgain, ...data.tryNew]) {
-    if (seen.has(id) || excludeIds?.has(id)) continue;
+    if (seen.has(id)) continue;
     const product = byId.get(id);
     if (!product) continue;
     seen.add(id);

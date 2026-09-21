@@ -99,6 +99,7 @@ export type PublicChallenge = {
 export type ChallengeWinnerCard = {
   id: string;
   challengeName: string;
+  challengeSlug: string;
   rewardName: string;
   displayName: string;
   avatarUrl: string | null;
