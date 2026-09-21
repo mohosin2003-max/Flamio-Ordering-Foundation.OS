@@ -102,7 +102,7 @@ function ContactPage() {
   );
 }
 
-function ContactRow({
+export function ContactRow({
   icon,
   title,
   subtitle,
