@@ -1,9 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-
 import { ProductCard } from "@/components/menu/ProductCard";
-import { useAuth } from "@/hooks/use-auth";
-import { getRecommendations } from "@/lib/recommendations.functions";
+import type { Recommendations } from "@/lib/recommendations.functions";
 import type { Product } from "@/types/menu";
 
 /**
@@ -11,25 +7,28 @@ import type { Product } from "@/types/menu";
  * every price, option and availability flag comes from the live menu list
  * already loaded on the page.
  */
-export function RecommendedSection({ products }: { products: Product[] }) {
-  const { user, loading } = useAuth();
-  const fetchRecommendations = useServerFn(getRecommendations);
+export function RecommendedSection({
+  products,
+  recommendations,
+  excludedIds,
+}: {
+  products: Product[];
+  recommendations: Recommendations | undefined;
+  excludedIds: Set<string>;
+}) {
+  if (!recommendations?.enabled) return null;
 
-  const { data } = useQuery({
-    queryKey: ["recommendations", user?.id ?? "guest"],
-    queryFn: () => fetchRecommendations(),
-    enabled: !loading,
-    staleTime: 60 * 1000,
-  });
-
-  if (!data?.enabled) return null;
-
-  const byId = new Map(products.filter((p) => p.isAvailable).map((p) => [p.id, p] as const));
+  const byId = new Map(
+    products
+      .filter((p) => p.isAvailable && !excludedIds.has(p.id))
+      .map((p) => [p.id, p] as const),
+  );
   const pick = (ids: string[]) =>
     ids.map((id) => byId.get(id)).filter((p): p is Product => Boolean(p));
 
-  const orderAgain = pick(data.orderAgain);
-  const tryNew = pick(data.tryNew);
+  const orderAgain = pick(recommendations.orderAgain);
+  const orderAgainIds = new Set(orderAgain.map((product) => product.id));
+  const tryNew = pick(recommendations.tryNew).filter((product) => !orderAgainIds.has(product.id));
 
   if (orderAgain.length === 0 && tryNew.length === 0) return null;
 
@@ -42,29 +41,35 @@ export function RecommendedSection({ products }: { products: Product[] }) {
         Recommended for You
       </h2>
 
-      {orderAgain.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm font-semibold text-muted-foreground">Order again</p>
-          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {orderAgain.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+      <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {orderAgain.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground">Order again</p>
+            <div className="mt-3 flex gap-3">
+              {orderAgain.map((product) => (
+                <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {tryNew.length > 0 && (
-        <div className="mt-6">
-          <p className="text-sm font-semibold text-muted-foreground">
-            {orderAgain.length > 0 ? "Try something new" : "Popular picks for you"}
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {tryNew.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {tryNew.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground">
+              {orderAgain.length > 0 ? "Try something new" : "Popular picks for you"}
+            </p>
+            <div className="mt-3 flex gap-3">
+              {tryNew.map((product) => (
+                <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
