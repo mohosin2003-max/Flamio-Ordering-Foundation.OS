@@ -60,6 +60,14 @@ export function LocationSection({ restaurant }: { restaurant: Restaurant }) {
             external
           />
         ) : null}
+
+        <ContactRow
+          icon={<MapPin aria-hidden="true" className="size-5 shrink-0 text-primary" />}
+          title="Location"
+          subtitle={addressLine ?? "Not configured yet"}
+          href={googleMapsUrl ?? undefined}
+          external
+        />
       </div>
     </section>
   );
