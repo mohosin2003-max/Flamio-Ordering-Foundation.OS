@@ -74,7 +74,7 @@ function ContactPage() {
 
       <div className="flex flex-col">
         {callRestaurantEnabled ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info?.phone ?? "Not configured yet"} href={info?.phone ? `tel:${info.phone}` : undefined} /> : null}
-        {whatsappEnabled ? <ContactRow icon={<MessageCircle aria-hidden="true" className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappDigits ? primaryWhatsappLabel : "Not configured yet"} href={primaryWhatsappDigits ? `https://wa.me/${primaryWhatsappDigits}` : undefined} external /> : null}
+        {whatsappEnabled ? <ContactRow icon={<WhatsAppIcon className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappDigits ? primaryWhatsappLabel : "Not configured yet"} href={primaryWhatsappDigits ? `https://wa.me/${primaryWhatsappDigits}` : undefined} external /> : null}
         {callOwnerEnabled ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info?.ownerPhone ?? "Not configured yet"} href={ownerPhoneDigits ? `tel:${info?.ownerPhone}` : undefined} /> : null}
         {info?.contactInboxEnabled ? <ContactRow icon={<MessagesSquare aria-hidden="true" className="size-5 text-primary" />} title="Customer Message / Inbox" subtitle="Message the Flamio team" to="/account/inbox" /> : null}
         {info?.contactFacebookEnabled ? (
