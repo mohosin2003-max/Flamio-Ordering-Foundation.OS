@@ -3,6 +3,8 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { z } from "zod";
 
+import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
+import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
