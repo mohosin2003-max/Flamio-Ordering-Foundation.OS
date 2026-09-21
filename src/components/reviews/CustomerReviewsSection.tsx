@@ -87,7 +87,7 @@ export function CustomerReviewsSection() {
   }, [photoPreview, videoPreview]);
 
   const profileName = profile?.fullName?.trim() || null;
-  const displayName = isAuthenticated ? profileName ?? "Flamio customer" : guestName.trim();
+  const displayName = profileName ?? "Flamio customer";
   const reviewsEnabled = settings.data?.reviewsEnabled !== false;
   const photosAllowed = settings.data?.photosEnabled !== false;
   const mediaAllowed = isAuthenticated && photosAllowed;
