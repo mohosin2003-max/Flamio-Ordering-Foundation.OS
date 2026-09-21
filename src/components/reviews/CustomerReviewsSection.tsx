@@ -57,7 +57,6 @@ export function CustomerReviewsSection() {
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
-  const [guestName, setGuestName] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [photoPath, setPhotoPath] = useState<string | null>(null);
@@ -139,12 +138,9 @@ export function CustomerReviewsSection() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (saving) return;
+    if (!isAuthenticated) return;
     if (rating < 1) {
       toast.error("Please choose a star rating.");
-      return;
-    }
-    if (!isAuthenticated && guestName.trim().length < 2) {
-      toast.error("Please add your name.");
       return;
     }
     if (comment.trim().length < 2) {
@@ -156,7 +152,6 @@ export function CustomerReviewsSection() {
     try {
       await saveReview({
         data: {
-          guestName: isAuthenticated ? profileName : guestName.trim(),
           rating,
           comment: comment.trim(),
           photoPath: mediaAllowed ? photoPath : null,
@@ -166,7 +161,6 @@ export function CustomerReviewsSection() {
       toast.success("Thanks! Your review is waiting for approval.");
       setRating(0);
       setComment("");
-      setGuestName("");
       setPhotoPath(null);
       setPhotoPreview(null);
       setVideoPath(null);
