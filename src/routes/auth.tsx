@@ -47,8 +47,6 @@ function AuthPage() {
     if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
     return raw;
   }
-  const { isAuthenticated, loading } = useAuth();
-  const fetchAccess = useServerFn(getOwnerAccess);
 
   /**
    * Role-based landing: owners and staff go to the dashboard, customers keep
@@ -65,12 +63,13 @@ function AuthPage() {
     } catch {
       // fall through to the customer landing
     }
-    if (redirect) {
-      window.location.replace(redirect);
+    const back = safeRedirect();
+    if (back) {
+      window.location.replace(back);
       return;
     }
     await navigate({ to: "/account/orders", replace: true });
-  }, [fetchAccess, navigate, redirect]);
+  }, [fetchAccess, navigate]);
 
 
   const [mode, setMode] = useState<Mode>("login");
