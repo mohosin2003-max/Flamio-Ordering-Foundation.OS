@@ -39,7 +39,7 @@ function initials(name: string): string {
     .join("") || "F";
 }
 
-export function CustomerReviewsSection() {
+export function CustomerReviewsSection({ signInRedirectTo = "/#write-review" }: { signInRedirectTo?: string }) {
   const queryClient = useQueryClient();
   const fetchReviews = useServerFn(listPublicReviews);
   const fetchSettings = useServerFn(getReviewSettings);
