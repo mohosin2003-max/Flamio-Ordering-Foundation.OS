@@ -53,7 +53,6 @@ function ContactPage() {
   const ownerPhoneDigits = info?.ownerPhone?.replace(/\D/g, "") ?? "";
   const whatsappDigits = info?.whatsappNumber?.replace(/\D/g, "") ?? "";
   const primaryWhatsappDigits = whatsappDigits || phoneDigits;
-  const primaryWhatsappLabel = info?.whatsappNumber || info?.phone || "WhatsApp";
   const callRestaurantEnabled = info ? info.contactCallRestaurantEnabled : Boolean(restaurant.phone);
   const callOwnerEnabled = info?.contactCallOwnerEnabled === true;
 
@@ -73,7 +72,7 @@ function ContactPage() {
 
       <div className="flex flex-col">
         {callRestaurantEnabled ? <ContactRow icon={<Phone aria-hidden="true" className="size-5 text-primary" />} title="Call Restaurant" subtitle={info?.phone ?? "Not configured yet"} href={info?.phone ? `tel:${info.phone}` : undefined} /> : null}
-        {primaryWhatsappDigits ? <ContactRow icon={<WhatsAppIcon className="size-5 text-primary" />} title="WhatsApp" subtitle={primaryWhatsappLabel} href={`https://wa.me/${primaryWhatsappDigits}`} external /> : null}
+        {primaryWhatsappDigits ? <ContactRow icon={<WhatsAppIcon className="size-5 text-primary" />} title="WhatsApp" subtitle="" href={`https://wa.me/${primaryWhatsappDigits}`} external /> : null}
         {callOwnerEnabled ? <ContactRow icon={<UserRound aria-hidden="true" className="size-5 text-primary" />} title="Call Owner" subtitle={info?.ownerPhone ?? "Not configured yet"} href={ownerPhoneDigits ? `tel:${info?.ownerPhone}` : undefined} /> : null}
         {info?.contactInboxEnabled ? <ContactRow icon={<MessagesSquare aria-hidden="true" className="size-5 text-primary" />} title="Customer Message / Inbox" subtitle="Message the Flamio team" to="/account/inbox" /> : null}
         {info?.contactFacebookEnabled ? (
@@ -145,8 +144,7 @@ export function ContactRow({
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <path d="M12 2C6.48 2 2 6.48 2 12c0 2.2.7 4.2 1.9 5.8L2 22l4.2-1.9c1.5 1 3.3 1.5 5.1 1.5 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.7 0-3.3-.5-4.7-1.4l-.3-.2-2.5.8.8-2.5-.2-.3C3.9 14.8 3.5 13.4 3.5 12c0-4.7 3.8-8.5 8.5-8.5s8.5 3.8 8.5 8.5S16.7 20 12 20z" />
-      <path d="M15.7 7.2c-.4-.1-.8-.2-1.2-.1-2.1.1-4 1.5-4.8 3.6-.4 1.1-.4 2.4.1 3.4.1.2 0 .4-.2.5l-.8.3c-.2.1-.3.3-.2.5.1.2.3.2.5.2l.8-.3c.4-.2.7-.6.6-1-.2-.7-.1-1.4.3-2 .5-1 1.6-1.6 2.7-1.4.2 0 .3-.2.3-.3 0-.2-.2-.4-.3-.4-.1 0-.2.1-.3.1z" />
+      <path d="M12.036 2C6.462 2 1.93 6.532 1.93 12.107c0 1.876.537 3.66 1.502 5.17L2 22l5.018-1.35a9.948 9.948 0 005.018 1.35c5.575 0 10.107-4.532 10.107-10.107S17.611 2 12.036 2Zm5.88 14.46c-.24.675-1.35 1.238-1.863 1.318-.51.08-1.01-.188-1.514-.388-.337-.13-2.078-1.02-2.428-1.188-.35-.17-.607-.262-.862.27-.255.532-.982 1.71-1.213 2.06-.23.352-.458.397-.862.27-.405-.127-1.748-.645-3.34-2.063-1.23-1.095-2.063-2.448-2.303-2.858-.24-.412-.022-.638.18-.855.195-.195.42-.502.63-.75.21-.247.285-.42.42-.698.135-.277.06-.525-.045-.735-.105-.21-.945-2.295-1.298-3.15-.345-.832-.698-.72-.952-.735-.24-.007-.517-.01-.795-.01-.278 0-.735.098-1.125.51-.39.412-1.49 1.447-1.49 3.548 0 2.1 1.53 4.125 1.74 4.403.21.277 3.008 4.59 7.298 6.443 1.02.44 1.815.697 2.438.9 1.027.33 1.958.285 2.685.177.817-.12 2.52-1.028 2.872-2.04.352-1.013.352-1.883.247-2.047-.105-.165-.39-.255-.82-.45Z" />
     </svg>
   );
 }
