@@ -3,6 +3,8 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { z } from "zod";
 
+import { FeaturedSection, featuredIds } from "@/components/home/FeaturedSection";
+import { RecommendedSection } from "@/components/home/RecommendedSection";
 import { ProductCard } from "@/components/menu/ProductCard";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
@@ -49,6 +51,12 @@ function MenuPage() {
 
   const activeCategory = menu.categories.find((c) => c.slug === category) ?? null;
   const visibleCategories = activeCategory ? [activeCategory] : menu.categories;
+
+  // Owner-selected Popular / Offer items are shown once in the Featured area at
+  // the top of the full menu, so they are not repeated in the category lists.
+  // While searching or filtering a category, the plain full list is kept.
+  const showFeatured = !activeCategory && !query;
+  const featuredSet = showFeatured ? new Set(featuredIds(menu.products)) : new Set<string>();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
@@ -117,6 +125,14 @@ function MenuPage() {
         </ul>
       </nav>
 
+      {showFeatured ? (
+        <div className="-mx-4 sm:-mx-6">
+          <FeaturedSection products={menu.products} />
+          <RecommendedSection products={menu.products} excludeIds={featuredSet} />
+        </div>
+      ) : null}
+
+
       {query && visibleCategories.every((c) => menu.products.filter((p) => p.categoryId === c.id && matches(p)).length === 0) ? (
         <div className="mt-8">
           <EmptyState
@@ -143,7 +159,10 @@ function MenuPage() {
       ) : (
         <div className="mt-8 space-y-12">
           {visibleCategories.map((c) => {
-            const items = menu.products.filter((p) => p.categoryId === c.id && matches(p));
+            const items = menu.products.filter(
+              (p) => p.categoryId === c.id && matches(p) && !featuredSet.has(p.id),
+            );
+            if (showFeatured && items.length === 0) return null;
             if (query && items.length === 0) return null;
             return (
               <section key={c.id} aria-labelledby={`cat-${c.slug}`} className="scroll-mt-32">
