@@ -40,9 +40,18 @@ function AuthPage() {
   const { isAuthenticated, loading } = useAuth();
   const fetchAccess = useServerFn(getOwnerAccess);
 
+  /** Same-origin only: anything else is ignored so the link can't be used to send customers off-site. */
+  function safeRedirect(): string | null {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("redirect");
+    if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  }
+
   /**
    * Role-based landing: owners and staff go to the dashboard, customers keep
    * the existing customer landing. Access itself is decided on the server.
+   * A validated same-origin `redirect` (e.g. the review section) wins for customers.
    */
   const goToLanding = useCallback(async () => {
     try {
@@ -54,8 +63,14 @@ function AuthPage() {
     } catch {
       // fall through to the customer landing
     }
+    const back = safeRedirect();
+    if (back) {
+      window.location.replace(back);
+      return;
+    }
     await navigate({ to: "/account/orders", replace: true });
   }, [fetchAccess, navigate]);
+
 
   const [mode, setMode] = useState<Mode>("login");
   const [phone, setPhone] = useState("");

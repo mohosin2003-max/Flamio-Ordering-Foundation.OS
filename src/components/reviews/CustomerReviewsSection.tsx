@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, CheckCircle2, Loader2, UserRound, Video, X } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, LogIn, UserRound, Video, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/states";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +56,6 @@ export function CustomerReviewsSection() {
   const photoRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
 
-  const [guestName, setGuestName] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [photoPath, setPhotoPath] = useState<string | null>(null);
@@ -87,7 +85,7 @@ export function CustomerReviewsSection() {
   }, [photoPreview, videoPreview]);
 
   const profileName = profile?.fullName?.trim() || null;
-  const displayName = isAuthenticated ? profileName ?? "Flamio customer" : guestName.trim();
+  const displayName = profileName ?? "Flamio customer";
   const reviewsEnabled = settings.data?.reviewsEnabled !== false;
   const photosAllowed = settings.data?.photosEnabled !== false;
   const mediaAllowed = isAuthenticated && photosAllowed;
@@ -139,12 +137,9 @@ export function CustomerReviewsSection() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (saving) return;
+    if (!isAuthenticated) return;
     if (rating < 1) {
       toast.error("Please choose a star rating.");
-      return;
-    }
-    if (!isAuthenticated && guestName.trim().length < 2) {
-      toast.error("Please add your name.");
       return;
     }
     if (comment.trim().length < 2) {
@@ -156,7 +151,6 @@ export function CustomerReviewsSection() {
     try {
       await saveReview({
         data: {
-          guestName: isAuthenticated ? profileName : guestName.trim(),
           rating,
           comment: comment.trim(),
           photoPath: mediaAllowed ? photoPath : null,
@@ -166,7 +160,6 @@ export function CustomerReviewsSection() {
       toast.success("Thanks! Your review is waiting for approval.");
       setRating(0);
       setComment("");
-      setGuestName("");
       setPhotoPath(null);
       setPhotoPreview(null);
       setVideoPath(null);
@@ -209,33 +202,41 @@ export function CustomerReviewsSection() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <Card id="write-review" className="scroll-mt-24 rounded-2xl shadow-card">
           <CardContent className="p-4 sm:p-5">
+            {loading ? (
+              <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading…
+              </div>
+            ) : !isAuthenticated ? (
+              <div className="space-y-4 py-2 text-center">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary">
+                  <LogIn aria-hidden="true" className="size-5 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-semibold">Sign in to write a review</p>
+                  <p className="text-sm text-muted-foreground">
+                    Reviews come from verified Flamio customers. Sign in with your phone number and you will come straight
+                    back to this review section.
+                  </p>
+                </div>
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <a href="/auth?redirect=%2F%23write-review">Sign in to continue</a>
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="flex items-center gap-3">
                 <Avatar className="size-12 border border-border/70">
-                  {profile?.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName || "Customer"} /> : null}
+                  {profile?.avatarUrl ? <AvatarImage src={profile.avatarUrl} alt={displayName} /> : null}
                   <AvatarFallback>
                     {displayName ? initials(displayName) : <UserRound aria-hidden="true" className="size-5" />}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold">{displayName || "Your Flamio experience"}</p>
+                  <p className="text-sm font-semibold">{displayName}</p>
                   <p className="text-xs text-muted-foreground">Reviews appear after approval.</p>
                 </div>
               </div>
 
-              {!loading && !isAuthenticated ? (
-                <div className="space-y-2">
-                  <Label htmlFor="reviewer-name">Customer name</Label>
-                  <Input
-                    id="reviewer-name"
-                    value={guestName}
-                    onChange={(event) => setGuestName(event.target.value)}
-                    maxLength={80}
-                    placeholder="Your name"
-                    disabled={saving}
-                  />
-                </div>
-              ) : null}
 
               <div className="space-y-2">
                 <Label>Your rating</Label>
@@ -307,6 +308,7 @@ export function CustomerReviewsSection() {
                 Submit Review
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
