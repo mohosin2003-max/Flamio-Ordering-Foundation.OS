@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Camera, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Video, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -33,10 +33,16 @@ export const Route = createFileRoute("/_authenticated/account/review/$orderId")(
   component: ReviewOrderPage,
 });
 
-const EXTENSIONS: Record<string, string> = {
+const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+};
+
+const VIDEO_EXTENSIONS: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
 };
 
 function ReviewOrderPage() {
@@ -46,13 +52,16 @@ function ReviewOrderPage() {
   const fetchSettings = useServerFn(getReviewSettings);
   const save = useServerFn(submitReview);
 
-  const fileRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [productId, setProductId] = useState<string | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [videoPath, setVideoPath] = useState<string | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<"photo" | "video" | null>(null);
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -78,11 +87,21 @@ function ReviewOrderPage() {
       setProductId(existing.productId);
       setPhotoPath(existing.photoPath);
       setPhotoPreview(existing.photoUrl);
+      setVideoPath(existing.videoPath);
+      setVideoPreview(existing.videoUrl);
     } else if (order && order.items.length === 1) {
-      setProductId(order.items[0]!.productId);
+      const onlyItem = order.items[0];
+      if (onlyItem) setProductId(onlyItem.productId);
     }
     setHydrated(true);
   }, [reviewQuery.data, existing, order, hydrated]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+      if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
+    };
+  }, [photoPreview, videoPreview]);
 
   if (reviewQuery.isLoading) {
     return (
@@ -139,19 +158,19 @@ function ReviewOrderPage() {
 
   const photosAllowed = settingsQuery.data?.photosEnabled !== false;
 
-  async function handlePhoto(file: File | undefined) {
+  async function handleMedia(kind: "photo" | "video", file: File | undefined) {
     if (!file || uploading) return;
-    const extension = EXTENSIONS[file.type];
+    const extension = kind === "photo" ? IMAGE_EXTENSIONS[file.type] : VIDEO_EXTENSIONS[file.type];
     if (!extension) {
-      toast.error("Choose a JPG, PNG, or WebP image.");
+      toast.error(kind === "photo" ? "Choose a JPG, PNG, or WebP image." : "Choose an MP4, WebM, or MOV video.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Choose an image smaller than 5 MB.");
+      toast.error(kind === "photo" ? "Choose an image smaller than 5 MB." : "Choose a video smaller than 5 MB.");
       return;
     }
 
-    setUploading(true);
+    setUploading(kind);
     try {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
@@ -161,14 +180,23 @@ function ReviewOrderPage() {
         .from("review-photos")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw error;
-      setPhotoPath(path);
-      setPhotoPreview(URL.createObjectURL(file));
-      toast.success("Photo added");
+      const preview = URL.createObjectURL(file);
+      if (kind === "photo") {
+        if (photoPreview?.startsWith("blob:")) URL.revokeObjectURL(photoPreview);
+        setPhotoPath(path);
+        setPhotoPreview(preview);
+      } else {
+        if (videoPreview?.startsWith("blob:")) URL.revokeObjectURL(videoPreview);
+        setVideoPath(path);
+        setVideoPreview(preview);
+      }
+      toast.success(kind === "photo" ? "Photo added" : "Video added");
     } catch {
-      toast.error("We couldn't add that photo. Please try again.");
+      toast.error(kind === "photo" ? "We couldn't add that photo. Please try again." : "We couldn't add that video. Please try again.");
     } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+      setUploading(null);
+      if (photoRef.current) photoRef.current.value = "";
+      if (videoRef.current) videoRef.current.value = "";
     }
   }
 
@@ -188,6 +216,7 @@ function ReviewOrderPage() {
           rating,
           comment: comment.trim().length > 0 ? comment.trim() : null,
           photoPath: photosAllowed ? photoPath : null,
+          videoPath: photosAllowed ? videoPath : null,
         },
       });
       toast.success("Thanks for your feedback! ❤️");
@@ -259,53 +288,64 @@ function ReviewOrderPage() {
 
             {photosAllowed && (
               <div className="space-y-2">
-                <Label>Food photo (optional)</Label>
-                <div className="flex items-center gap-3">
+                <Label>Food photo or video (optional)</Label>
+                <div className="flex flex-wrap items-center gap-3">
                   {photoPreview ? (
-                    <img
-                      src={photoPreview}
-                      alt="Your review photo"
-                      className="size-20 rounded-2xl border border-border/70 object-cover"
-                    />
+                    <MediaPreview onRemove={() => { setPhotoPath(null); setPhotoPreview(null); }} label="Remove photo">
+                      <img src={photoPreview} alt="Your review photo" className="size-full object-cover" />
+                    </MediaPreview>
+                  ) : null}
+                  {videoPreview ? (
+                    <MediaPreview onRemove={() => { setVideoPath(null); setVideoPreview(null); }} label="Remove video">
+                      <video src={videoPreview} controls className="size-full object-cover" />
+                    </MediaPreview>
                   ) : null}
                   <input
-                    ref={fileRef}
+                    ref={photoRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
-                    onChange={(e) => void handlePhoto(e.target.files?.[0])}
+                    onChange={(e) => void handleMedia("photo", e.target.files?.[0])}
+                  />
+                  <input
+                    ref={videoRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    onChange={(e) => void handleMedia("video", e.target.files?.[0])}
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading !== null}
+                    onClick={() => photoRef.current?.click()}
                   >
-                    {uploading ? (
+                    {uploading === "photo" ? (
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                     ) : (
                       <Camera aria-hidden="true" className="size-4" />
                     )}
                     {photoPreview ? "Change photo" : "Add a photo"}
                   </Button>
-                  {photoPreview ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => {
-                        setPhotoPath(null);
-                        setPhotoPreview(null);
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploading !== null}
+                    onClick={() => videoRef.current?.click()}
+                  >
+                    {uploading === "video" ? (
+                      <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                    ) : (
+                      <Video aria-hidden="true" className="size-4" />
+                    )}
+                    {videoPreview ? "Change video" : "Add a video"}
+                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to 5 MB.</p>
+                <p className="text-xs text-muted-foreground">JPG, PNG, WebP, MP4, WebM or MOV, up to 5 MB.</p>
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" disabled={saving}>
+            <Button type="submit" size="lg" className="w-full" disabled={saving || uploading !== null}>
               {saving ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
               {existing ? "Update my review" : "Send my review"}
             </Button>
@@ -318,5 +358,23 @@ function ReviewOrderPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MediaPreview({ children, label, onRemove }: { children: React.ReactNode; label: string; onRemove: () => void }) {
+  return (
+    <span className="relative block size-20 overflow-hidden rounded-2xl border border-border/70 bg-secondary">
+      {children}
+      <Button
+        type="button"
+        size="icon"
+        variant="secondary"
+        aria-label={label}
+        className="absolute right-1 top-1 size-7"
+        onClick={onRemove}
+      >
+        <X aria-hidden="true" className="size-3" />
+      </Button>
+    </span>
   );
 }
