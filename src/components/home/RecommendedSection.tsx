@@ -42,33 +42,33 @@ export function RecommendedSection({
       </h2>
 
       <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {orderAgain.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm font-semibold text-muted-foreground">Order again</p>
-          <div className="mt-3 flex gap-3">
-            {orderAgain.map((product) => (
-              <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
-                <ProductCard product={product} />
-              </div>
-            ))}
+        {orderAgain.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground">Order again</p>
+            <div className="mt-3 flex gap-3">
+              {orderAgain.map((product) => (
+                <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {tryNew.length > 0 && (
-        <div className={orderAgain.length > 0 ? "mt-4" : "mt-4"}>
-          <p className="text-sm font-semibold text-muted-foreground">
-            {orderAgain.length > 0 ? "Try something new" : "Popular picks for you"}
-          </p>
-          <div className="mt-3 flex gap-3">
-            {tryNew.map((product) => (
-              <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
-                <ProductCard product={product} />
-              </div>
-            ))}
+        {tryNew.length > 0 && (
+          <div>
+            <p className="text-sm font-semibold text-muted-foreground">
+              {orderAgain.length > 0 ? "Try something new" : "Popular picks for you"}
+            </p>
+            <div className="mt-3 flex gap-3">
+              {tryNew.map((product) => (
+                <div key={product.id} className="w-44 shrink-0 snap-start sm:w-48">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </section>
   );

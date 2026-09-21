@@ -128,16 +128,17 @@ function HomePage() {
               See offers
             </Link>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {featuredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                displayBadges={[
-                  ...(product.isFeatured ? ["offer"] : []),
-                  ...(product.isPopular ? ["popular"] : []),
-                ]}
-              />
+              <div key={product.id} className="w-44 shrink-0 snap-start sm:w-52">
+                <ProductCard
+                  product={product}
+                  displayBadges={[
+                    ...(product.isFeatured ? ["offer"] : []),
+                    ...(product.isPopular ? ["popular"] : []),
+                  ]}
+                />
+              </div>
             ))}
           </div>
         </section>
