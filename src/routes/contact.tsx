@@ -55,7 +55,6 @@ function ContactPage() {
   const primaryWhatsappDigits = whatsappDigits || phoneDigits;
   const primaryWhatsappLabel = info?.whatsappNumber || info?.phone || "WhatsApp";
   const callRestaurantEnabled = info ? info.contactCallRestaurantEnabled : Boolean(restaurant.phone);
-  const whatsappEnabled = info ? info.contactWhatsappEnabled : false;
   const callOwnerEnabled = info?.contactCallOwnerEnabled === true;
 
   return (
