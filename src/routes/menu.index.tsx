@@ -37,6 +37,7 @@ export const Route = createFileRoute("/menu/")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());
+    context.queryClient.ensureQueryData(restaurantQueryOptions());
   },
   component: MenuPage,
 });
