@@ -1,7 +1,7 @@
 import { ChevronRight, Clock, Facebook, Instagram, MapPin, Phone } from "lucide-react";
 
-
 import { ContactRow } from "@/routes/contact";
+
 import type { Restaurant } from "@/types/menu";
 
 function PendingValue({ children }: { children: string }) {
