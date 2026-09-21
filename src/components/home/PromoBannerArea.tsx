@@ -12,7 +12,7 @@ export function PromoBannerArea({ banners }: { banners: PromoBanner[] }) {
       <div className="grid gap-4 md:grid-cols-2">
         {banners.map((banner) => {
           const content = banner.desktopImageUrl ? (
-            <picture className="block aspect-[16/7] w-full sm:aspect-[16/5]">
+            <picture className="block aspect-[4/3] w-full sm:aspect-[16/6]">
               {banner.mobileImageUrl ? <source media="(max-width: 639px)" srcSet={banner.mobileImageUrl} /> : null}
               <img src={banner.desktopImageUrl} alt="Promotional banner" loading="lazy" className="size-full object-cover" />
             </picture>
