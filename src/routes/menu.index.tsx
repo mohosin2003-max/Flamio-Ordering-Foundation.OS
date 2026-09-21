@@ -46,6 +46,7 @@ function MenuPage() {
   const { category, q } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: menu } = useSuspenseQuery(menuQueryOptions());
+  const { data: info } = useSuspenseQuery(restaurantQueryOptions());
   const query = (q ?? "").trim().toLowerCase();
   const matches = (p: { name: string; description: string | null }) =>
     !query ||
