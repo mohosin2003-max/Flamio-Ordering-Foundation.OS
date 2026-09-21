@@ -1,5 +1,5 @@
 import { ChevronRight, Clock, Facebook, Instagram, MapPin, Phone } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+
 
 import { ContactRow } from "@/routes/contact";
 import type { Restaurant } from "@/types/menu";
