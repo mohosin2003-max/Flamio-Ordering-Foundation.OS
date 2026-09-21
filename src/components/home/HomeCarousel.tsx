@@ -83,7 +83,7 @@ export function HomeCarousel({
           const body = (
             <div className="relative w-full overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
               {slide.imageOnly && slide.image ? (
-                <picture className="block aspect-[16/7] w-full sm:aspect-[16/5]">
+                <picture className="block aspect-[4/3] w-full sm:aspect-[16/6]">
                   {slide.mobileImage ? <source media="(max-width: 639px)" srcSet={slide.mobileImage} /> : null}
                   <img src={slide.image} alt="Promotional banner" className="size-full object-cover" />
                 </picture>

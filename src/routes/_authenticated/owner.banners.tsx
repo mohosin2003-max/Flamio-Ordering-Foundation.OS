@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ImagePlus, Loader2, Pencil, Trash2, Upload } from "lucide-react";
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ownerDeletePromoBanner,
@@ -27,6 +28,7 @@ import {
   ownerSavePromoBanner,
 } from "@/lib/banners.functions";
 import { menuQueryOptions } from "@/lib/menu-repository";
+import { cn } from "@/lib/utils";
 import type { PromoBanner } from "@/types/menu";
 
 export const Route = createFileRoute("/_authenticated/owner/banners")({
@@ -45,6 +47,8 @@ export const Route = createFileRoute("/_authenticated/owner/banners")({
 });
 
 type Destination = "none" | "menu" | "offers" | "category" | "product" | "custom";
+type BannerKind = "desktop" | "mobile";
+type CropPosition = "center" | "left" | "right" | "top" | "bottom";
 
 type FormState = {
   id: string | null;
@@ -56,6 +60,15 @@ type FormState = {
   target: string;
   sortOrder: string;
   isActive: boolean;
+};
+
+type BannerDraft = {
+  sourceFile: File;
+  uploadFile: File;
+  previewUrl: string;
+  width: number;
+  height: number;
+  sourceRatioLabel: string;
 };
 
 const emptyForm = (): FormState => ({
@@ -110,10 +123,121 @@ function clickHref(form: FormState): string | null {
 }
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const POSITION_OPTIONS: Array<{ value: CropPosition; label: string }> = [
+  { value: "center", label: "Center" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+];
+const BANNER_TARGETS = {
+  desktop: { width: 1600, height: 600, ratioLabel: "16:6" },
+  mobile: { width: 1200, height: 900, ratioLabel: "4:3" },
+} satisfies Record<BannerKind, { width: number; height: number; ratioLabel: string }>;
 
-async function uploadBanner(file: File, kind: "desktop" | "mobile") {
+function positionClass(position: CropPosition) {
+  if (position === "left") return "object-left";
+  if (position === "right") return "object-right";
+  if (position === "top") return "object-top";
+  if (position === "bottom") return "object-bottom";
+  return "object-center";
+}
+
+function validateBannerFile(file: File) {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) throw new Error("Choose a JPG, PNG or WebP image.");
   if (file.size > 8 * 1024 * 1024) throw new Error("Banner images must be 8 MB or smaller.");
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+function ratioLabel(width: number, height: number) {
+  const divisor = gcd(width, height);
+  return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("The image couldn't be read. Please choose another image."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("The image couldn't be optimized. Please try another image."));
+      },
+      "image/webp",
+      0.92,
+    );
+  });
+}
+
+async function prepareBannerDraft(
+  sourceFile: File,
+  kind: BannerKind,
+  position: CropPosition,
+): Promise<BannerDraft> {
+  validateBannerFile(sourceFile);
+  const target = BANNER_TARGETS[kind];
+  const image = await loadImage(sourceFile);
+  const targetRatio = target.width / target.height;
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  let sx = 0;
+  let sy = 0;
+  let sw = image.naturalWidth;
+  let sh = image.naturalHeight;
+
+  if (sourceRatio > targetRatio) {
+    sw = image.naturalHeight * targetRatio;
+    if (position === "left") sx = 0;
+    else if (position === "right") sx = image.naturalWidth - sw;
+    else sx = (image.naturalWidth - sw) / 2;
+  } else {
+    sh = image.naturalWidth / targetRatio;
+    if (position === "top") sy = 0;
+    else if (position === "bottom") sy = image.naturalHeight - sh;
+    else sy = (image.naturalHeight - sh) / 2;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = target.width;
+  canvas.height = target.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("The image couldn't be optimized. Please try another image.");
+  context.drawImage(image, sx, sy, sw, sh, 0, 0, target.width, target.height);
+  const blob = await canvasToBlob(canvas);
+  const uploadFile = new File([blob], `${kind}-banner.webp`, {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
+  validateBannerFile(uploadFile);
+
+  return {
+    sourceFile,
+    uploadFile,
+    previewUrl: URL.createObjectURL(uploadFile),
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+    sourceRatioLabel: ratioLabel(image.naturalWidth, image.naturalHeight),
+  };
+}
+
+async function uploadBanner(file: File, kind: BannerKind) {
+  validateBannerFile(file);
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const path = `${crypto.randomUUID()}/${kind}.${extension}`;
   const { error } = await supabase.storage.from("banner-images").upload(path, file, {
@@ -130,31 +254,28 @@ function OwnerBanners() {
   const remove = useServerFn(ownerDeletePromoBanner);
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [desktopFile, setDesktopFile] = useState<File | null>(null);
-  const [mobileFile, setMobileFile] = useState<File | null>(null);
+  const [desktopDraft, setDesktopDraft] = useState<BannerDraft | null>(null);
+  const [mobileDraft, setMobileDraft] = useState<BannerDraft | null>(null);
+  const [desktopPosition, setDesktopPosition] = useState<CropPosition>("center");
+  const [mobilePosition, setMobilePosition] = useState<CropPosition>("center");
+  const [processingKind, setProcessingKind] = useState<BannerKind | null>(null);
   const [saving, setSaving] = useState(false);
 
   const banners = useQuery({ queryKey: ["owner-banners"], queryFn: () => list() });
   const menu = useQuery(menuQueryOptions());
-  const desktopPreview = useMemo(
-    () => (desktopFile ? URL.createObjectURL(desktopFile) : form.desktopUrl),
-    [desktopFile, form.desktopUrl],
-  );
-  const mobilePreview = useMemo(
-    () => (mobileFile ? URL.createObjectURL(mobileFile) : form.mobileUrl),
-    [mobileFile, form.mobileUrl],
-  );
+  const desktopPreview = desktopDraft?.previewUrl ?? form.desktopUrl;
+  const mobilePreview = mobileDraft?.previewUrl ?? form.mobileUrl;
 
   useEffect(() => {
     return () => {
-      if (desktopPreview?.startsWith("blob:")) URL.revokeObjectURL(desktopPreview);
+      if (desktopDraft?.previewUrl) URL.revokeObjectURL(desktopDraft.previewUrl);
     };
-  }, [desktopPreview]);
+  }, [desktopDraft?.previewUrl]);
   useEffect(() => {
     return () => {
-      if (mobilePreview?.startsWith("blob:")) URL.revokeObjectURL(mobilePreview);
+      if (mobileDraft?.previewUrl) URL.revokeObjectURL(mobileDraft.previewUrl);
     };
-  }, [mobilePreview]);
+  }, [mobileDraft?.previewUrl]);
 
   if (banners.isLoading) return <Skeleton className="h-96 w-full" />;
   if (banners.error) {
@@ -170,8 +291,10 @@ function OwnerBanners() {
   const rows = banners.data ?? [];
   const reset = () => {
     setForm(emptyForm());
-    setDesktopFile(null);
-    setMobileFile(null);
+    setDesktopDraft(null);
+    setMobileDraft(null);
+    setDesktopPosition("center");
+    setMobilePosition("center");
   };
   const refresh = async () => {
     await Promise.all([
@@ -179,26 +302,43 @@ function OwnerBanners() {
       queryClient.invalidateQueries({ queryKey: ["restaurant"] }),
     ]);
   };
+  const updateDraft = async (kind: BannerKind, file: File, position: CropPosition) => {
+    setProcessingKind(kind);
+    try {
+      const draft = await prepareBannerDraft(file, kind, position);
+      if (kind === "desktop") setDesktopDraft(draft);
+      else setMobileDraft(draft);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The image couldn't be prepared");
+    } finally {
+      setProcessingKind(null);
+    }
+  };
   const chooseFile =
-    (kind: "desktop" | "mobile") => (event: ChangeEvent<HTMLInputElement>) => {
+    (kind: BannerKind) => (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0] ?? null;
       if (!file) return;
-      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        toast.error("Choose a JPG, PNG or WebP image");
+      try {
+        validateBannerFile(file);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Choose a valid banner image");
         event.target.value = "";
         return;
       }
-      if (file.size > 8 * 1024 * 1024) {
-        toast.error("Banner images must be 8 MB or smaller");
-        event.target.value = "";
-        return;
-      }
-      if (kind === "desktop") setDesktopFile(file);
-      else setMobileFile(file);
+      void updateDraft(kind, file, kind === "desktop" ? desktopPosition : mobilePosition);
     };
+  const changePosition = (kind: BannerKind, position: CropPosition) => {
+    if (kind === "desktop") {
+      setDesktopPosition(position);
+      if (desktopDraft) void updateDraft("desktop", desktopDraft.sourceFile, position);
+    } else {
+      setMobilePosition(position);
+      if (mobileDraft) void updateDraft("mobile", mobileDraft.sourceFile, position);
+    }
+  };
 
   const submit = async () => {
-    if (!desktopFile && !form.desktopPath) {
+    if (!desktopDraft && !form.desktopPath) {
       toast.error("Upload a desktop banner image");
       return;
     }
@@ -210,14 +350,14 @@ function OwnerBanners() {
     setSaving(true);
     const newlyUploaded: string[] = [];
     try {
-      const desktopPath = desktopFile
-        ? await uploadBanner(desktopFile, "desktop").then((path) => {
+      const desktopPath = desktopDraft
+        ? await uploadBanner(desktopDraft.uploadFile, "desktop").then((path) => {
             newlyUploaded.push(path);
             return path;
           })
         : form.desktopPath;
-      const mobilePath = mobileFile
-        ? await uploadBanner(mobileFile, "mobile").then((path) => {
+      const mobilePath = mobileDraft
+        ? await uploadBanner(mobileDraft.uploadFile, "mobile").then((path) => {
             newlyUploaded.push(path);
             return path;
           })
@@ -264,15 +404,29 @@ function OwnerBanners() {
             <ImagePicker
               id="banner-desktop"
               label="Desktop banner image"
+              previewLabel="Live Desktop Preview"
+              ratioLabel="16:6"
+              position={desktopPosition}
+              sourceInfo={desktopDraft ? `${desktopDraft.width}×${desktopDraft.height} (${desktopDraft.sourceRatioLabel})` : null}
+              processing={processingKind === "desktop"}
               required
               preview={desktopPreview}
+              frame="desktop"
+              onPositionChange={(position) => changePosition("desktop", position)}
               onChange={chooseFile("desktop")}
             />
             <ImagePicker
               id="banner-mobile"
               label="Mobile banner image (optional)"
+              previewLabel="Live Mobile Preview"
+              ratioLabel="4:3"
+              position={mobilePosition}
+              sourceInfo={mobileDraft ? `${mobileDraft.width}×${mobileDraft.height} (${mobileDraft.sourceRatioLabel})` : null}
+              processing={processingKind === "mobile"}
               preview={mobilePreview ?? desktopPreview}
+              frame="mobile"
               fallback={!mobilePreview && Boolean(desktopPreview)}
+              onPositionChange={(position) => changePosition("mobile", position)}
               onChange={chooseFile("mobile")}
             />
           </div>
@@ -408,8 +562,10 @@ function OwnerBanners() {
                     variant="outline"
                     aria-label="Edit banner"
                     onClick={() => {
-                      setDesktopFile(null);
-                      setMobileFile(null);
+                      setDesktopDraft(null);
+                      setMobileDraft(null);
+                      setDesktopPosition("center");
+                      setMobilePosition("center");
                       setForm(toForm(banner));
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
@@ -446,32 +602,44 @@ function OwnerBanners() {
 function ImagePicker({
   id,
   label,
+  previewLabel,
+  ratioLabel,
+  position,
+  sourceInfo,
+  processing,
   preview,
+  frame,
   required = false,
   fallback = false,
+  onPositionChange,
   onChange,
 }: {
   id: string;
   label: string;
+  previewLabel: string;
+  ratioLabel: string;
+  position: CropPosition;
+  sourceInfo: string | null;
+  processing: boolean;
   preview: string | null;
+  frame: BannerKind;
   required?: boolean;
   fallback?: boolean;
+  onPositionChange: (position: CropPosition) => void;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
       <Label htmlFor={id}>{label}{required ? " *" : ""}</Label>
       <label
         htmlFor={id}
-        className="relative flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-border bg-muted"
+        className="relative flex min-h-28 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-border bg-muted"
       >
         {preview ? (
-          <>
-            <img src={preview} alt="Banner preview" className="size-full object-cover" />
-            <span className="absolute bottom-2 right-2 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground">
-              {fallback ? "Desktop fallback" : "Change image"}
-            </span>
-          </>
+          <span className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+            <ImagePlus className="size-6" />
+            {fallback ? "Using desktop image" : "Change image"}
+          </span>
         ) : (
           <span className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
             <ImagePlus className="size-6" />
@@ -480,7 +648,55 @@ function ImagePicker({
         )}
       </label>
       <Input id={id} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={onChange} />
-      <p className="text-xs text-muted-foreground">JPG, PNG or WebP · up to 8 MB</p>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          JPG, PNG or WebP · up to 8 MB · optimized to {ratioLabel}
+          {sourceInfo ? ` · detected ${sourceInfo}` : ""}
+        </p>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Smart crop position</Label>
+          <ToggleGroup
+            type="single"
+            value={position}
+            onValueChange={(value) => {
+              if (value) onPositionChange(value as CropPosition);
+            }}
+            variant="outline"
+            size="sm"
+            className="flex-wrap justify-start"
+          >
+            {POSITION_OPTIONS.map((option) => (
+              <ToggleGroupItem key={option.value} value={option.value} aria-label={`${label} ${option.label}`}>
+                {option.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-xs">{previewLabel}</Label>
+          {processing ? <span className="text-xs text-muted-foreground">Optimizing…</span> : null}
+        </div>
+        <div
+          className={cn(
+            "overflow-hidden rounded-md border border-border bg-muted",
+            frame === "desktop" ? "aspect-[16/6]" : "aspect-[4/3] max-w-56",
+          )}
+        >
+          {preview ? (
+            <img
+              src={preview}
+              alt={previewLabel}
+              className={cn("size-full object-cover", positionClass(position))}
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center px-3 text-center text-xs text-muted-foreground">
+              Preview appears after upload
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
