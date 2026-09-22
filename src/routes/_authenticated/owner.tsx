@@ -184,6 +184,19 @@ function OwnerLayout() {
     .filter((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`))
     .sort((a, b) => b.to.length - a.to.length)[0];
   const sectionAllowed = !match || allows(access.data, match.permission);
+  const sectionKeys = match
+    ? Array.isArray(match.permission)
+      ? match.permission
+      : match.permission
+        ? [match.permission]
+        : []
+    : [];
+  const viewOnlySection =
+    sectionAllowed &&
+    sectionKeys.length > 0 &&
+    !access.data.isManager &&
+    !sectionKeys.some((key) => canManage(access.data, key));
+
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
