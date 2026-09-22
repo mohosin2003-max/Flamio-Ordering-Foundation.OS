@@ -29,6 +29,17 @@ import type { PlatformRow, PricingMode } from "@/lib/platforms.functions";
  * menu prices are only shown for reference — they are never written here.
  */
 export const Route = createFileRoute("/_authenticated/owner/platforms")({
+  head: () => ({
+    meta: [
+      { title: "Online Platforms — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio food delivery platforms and pricing." },
+      { property: "og:title", content: "Online Platforms — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio food delivery platforms and pricing." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerPlatforms,
 });
 

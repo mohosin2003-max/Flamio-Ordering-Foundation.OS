@@ -44,6 +44,17 @@ import type { OwnerCategory, OwnerProduct } from "@/lib/owner.functions";
 
 
 export const Route = createFileRoute("/_authenticated/owner/menu")({
+  head: () => ({
+    meta: [
+      { title: "Menu Management — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio menu categories, items and options." },
+      { property: "og:title", content: "Menu Management — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio menu categories, items and options." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerMenu,
 });
 

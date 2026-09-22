@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
+import { BrandLogo } from "@/components/branding/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -220,9 +221,12 @@ function OwnerLayout() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-7">
       <header className="mb-5">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" /> {access.data.isManager ? "Owner" : "Staff"}
-        </p>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <BrandLogo showName textClassName="text-lg tracking-tight" />
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <ShieldCheck className="h-4 w-4" /> {access.data.isManager ? "Owner" : "Staff"}
+          </p>
+        </div>
         <h1 className="font-display text-2xl font-bold">{pathname.startsWith("/owner/inbox") ? "Messages" : pathname.startsWith("/owner/orders") ? "Orders" : pathname.startsWith("/owner/account") ? "Account" : "Workspace"}</h1>
       </header>
 

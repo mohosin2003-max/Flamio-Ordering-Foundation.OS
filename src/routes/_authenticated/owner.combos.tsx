@@ -31,6 +31,17 @@ import { formatBDT } from "@/lib/format";
 import { menuQueryOptions } from "@/lib/menu-repository";
 
 export const Route = createFileRoute("/_authenticated/owner/combos")({
+  head: () => ({
+    meta: [
+      { title: "Combo Offers — Flamio Owner Dashboard" },
+      { name: "description", content: "Create and manage Flamio combo offers." },
+      { property: "og:title", content: "Combo Offers — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Create and manage Flamio combo offers." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());
   },

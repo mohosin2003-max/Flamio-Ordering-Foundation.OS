@@ -42,6 +42,17 @@ import { ownerListSuppliers } from "@/lib/suppliers.functions";
  * simple client-side summaries of that same data — no separate expense system.
  */
 export const Route = createFileRoute("/_authenticated/owner/purchases")({
+  head: () => ({
+    meta: [
+      { title: "Purchases — Flamio Owner Dashboard" },
+      { name: "description", content: "Record Flamio inventory purchases and other expenses." },
+      { property: "og:title", content: "Purchases — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Record Flamio inventory purchases and other expenses." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>): { date?: string } => typeof search["date"] === "string" ? { date: search["date"] } : {},
   component: OwnerPurchases,
 });

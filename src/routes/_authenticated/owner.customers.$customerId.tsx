@@ -14,6 +14,17 @@ import { crmGetCustomer } from "@/lib/crm.functions";
  * which is how the existing customer list already groups orders.
  */
 export const Route = createFileRoute("/_authenticated/owner/customers/$customerId")({
+  head: () => ({
+    meta: [
+      { title: "Customer Profile — Flamio CRM" },
+      { name: "description", content: "View one Flamio customer profile and order history." },
+      { property: "og:title", content: "Customer Profile — Flamio CRM" },
+      { property: "og:description", content: "View one Flamio customer profile and order history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerCustomerProfile,
 });
 

@@ -32,6 +32,17 @@ import type { StaffRole } from "@/lib/staff.functions";
 import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/owner/staff")({
+  head: () => ({
+    meta: [
+      { title: "Team Access — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio staff roles and permissions." },
+      { property: "og:title", content: "Team Access — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio staff roles and permissions." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerStaff,
 });
 

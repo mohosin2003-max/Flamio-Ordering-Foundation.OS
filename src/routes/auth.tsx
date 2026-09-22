@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { BrandLogo } from "@/components/branding/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -217,6 +218,9 @@ function AuthPage() {
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6">
+      <div className="mb-6 flex justify-center">
+        <BrandLogo showName textClassName="text-2xl tracking-tight" imageClassName="size-14" />
+      </div>
       <h1 className="font-display text-3xl font-extrabold">
         {mode === "login" ? "Welcome back" : "Create your account"}
       </h1>

@@ -27,6 +27,17 @@ import {
  * separate screen and is not touched.
  */
 export const Route = createFileRoute("/_authenticated/owner/platform-sale")({
+  head: () => ({
+    meta: [
+      { title: "Platform Sale — Flamio Owner Dashboard" },
+      { name: "description", content: "Record Flamio sales from online food platforms." },
+      { property: "og:title", content: "Platform Sale — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Record Flamio sales from online food platforms." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: PlatformSale,
 });
 
