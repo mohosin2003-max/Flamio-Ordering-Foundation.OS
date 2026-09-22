@@ -15,9 +15,8 @@ import { ownerGetOrder } from "@/lib/owner.functions";
 import { statusLabel } from "@/lib/order-status";
 
 export const Route = createFileRoute("/_authenticated/owner/orders/$orderId")({
-  validateSearch: (search: Record<string, unknown>): { message?: boolean } => ({
-    message: search["message"] === true || search["message"] === "true" || undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { message?: boolean } =>
+    search["message"] === true || search["message"] === "true" ? { message: true } : {},
   head: () => ({
     meta: [
       { title: "Order Details — Flamio Owner Dashboard" },
@@ -118,7 +117,7 @@ function OwnerOrderDetailPage() {
             </div>
           </section>
 
-          <OwnerOrderActions order={details} messageOpenInitially={message} />
+          <OwnerOrderActions order={details} messageOpenInitially={message === true} />
         </CardContent>
       </Card>
     </div>
