@@ -58,6 +58,7 @@ import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
+import { Route as AuthenticatedOwnerOrdersIndexRouteImport } from './routes/_authenticated/owner.orders.index'
 import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
@@ -335,6 +336,12 @@ const AuthenticatedAccountReviewOrderIdRoute =
     path: '/account/review/$orderId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOwnerOrdersIndexRoute =
+  AuthenticatedOwnerOrdersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnerOrdersRoute,
+  } as any)
 const AuthenticatedOwnerOrdersOrderIdRoute =
   AuthenticatedOwnerOrdersOrderIdRouteImport.update({
     id: '/$orderId',
@@ -405,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
+  '/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -438,7 +446,6 @@ export interface FileRoutesByTo {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
-  '/owner/orders': typeof AuthenticatedOwnerOrdersRouteWithChildren
   '/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
@@ -457,6 +464,7 @@ export interface FileRoutesByTo {
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
+  '/owner/orders': typeof AuthenticatedOwnerOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -512,6 +520,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
+  '/_authenticated/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -567,6 +576,7 @@ export interface FileRouteTypes {
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
+    | '/owner/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -600,7 +610,6 @@ export interface FileRouteTypes {
     | '/owner/inventory'
     | '/owner/menu'
     | '/owner/my-account'
-    | '/owner/orders'
     | '/owner/platform-sale'
     | '/owner/platforms'
     | '/owner/pos'
@@ -619,6 +628,7 @@ export interface FileRouteTypes {
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
+    | '/owner/orders'
   id:
     | '__root__'
     | '/'
@@ -673,6 +683,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
+    | '/_authenticated/owner/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1038,6 +1049,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountReviewOrderIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/owner/orders/': {
+      id: '/_authenticated/owner/orders/'
+      path: '/'
+      fullPath: '/owner/orders/'
+      preLoaderRoute: typeof AuthenticatedOwnerOrdersIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerOrdersRoute
+    }
     '/_authenticated/owner/orders/$orderId': {
       id: '/_authenticated/owner/orders/$orderId'
       path: '/$orderId'
@@ -1064,11 +1082,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedOwnerOrdersRouteChildren {
   AuthenticatedOwnerOrdersOrderIdRoute: typeof AuthenticatedOwnerOrdersOrderIdRoute
+  AuthenticatedOwnerOrdersIndexRoute: typeof AuthenticatedOwnerOrdersIndexRoute
 }
 
 const AuthenticatedOwnerOrdersRouteChildren: AuthenticatedOwnerOrdersRouteChildren =
   {
     AuthenticatedOwnerOrdersOrderIdRoute: AuthenticatedOwnerOrdersOrderIdRoute,
+    AuthenticatedOwnerOrdersIndexRoute: AuthenticatedOwnerOrdersIndexRoute,
   }
 
 const AuthenticatedOwnerOrdersRouteWithChildren =
