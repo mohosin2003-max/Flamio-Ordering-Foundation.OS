@@ -151,11 +151,11 @@ export async function saveSetting(
   userId: string,
   category: CleanupCategory,
   patch: {
-    autoEnabled?: boolean;
-    retentionDays?: number;
-    frequencyDays?: number;
-    requireApproval?: boolean;
-    unlocked?: boolean;
+    autoEnabled?: boolean | undefined;
+    retentionDays?: number | undefined;
+    frequencyDays?: number | undefined;
+    requireApproval?: boolean | undefined;
+    unlocked?: boolean | undefined;
   },
 ): Promise<CleanupSettingRow> {
   const info = CLEANUP_CATEGORY_INFO[category];
@@ -220,7 +220,11 @@ export async function approveCategory(userId: string, category: CleanupCategory)
 
 export async function setGlobalState(
   userId: string | null,
-  patch: { autoPaused?: boolean; pausedReason?: string | null; largeDeletionThreshold?: number },
+  patch: {
+    autoPaused?: boolean | undefined;
+    pausedReason?: string | null | undefined;
+    largeDeletionThreshold?: number | undefined;
+  },
 ): Promise<void> {
   const client = await db();
   const current = (await readConfig()).state;
@@ -658,7 +662,7 @@ const SCAN_LIMIT = 500;
 
 export async function previewCategory(
   category: CleanupCategory,
-  options: { retentionDays?: number; before?: string } = {},
+  options: { retentionDays?: number | undefined; before?: string | undefined } = {},
 ): Promise<PreviewResult> {
   const setting = await getSetting(category);
   const retentionDays = options.retentionDays ?? setting.retentionDays;
@@ -706,7 +710,7 @@ async function countReviewPhotos(ids: string[]): Promise<number> {
 
 export async function listForOwner(
   category: CleanupCategory,
-  options: { retentionDays?: number; before?: string; limit?: number } = {},
+  options: { retentionDays?: number | undefined; before?: string | undefined; limit?: number | undefined } = {},
 ): Promise<Candidate[]> {
   const setting = await getSetting(category);
   const cutoff = options.before ?? cutoffFor(options.retentionDays ?? setting.retentionDays);
@@ -774,7 +778,7 @@ export async function deleteRecords(
   category: CleanupCategory,
   ids: string[],
   actor: { userId: string | null; label: string; runType: "manual" | "auto" },
-  options: { retentionDays?: number; before?: string } = {},
+  options: { retentionDays?: number | undefined; before?: string | undefined } = {},
 ): Promise<CleanupResult> {
   if (category === "orphan_files") {
     if (!actor.userId) throw new Error("Forbidden");
@@ -936,12 +940,11 @@ async function logRun(input: {
       initiated_label: input.initiatedLabel ?? null,
       error_summary:
         input.errorSummary ??
-        input.items
+        (input.items
           .filter((i) => i.outcome === "failed")
           .map((i) => `${i.label}: ${i.reason ?? "failed"}`)
           .slice(0, 10)
-          .join("; ") ||
-        null,
+          .join("; ") || null),
       started_at: now,
       completed_at: now,
     })
