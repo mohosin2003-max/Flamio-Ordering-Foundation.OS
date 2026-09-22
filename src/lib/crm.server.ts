@@ -25,9 +25,12 @@ export function maskPhoneNumber(raw: string): string {
 }
 
 /**
- * Finds (or creates) the CRM record for a normalised phone number.
- * Idempotent: the phone identity carries a unique constraint, so a repeated
- * call can never produce a duplicate customer.
+ * Finds (or creates) the CRM record for one customer identity.
+ *
+ * Deterministic and idempotent: resolution goes through the shared identity
+ * layer (exact auth user id / exact canonical phone / exact verified email),
+ * every identity carries a unique constraint, and nothing is ever merged when
+ * two records match — the conflict is reported back instead.
  */
 export async function ensureCrmCustomer(input: {
   phone: string;
@@ -35,63 +38,132 @@ export async function ensureCrmCustomer(input: {
   customerType: CrmCustomerType;
   firstOrderAt: string | null;
   lastOrderAt: string | null;
-}): Promise<CrmRecord> {
-  const phone = normalizePhone(input.phone);
+  authUserId?: string | null;
+  email?: string | null;
+  emailVerified?: boolean;
+}): Promise<CrmRecord & { conflict: boolean; matchType: string }> {
+  const {
+    canonicalEmail,
+    canonicalPhone,
+    resolveCrmCustomer,
+    attachIdentity,
+    readIdentities,
+  } = await import("@/lib/crm-identity.server");
+
+  const phone = canonicalPhone(input.phone) ?? normalizePhone(input.phone);
+  const email = canonicalEmail(input.email ?? null);
   const db = await (await import("@/lib/untyped-db.server")).untypedAdmin();
 
-  const existing = await db
-    .from("crm_customer_identities")
-    .select("crm_customer_id")
-    .eq("kind", "phone")
-    .eq("value", phone)
-    .maybeSingle();
+  const resolution = await resolveCrmCustomer({
+    authUserId: input.authUserId ?? null,
+    phone,
+    email,
+    emailVerified: input.emailVerified ?? false,
+  });
 
-  if (existing.error) throw new Error("CRM_TABLES_MISSING");
-
-  if (existing.data?.crm_customer_id) {
-    const id = existing.data.crm_customer_id as string;
-    await db
-      .from("crm_customers")
-      .update({
-        display_name: input.displayName,
-        customer_type: input.customerType,
-        first_order_at: input.firstOrderAt,
-        last_order_at: input.lastOrderAt,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
+  if (resolution.matchType === "MULTIPLE_MATCH") {
+    // Two different customer records carry these identities. Use the phone
+    // record (the one this page is keyed by) and never join them.
+    const phoneOwner = await (async () => {
+      const row = await db
+        .from("crm_customer_identities")
+        .select("crm_customer_id")
+        .eq("kind", "phone")
+        .eq("value", phone)
+        .maybeSingle();
+      return (row.data?.crm_customer_id as string | undefined) ?? resolution.candidateIds[0]!;
+    })();
     return {
-      id,
+      id: phoneOwner,
       displayName: input.displayName,
       primaryPhone: phone,
       customerType: input.customerType,
+      conflict: true,
+      matchType: resolution.matchType,
     };
   }
 
-  const created = await db
-    .from("crm_customers")
-    .insert({
-      display_name: input.displayName,
-      primary_phone: phone,
-      customer_type: input.customerType,
-      first_order_at: input.firstOrderAt,
-      last_order_at: input.lastOrderAt,
-    })
-    .select("id")
-    .single();
+  let id = resolution.crmCustomerId;
 
-  if (created.error || !created.data) throw new Error("CRM_TABLES_MISSING");
-  const id = created.data.id as string;
+  if (!id) {
+    const created = await db
+      .from("crm_customers")
+      .insert({
+        display_name: input.displayName,
+        primary_phone: phone,
+        customer_type: input.customerType,
+        first_order_at: input.firstOrderAt,
+        last_order_at: input.lastOrderAt,
+      })
+      .select("id")
+      .single();
 
-  await db
-    .from("crm_customer_identities")
-    .insert({ kind: "phone", value: phone, source: "order", crm_customer_id: id });
+    if (created.error || !created.data) throw new Error("CRM_TABLES_MISSING");
+    id = created.data.id as string;
+
+    const identity = await db
+      .from("crm_customer_identities")
+      .insert({ kind: "phone", value: phone, source: "guest_order", crm_customer_id: id });
+    if (identity.error) {
+      // Never leave a half-created record behind.
+      await db.from("crm_customers").delete().eq("id", id);
+      throw new Error("CRM_TABLES_MISSING");
+    }
+  } else {
+    // Refresh derived fields from authoritative order data. Blank values never
+    // overwrite better existing data.
+    const patch: Record<string, string> = { updated_at: new Date().toISOString() };
+    if (input.displayName) patch["display_name"] = input.displayName;
+    if (input.firstOrderAt) patch["first_order_at"] = input.firstOrderAt;
+    if (input.lastOrderAt) patch["last_order_at"] = input.lastOrderAt;
+    // guest → account only; an account is never downgraded to guest.
+    if (input.customerType === "account") patch["customer_type"] = "account";
+    await db.from("crm_customers").update(patch).eq("id", id);
+  }
+
+  let conflict = false;
+
+  if (input.authUserId) {
+    const result = await attachIdentity({
+      crmCustomerId: id,
+      kind: "auth_user",
+      value: input.authUserId,
+      source: "account_signup",
+      verified: true,
+    });
+    if (!result.ok) conflict = true;
+  }
+  if (email && input.emailVerified) {
+    const result = await attachIdentity({
+      crmCustomerId: id,
+      kind: "email",
+      value: email,
+      source: "account_profile",
+      verified: true,
+    });
+    if (!result.ok) conflict = true;
+  }
+
+  // Keep the phone identity present for records created before Phase 2.
+  const identities = await readIdentities(id);
+  if (!identities.some((row) => row.kind === "phone" && row.value === phone)) {
+    const result = await attachIdentity({
+      crmCustomerId: id,
+      kind: "phone",
+      value: phone,
+      source: "guest_order",
+      verified: false,
+    });
+    if (!result.ok) conflict = true;
+  }
 
   return {
     id,
     displayName: input.displayName,
     primaryPhone: phone,
     customerType: input.customerType,
+    conflict,
+    matchType: resolution.matchType,
   };
 }
 
