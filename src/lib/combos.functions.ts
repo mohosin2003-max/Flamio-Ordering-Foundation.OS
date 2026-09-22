@@ -148,15 +148,16 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
         console.error("Combo insert failed", error);
         throw new Error("We couldn't create this combo. Please try again.");
       }
-      comboId = row.id;
+      comboId = row.id as string;
     }
+    const savedComboId = comboId as string;
 
     // Steps are replaced wholesale — they only ever belong to this combo.
-    await supabaseAdmin.from("combo_groups").delete().eq("combo_id", comboId);
+    await supabaseAdmin.from("combo_groups").delete().eq("combo_id", savedComboId);
     if (candidate.groups.length > 0) {
       const { error } = await supabaseAdmin.from("combo_groups").insert(
         candidate.groups.map((g) => ({
-          combo_id: comboId,
+          combo_id: savedComboId,
           name: g.name,
           is_required: g.isRequired,
           min_select: g.minSelect,
