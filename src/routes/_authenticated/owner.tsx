@@ -45,20 +45,20 @@ const TABS: {
   { to: "/owner/platforms", label: "Platforms", exact: false, permission: "platform_sales" },
   { to: "/owner/platform-sale", label: "Platform sale", exact: false, permission: "platform_sales" },
   { to: "/owner/menu", label: "Menu", exact: false, permission: "menu" },
-  { to: "/owner/combos", label: "Combos", exact: false, permission: "menu" },
+  { to: "/owner/combos", label: "Combos", exact: false, permission: "combos" },
   { to: "/owner/inventory", label: "Inventory", exact: false, permission: "inventory" },
   { to: "/owner/purchases", label: "Purchases", exact: false, permission: "purchases" },
   { to: "/owner/suppliers", label: "Suppliers", exact: false, permission: "suppliers" },
-  { to: "/owner/delivery", label: "Delivery", exact: false, permission: "settings" },
-  { to: "/owner/riders", label: "Riders", exact: false, permission: "order_management" },
+  { to: "/owner/delivery", label: "Delivery", exact: false, permission: "delivery" },
+  { to: "/owner/riders", label: "Riders", exact: false, permission: "riders" },
   { to: "/owner/coupons", label: "Coupons", exact: false, permission: "coupons" },
-  { to: "/owner/rewards", label: "Rewards", exact: false, permission: "coupons" },
-  { to: "/owner/challenges", label: "Challenges", exact: false, permission: "coupons" },
-  { to: "/owner/banners", label: "Banners", exact: false, permission: "menu" },
+  { to: "/owner/rewards", label: "Rewards", exact: false, permission: "rewards" },
+  { to: "/owner/challenges", label: "Challenges", exact: false, permission: "challenges" },
+  { to: "/owner/banners", label: "Banners", exact: false, permission: "banners" },
   { to: "/owner/reports", label: "Reports", exact: false, permission: "reports" },
   { to: "/owner/customers", label: "Customers", exact: false, permission: "customers" },
   { to: "/owner/inbox", label: "Inbox", exact: false, permission: "customers" },
-  { to: "/owner/reviews", label: "Reviews", exact: false, permission: "customers" },
+  { to: "/owner/reviews", label: "Reviews", exact: false, permission: "reviews" },
 
   { to: "/owner/staff", label: "Staff", exact: false, permission: "staff" },
   {
@@ -78,7 +78,7 @@ const TABS: {
 
 /** Owners/managers pass; staff need at least one of the tab's permissions. */
 function allows(
-  access: { isManager?: boolean; permissions?: string[] } | null | undefined,
+  access: { isManager?: boolean; permissions?: string[]; grants?: Record<string, string> | null } | null | undefined,
   permission: StaffPermission | StaffPermission[] | null,
 ): boolean {
   if (permission === null) return true;
