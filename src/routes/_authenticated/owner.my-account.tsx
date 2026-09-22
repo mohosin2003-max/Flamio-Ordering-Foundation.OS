@@ -335,6 +335,87 @@ function MyAccountPage() {
   );
 }
 
+function MonthHeader({ month, setMonth }: { month: string; setMonth: (value: string) => void }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 className="font-display text-xl font-bold">My account</h2>
+        <p className="text-sm text-muted-foreground">
+          Only your own salary, profit share and money records are shown here.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="month">Month</Label>
+        <Input
+          id="month"
+          type="month"
+          value={month}
+          onChange={(event) => setMonth(event.target.value || thisMonth())}
+          className="w-[170px]"
+        />
+      </div>
+    </div>
+  );
+}
+
+/** A partner's own profit share. No other person's finances are loaded here. */
+function ProfitShareSection({ partner }: { partner: MyProfitShare }) {
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            My profit share · {partner.sharePercent ?? 0}%
+            {partner.status === "ended" ? " (ended)" : ""}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {partner.month} · Business net profit {formatBDT(partner.monthBusinessProfit)}
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Earned" value={formatBDT(partner.monthEarned)} />
+            <Stat label="Paid" value={formatBDT(partner.monthPaid)} />
+            <Stat label="Remaining" value={formatBDT(partner.monthRemaining)} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Total earned" value={formatBDT(partner.totalEarned)} />
+            <Stat label="Total paid" value={formatBDT(partner.totalPaid)} />
+            <Stat label="Total remaining" value={formatBDT(partner.totalRemaining)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">My profit share history</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {partner.months.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No profit share earned yet.</p>
+          ) : (
+            partner.months.map((row) => (
+              <div
+                key={row.month}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2 text-sm"
+              >
+                <span className="font-medium">
+                  {row.month} · {row.sharePercent}%
+                </span>
+                <span className="text-muted-foreground">
+                  Earned {formatBDT(row.earned)} · Paid {formatBDT(row.paid)} · Remaining{" "}
+                  {formatBDT(row.remaining)}
+                </span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <Card>
