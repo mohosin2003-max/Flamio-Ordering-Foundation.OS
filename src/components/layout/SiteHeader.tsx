@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState } from "react";
 
+import { BrandLogo } from "@/components/branding/BrandLogo";
 import { LocationSelector, useCustomerLocation } from "@/components/layout/LocationSelector";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
@@ -25,11 +26,8 @@ export function SiteHeader() {
     <>
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="Flamio home">
-          <span className="grid size-9 place-items-center rounded-xl bg-gradient-ember text-lg font-black text-primary-foreground">
-            F
-          </span>
-          <span className="font-display text-xl font-extrabold tracking-tight">Flamio</span>
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="Flamio home">
+          <BrandLogo showName textClassName="hidden text-xl tracking-tight sm:block" />
         </Link>
 
         <LocationSelector location={location} onSelect={setLocation} />

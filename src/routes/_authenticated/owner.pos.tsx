@@ -34,6 +34,17 @@ function round2(value: number): number {
  * (Advanced mode). No separate POS order or inventory system.
  */
 export const Route = createFileRoute("/_authenticated/owner/pos")({
+  head: () => ({
+    meta: [
+      { title: "Counter Sale — Flamio Owner Dashboard" },
+      { name: "description", content: "Record Flamio counter sales and discounts." },
+      { property: "og:title", content: "Counter Sale — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Record Flamio counter sales and discounts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerPos,
 });
 

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { BrandingSettingsSection } from "@/components/owner/branding-settings-section";
 import { IntegrationsSection } from "@/components/owner/integration-providers";
 import { PaymentProvidersSection } from "@/components/owner/payment-providers";
 import { SmsProviderSection } from "@/components/owner/sms-provider";
@@ -20,6 +21,17 @@ import { getOwnerAccess, ownerGetSettings, ownerUpdateSettings } from "@/lib/own
 import type { RestaurantSettings } from "@/lib/owner.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/settings")({
+  head: () => ({
+    meta: [
+      { title: "Settings — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio restaurant settings, branding and integrations." },
+      { property: "og:title", content: "Settings — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio restaurant settings, branding and integrations." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerSettings,
 });
 
@@ -60,6 +72,8 @@ function OwnerSettings() {
 
   return (
     <div className="space-y-6">
+      <BrandingSettingsSection />
+
       <Card>
         <CardContent className="space-y-4 p-4">
           <div className="flex items-center justify-between rounded-lg border border-border p-3">

@@ -33,6 +33,17 @@ import { ownerListCustomers, ownerSendPromotion } from "@/lib/reports.functions"
  * history) and sends promotions through the existing notifications table.
  */
 export const Route = createFileRoute("/_authenticated/owner/customers")({
+  head: () => ({
+    meta: [
+      { title: "Customers — Flamio Owner Dashboard" },
+      { name: "description", content: "Review Flamio customer history and communication tools." },
+      { property: "og:title", content: "Customers — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Review Flamio customer history and communication tools." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerCustomers,
 });
 

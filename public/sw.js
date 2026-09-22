@@ -19,8 +19,8 @@ self.addEventListener("push", (event) => {
   const silent = payload.silent === true;
   const options = {
     body: payload.body || "",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: "/favicon.png",
+    badge: "/favicon.png",
     tag: payload.tag || undefined,
     renotify: Boolean(payload.tag) && !silent,
     silent,

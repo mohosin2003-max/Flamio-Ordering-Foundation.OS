@@ -39,6 +39,17 @@ import {
 import type { InventoryItem } from "@/lib/inventory.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/inventory")({
+  head: () => ({
+    meta: [
+      { title: "Inventory — Flamio Owner Dashboard" },
+      { name: "description", content: "Track Flamio stock, ingredients and recipes." },
+      { property: "og:title", content: "Inventory — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Track Flamio stock, ingredients and recipes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerInventory,
 });
 

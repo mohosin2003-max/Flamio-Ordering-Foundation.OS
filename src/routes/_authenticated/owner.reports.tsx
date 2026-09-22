@@ -17,6 +17,17 @@ import { ownerGetSalesReport } from "@/lib/reports.functions";
  * derives everything from orders and order_items.
  */
 export const Route = createFileRoute("/_authenticated/owner/reports")({
+  head: () => ({
+    meta: [
+      { title: "Sales Reports — Flamio Owner Dashboard" },
+      { name: "description", content: "Review Flamio sales, revenue and expense reports." },
+      { property: "og:title", content: "Sales Reports — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Review Flamio sales, revenue and expense reports." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>): { from?: string; to?: string } => {
     const parsed: { from?: string; to?: string } = {};
     if (typeof search["from"] === "string") parsed.from = search["from"];

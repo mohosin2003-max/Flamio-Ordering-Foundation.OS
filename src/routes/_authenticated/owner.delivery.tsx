@@ -35,6 +35,17 @@ const RING_COLORS = ["#e0533d", "#f59e0b", "#3b82f6", "#10b981", "#8b5cf6"];
  * the checkout delivery-charge maths in `src/lib/delivery.ts` is untouched.
  */
 export const Route = createFileRoute("/_authenticated/owner/delivery")({
+  head: () => ({
+    meta: [
+      { title: "Delivery Zones — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio restaurant location and delivery zones." },
+      { property: "og:title", content: "Delivery Zones — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio restaurant location and delivery zones." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerDelivery,
 });
 

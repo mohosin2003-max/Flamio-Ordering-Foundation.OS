@@ -33,6 +33,17 @@ import {
  * validation and pricing stays server-side.
  */
 export const Route = createFileRoute("/_authenticated/owner/coupons")({
+  head: () => ({
+    meta: [
+      { title: "Coupons — Flamio Owner Dashboard" },
+      { name: "description", content: "Create and manage Flamio discount coupons." },
+      { property: "og:title", content: "Coupons — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Create and manage Flamio discount coupons." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerCoupons,
 });
 

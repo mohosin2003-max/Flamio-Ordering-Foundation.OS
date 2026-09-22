@@ -27,6 +27,17 @@ import { staffGetMyProfitShare, type MyProfitShare } from "@/lib/owner-finance.f
  * person's records, so no other team member's money is reachable from here.
  */
 export const Route = createFileRoute("/_authenticated/owner/my-account")({
+  head: () => ({
+    meta: [
+      { title: "My Staff Account — Flamio" },
+      { name: "description", content: "Review your Flamio staff account, salary and profit share details." },
+      { property: "og:title", content: "My Staff Account — Flamio" },
+      { property: "og:description", content: "Review your Flamio staff account, salary and profit share details." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: MyAccountPage,
 });
 

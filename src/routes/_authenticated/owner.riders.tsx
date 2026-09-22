@@ -27,6 +27,17 @@ import {
  * screen.
  */
 export const Route = createFileRoute("/_authenticated/owner/riders")({
+  head: () => ({
+    meta: [
+      { title: "Riders — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio delivery rider records." },
+      { property: "og:title", content: "Riders — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio delivery rider records." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerRiders,
 });
 

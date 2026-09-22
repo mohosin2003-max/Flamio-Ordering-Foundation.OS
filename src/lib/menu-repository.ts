@@ -8,6 +8,7 @@ import shawarmaImg from "@/assets/cat-shawarma.jpg";
 import { paymentMethods, promoBanners, restaurant } from "@/data/restaurant";
 import { getPromoBanners } from "@/lib/banners.functions";
 import { getMenu, getProductBySlug } from "@/lib/menu.functions";
+import { getPublicRestaurantInfo } from "@/lib/restaurant.functions";
 import type {
   Category,
   Product,
@@ -211,9 +212,26 @@ export const restaurantQueryOptions = () =>
     queryFn: async () => {
       // Owner-managed banners; falls back to the seed list (empty) on failure,
       // which keeps the existing "no promotions" behaviour.
-      const stored = await getPromoBanners().catch(() => promoBanners);
+      const [stored, liveRestaurant] = await Promise.all([
+        getPromoBanners().catch(() => promoBanners),
+        getPublicRestaurantInfo().catch(() => null),
+      ]);
       return {
-        restaurant,
+        restaurant: liveRestaurant
+          ? {
+              ...restaurant,
+              name: liveRestaurant.name,
+              tagline: liveRestaurant.tagline ?? restaurant.tagline,
+              addressLine: liveRestaurant.addressLine ?? restaurant.addressLine,
+              city: liveRestaurant.city ?? restaurant.city,
+              country: liveRestaurant.country ?? restaurant.country,
+              phone: liveRestaurant.phone,
+              email: liveRestaurant.email,
+              facebookUrl: liveRestaurant.facebookUrl,
+              instagramUrl: liveRestaurant.instagramUrl,
+              googleMapsUrl: liveRestaurant.googleMapsUrl,
+            }
+          : restaurant,
         banners: [...stored]
           .filter((b) => b.isActive)
           .sort((a, b) => a.sortOrder - b.sortOrder),

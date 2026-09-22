@@ -26,6 +26,17 @@ import {
  * their history are untouched; this list only feeds the supplier name field.
  */
 export const Route = createFileRoute("/_authenticated/owner/suppliers")({
+  head: () => ({
+    meta: [
+      { title: "Suppliers — Flamio Owner Dashboard" },
+      { name: "description", content: "Manage Flamio supplier records for purchases." },
+      { property: "og:title", content: "Suppliers — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Manage Flamio supplier records for purchases." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: OwnerSuppliers,
 });
 
