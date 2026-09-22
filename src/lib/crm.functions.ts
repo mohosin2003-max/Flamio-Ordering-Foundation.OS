@@ -28,6 +28,14 @@ export interface CrmNote {
   createdAt: string;
 }
 
+export interface CrmIdentityView {
+  kind: "auth_user" | "phone" | "email";
+  label: string;
+  value: string;
+  verified: boolean;
+  source: string | null;
+}
+
 export interface CrmCustomerDetail {
   crmId: string | null;
   name: string;
@@ -38,6 +46,8 @@ export interface CrmCustomerDetail {
   accountCreatedAt: string | null;
   possibleAccountMatch: boolean;
   orderCount: number;
+  guestOrderCount: number;
+  accountOrderCount: number;
   totalSpent: number;
   averageOrder: number;
   firstOrderAt: string | null;
@@ -51,6 +61,12 @@ export interface CrmCustomerDetail {
   tags: string[];
   canManage: boolean;
   storageReady: boolean;
+  /** Identity foundation (Phase 2). */
+  identities: CrmIdentityView[];
+  accountLinked: boolean;
+  identityConflict: boolean;
+  /** Account that could be linked by the owner (exact phone match only). */
+  linkCandidate: { authUserId: string; emailMasked: string | null } | null;
 }
 
 function mask(raw: string): string {
