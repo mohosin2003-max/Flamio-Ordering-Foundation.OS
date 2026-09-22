@@ -147,9 +147,14 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin + "/auth", data: metadata },
       });
       if (signUpError) throw signUpError;
-      if (!data.session) {
+      // The email must be confirmed by the provider before the account is
+      // usable. If a session is handed back while the address is still
+      // unconfirmed, we end it so the account is never treated as verified.
+      const emailConfirmed = Boolean(data.user?.email_confirmed_at ?? data.user?.confirmed_at);
+      if (!emailConfirmed) {
+        if (data.session) await supabase.auth.signOut();
         setAwaitingEmail(true);
-        toast.success("We sent a verification code to your email");
+        toast.success("Check your email to confirm your account");
         return;
       }
       await goToLanding();
@@ -210,34 +215,6 @@ function AuthPage() {
     }
   }
 
-  /**
-   * Verifies the signup code emailed by the existing authentication provider.
-   * The code is only ever typed in by the customer — it is never generated,
-   * stored or logged here.
-   */
-  async function verifyEmail() {
-    if (otp.trim().length < 4) {
-      fail("Enter the code sent to your email.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
-        token: otp.trim(),
-        type: "signup",
-      });
-      if (verifyError) throw verifyError;
-      setAwaitingEmail(false);
-      toast.success("Email verified");
-      await goToLanding();
-    } catch (err) {
-      fail(err instanceof Error ? err.message : "We couldn't verify that code.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
 
 
@@ -274,25 +251,22 @@ function AuthPage() {
       {awaitingEmail ? (
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border border-border bg-muted/40 p-4">
-            <p className="font-semibold">Verify your email</p>
+            <p className="font-semibold">Confirm your email</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              We sent a verification code to {email.trim()}. Enter it below to finish creating your
-              account. The link in the same email also works.
+              We sent a confirmation link to {email.trim()}. Open that email and tap the link to
+              activate your account, then sign in with your phone number and password.
             </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email-otp">Email verification code</Label>
-            <Input
-              id="email-otp"
-              value={otp}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              onChange={(event) => setOtp(event.target.value)}
-            />
-          </div>
-          <Button className="w-full" disabled={busy} onClick={() => void verifyEmail()}>
-            {busy ? <Loader2 className="animate-spin" /> : null}
-            Verify email
+          <Button
+            className="w-full"
+            onClick={() => {
+              setAwaitingEmail(false);
+              setMode("login");
+              setIdentity(phone.trim());
+              setPassword("");
+            }}
+          >
+            I confirmed my email — sign in
           </Button>
         </div>
       ) : awaitingPhoneOtp ? (
