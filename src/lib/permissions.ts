@@ -85,7 +85,9 @@ export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
   settings: "Restaurant settings, payment and SMS setup",
   own_salary: "Lets this person see only their own salary and money records",
   own_money_taken: "Lets this person submit money-taken requests for owner approval",
+  own_profit_share: "Lets a profit partner see only their own profit share",
 };
+
 
 /**
  * Sections that used to sit under a wider switch. Someone who already has the
@@ -121,7 +123,7 @@ export const PERMISSION_GROUPS: { title: string; permissions: StaffPermission[] 
   },
   {
     title: "People & money",
-    permissions: ["staff", "staff_finance", "own_salary", "own_money_taken"],
+    permissions: ["staff", "staff_finance", "own_salary", "own_money_taken", "own_profit_share"],
   },
   {
     title: "Reports & setup",
