@@ -178,6 +178,8 @@ function OwnerPos() {
       await queryClient.invalidateQueries({ queryKey: ["owner-inventory"] });
       setLines({});
       setCustomerPhone("");
+      setDiscountAmount("");
+      setDiscountPercent("");
       toast.success(`Sale recorded — ${result.code}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't record this sale");
