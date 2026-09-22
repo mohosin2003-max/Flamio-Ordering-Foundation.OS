@@ -45,6 +45,8 @@ function OwnerPos() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("Walk-in customer");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
   const [saving, setSaving] = useState(false);
 
   const catalog = useQuery({
@@ -61,6 +63,33 @@ function OwnerPos() {
     [products, lines],
   );
   const itemCount = Object.values(lines).reduce((sum, n) => sum + n, 0);
+
+  const subtotal = total;
+  const discountAmountNum = useMemo(() => {
+    const parsed = parseFloat(discountAmount);
+    return Number.isNaN(parsed) ? 0 : clampDiscount(round2(parsed), subtotal);
+  }, [discountAmount, subtotal]);
+  const discountPercentNum = useMemo(() => {
+    if (subtotal <= 0 || discountAmountNum <= 0) return 0;
+    return round2((discountAmountNum / subtotal) * 100);
+  }, [discountAmountNum, subtotal]);
+  const finalTotal = useMemo(
+    () => Math.max(round2(subtotal - discountAmountNum), 0),
+    [subtotal, discountAmountNum],
+  );
+
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setDiscountAmount("");
+      setDiscountPercent("");
+      return;
+    }
+    const parsed = parseFloat(discountAmount);
+    if (discountAmount !== "" && !Number.isNaN(parsed) && parsed > subtotal) {
+      setDiscountAmount(round2(subtotal).toString());
+      setDiscountPercent("100");
+    }
+  }, [subtotal]);
 
   if (catalog.isLoading) return <Skeleton className="h-96 w-full" />;
 
