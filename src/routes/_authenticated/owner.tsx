@@ -2,14 +2,14 @@ import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-r
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Eye, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
 import { claimOwnership, getOwnerAccess } from "@/lib/owner.functions";
-import { hasPermission } from "@/lib/permissions";
+import { canManage, hasPermission } from "@/lib/permissions";
 import type { StaffPermission } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
@@ -223,6 +223,16 @@ function OwnerLayout() {
           </Link>
         ))}
       </nav>
+
+      {viewOnlySection ? (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            You have view-only access to this section. You can read everything here, but changes
+            aren't allowed.
+          </span>
+        </div>
+      ) : null}
 
       {sectionAllowed ? (
         <Outlet />
