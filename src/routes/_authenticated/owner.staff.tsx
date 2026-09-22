@@ -23,7 +23,6 @@ import { StaffPermissionEditor } from "@/components/owner/StaffPermissionEditor"
 import {
   ownerCreateStaffAccount,
   ownerDeleteInvite,
-  ownerFindAccount,
   ownerListStaff,
   ownerRevokeStaff,
   ownerSetStaffPermissions,
@@ -48,7 +47,6 @@ function OwnerStaff() {
   const revoke = useServerFn(ownerRevokeStaff);
   const createStaff = useServerFn(ownerCreateStaffAccount);
   const deleteInvite = useServerFn(ownerDeleteInvite);
-  const findAccount = useServerFn(ownerFindAccount);
   const setPermissions = useServerFn(ownerSetStaffPermissions);
   const queryClient = useQueryClient();
 

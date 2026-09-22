@@ -525,7 +525,9 @@ export const claimMyStaffInvite = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("profiles").upsert({
       id: context.userId,
-      full_name: profile?.full_name ?? (typeof metadata.full_name === "string" ? metadata.full_name : null),
+      full_name:
+        profile?.full_name ??
+        (typeof metadata["full_name"] === "string" ? metadata["full_name"] : null),
       phone: profile?.phone ?? [...phones][0] ?? null,
       email: profile?.email ?? [...emails][0] ?? null,
     });
@@ -540,12 +542,6 @@ export const claimMyStaffInvite = createServerFn({ method: "POST" })
     });
     if (!matching.length) return { claimed: false };
 
-    const { data: otherRole } = await supabaseAdmin
-      .from("user_roles")
-      .select("user_id")
-      .neq("user_id", context.userId)
-      .limit(1);
-    void otherRole;
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: context.userId, role: "staff" }, { onConflict: "user_id,role" });
