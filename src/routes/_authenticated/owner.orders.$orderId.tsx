@@ -131,7 +131,7 @@ function OwnerOrderDetailPage() {
                   customerName: details.customerName,
                   customerPhone: details.customerPhone,
                   items: details.items.map((item) => ({
-                    productName: item.productName,
+                    productName: item.name,
                     variantName: item.variantName,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
