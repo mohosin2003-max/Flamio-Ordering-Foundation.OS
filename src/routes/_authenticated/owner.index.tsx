@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/owner/")({
   component: OwnerHome,
 });
 
-type Module = { to: string; label: string; description: string; icon: LucideIcon; permission: StaffPermission | StaffPermission[]; ownerOnly?: boolean; prominent?: boolean };
+type Module = { to: string; label: string; description: string; icon: LucideIcon; permission: StaffPermission | StaffPermission[]; ownerOnly?: boolean; ownerRoleOnly?: boolean; prominent?: boolean };
 
 const MODULES: Module[] = [
   { to: "/owner/pos", label: "Counter Sale", description: "Create an in-store sale", icon: ReceiptText, permission: "pos", prominent: true },
@@ -61,7 +61,13 @@ function OwnerHome() {
   const canSeeOrders = can(["online_orders", "order_management"]);
   const getSummary = useServerFn(ownerGetDashboardSummary);
   const summary = useQuery({ queryKey: ["owner-dashboard-summary"], queryFn: () => getSummary(), enabled: Boolean(access.data), refetchInterval: 30_000 });
-  const modules = MODULES.filter((module) => can(module.permission) && (!module.ownerOnly || access.data?.isManager));
+  const isOwnerRole = Boolean(access.data?.roles?.includes("owner"));
+  const modules = MODULES.filter(
+    (module) =>
+      can(module.permission) &&
+      (!module.ownerOnly || access.data?.isManager) &&
+      (!module.ownerRoleOnly || isOwnerRole),
+  );
   const s = summary.data;
 
   return (

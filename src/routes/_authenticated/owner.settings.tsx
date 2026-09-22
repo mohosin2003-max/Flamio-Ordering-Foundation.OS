@@ -344,7 +344,35 @@ function OwnerSettings() {
       <SmsProviderSection />
 
       <IntegrationsSection />
+
+      <DataStorageLink />
     </div>
+  );
+}
+
+/** Owner-only entry point. Staff never see this card. */
+function DataStorageLink() {
+  const access = useQuery({
+    queryKey: ["owner-access"],
+    queryFn: () => getOwnerAccessFn(),
+    staleTime: 60 * 1000,
+  });
+  if (!access.data?.roles?.includes("owner")) return null;
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div>
+          <p className="font-semibold">Data &amp; Storage Management</p>
+          <p className="text-sm text-muted-foreground">
+            Control data retention, cleanup and storage usage safely.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to="/owner/data-storage">Open Data &amp; Storage Management</Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

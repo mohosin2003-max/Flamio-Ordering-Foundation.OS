@@ -200,7 +200,9 @@ function OwnerLayout() {
   const match = TABS.filter((tab) => tab.to !== "/owner")
     .filter((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`))
     .sort((a, b) => b.to.length - a.to.length)[0];
-  const sectionAllowed = !match || allows(access.data, match.permission);
+  const ownerRole = Boolean(access.data.roles?.includes("owner"));
+  const sectionAllowed =
+    !match || (allows(access.data, match.permission) && (!match.ownerRoleOnly || ownerRole));
   const sectionKeys = match
     ? Array.isArray(match.permission)
       ? match.permission
