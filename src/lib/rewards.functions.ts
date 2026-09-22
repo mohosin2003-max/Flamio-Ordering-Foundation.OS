@@ -242,3 +242,184 @@ export const listMyVouchers = createServerFn({ method: "GET" })
     if (error) throw new Error("We couldn't load vouchers.");
     return data ?? [];
   });
+/* ------------------- challenge result rewards (optional) ------------------ */
+
+export type ChallengeRewardRule = {
+  id: string;
+  name: string;
+  challengeId: string | null;
+  resultCondition: "lost" | "close";
+  closeThresholdPercent: number;
+  points: number;
+  isEnabled: boolean;
+  firstTimeOnly: boolean;
+  maxPerCustomer: number;
+  maxPerDay: number;
+  maxPerChallenge: number;
+  allowRepeatAfterLimit: boolean;
+  startsOn: string | null;
+  endsOn: string | null;
+};
+
+export type ChallengeRewardEvent = {
+  id: string;
+  ruleName: string;
+  challengeName: string;
+  customerName: string;
+  resultCondition: string;
+  points: number;
+  status: "awarded" | "blocked";
+  blockedReason: string | null;
+  createdAt: string;
+};
+
+const CHALLENGE_RULE_COLUMNS =
+  "id, name, challenge_id, result_condition, close_threshold_percent, points, is_enabled, first_time_only, max_per_customer, max_per_day, max_per_challenge, allow_repeat_after_limit, starts_on, ends_on";
+
+const challengeRewardRuleInput = z.object({
+  id: z.string().uuid().nullable(),
+  name: z.string().trim().min(2).max(80),
+  challengeId: z.string().uuid().nullable(),
+  resultCondition: z.enum(["lost", "close"]),
+  closeThresholdPercent: z.number().int().min(1).max(100),
+  points: z.number().int().min(0).max(100_000),
+  isEnabled: z.boolean(),
+  firstTimeOnly: z.boolean(),
+  maxPerCustomer: z.number().int().min(0).max(100_000),
+  maxPerDay: z.number().int().min(0).max(1000),
+  maxPerChallenge: z.number().int().min(0).max(100_000),
+  allowRepeatAfterLimit: z.boolean(),
+  startsOn: z.string().trim().min(1).nullable(),
+  endsOn: z.string().trim().min(1).nullable(),
+});
+
+export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "coupons");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
+
+    const [rulesResult, eventsResult, challengesResult] = await Promise.all([
+      supabaseAdmin
+        .from("challenge_result_reward_rules")
+        .select(CHALLENGE_RULE_COLUMNS)
+        .order("created_at"),
+      supabaseAdmin
+        .from("challenge_result_reward_events")
+        .select(
+          "id, points, status, blocked_reason, result_condition, created_at, user_id, challenge_result_reward_rules(name), challenges(name)",
+        )
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabaseAdmin.from("challenges").select("id, name").order("sort_order"),
+    ]);
+
+    // The optional tables may not be installed yet — report that instead of failing.
+    if (rulesResult.error?.code === "42P01") {
+      return { installed: false, rules: [] as ChallengeRewardRule[], events: [] as ChallengeRewardEvent[], challenges: [] as { id: string; name: string }[] };
+    }
+    if (rulesResult.error) throw new Error("We couldn't load challenge reward rules.");
+
+    const eventRows = eventsResult.error ? [] : (eventsResult.data ?? []);
+    const eventList = eventRows as Record<string, unknown>[];
+    const userIds = [...new Set(eventList.map((row) => row["user_id"] as string))];
+    const names = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds);
+      for (const profile of (profiles ?? []) as Record<string, unknown>[]) names.set(profile["id"] as string, (profile["full_name"] as string | null) ?? "Customer");
+    }
+
+    const pick = (value: unknown): string | null => {
+      const row = Array.isArray(value) ? value[0] : value;
+      return (row as { name?: string } | null)?.name ?? null;
+    };
+
+    return {
+      installed: true,
+      challenges: ((challengesResult.data ?? []) as Record<string, unknown>[]).map((row) => ({ id: row["id"] as string, name: row["name"] as string })),
+      rules: ((rulesResult.data ?? []) as Record<string, unknown>[]).map((row) => {
+        const r = row as unknown as Record<string, unknown>;
+        return {
+          id: r["id"] as string,
+          name: r["name"] as string,
+          challengeId: (r["challenge_id"] as string | null) ?? null,
+          resultCondition: r["result_condition"] as "lost" | "close",
+          closeThresholdPercent: Number(r["close_threshold_percent"] ?? 90),
+          points: Number(r["points"] ?? 0),
+          isEnabled: Boolean(r["is_enabled"]),
+          firstTimeOnly: Boolean(r["first_time_only"]),
+          maxPerCustomer: Number(r["max_per_customer"] ?? 0),
+          maxPerDay: Number(r["max_per_day"] ?? 0),
+          maxPerChallenge: Number(r["max_per_challenge"] ?? 0),
+          allowRepeatAfterLimit: Boolean(r["allow_repeat_after_limit"]),
+          startsOn: (r["starts_on"] as string | null) ?? null,
+          endsOn: (r["ends_on"] as string | null) ?? null,
+        } satisfies ChallengeRewardRule;
+      }),
+      events: eventList.map((row) => {
+        const r = row as unknown as Record<string, unknown>;
+        return {
+          id: r["id"] as string,
+          ruleName: pick(r["challenge_result_reward_rules"]) ?? "Challenge reward",
+          challengeName: pick(r["challenges"]) ?? "Challenge",
+          customerName: names.get(r["user_id"] as string) ?? "Customer",
+          resultCondition: r["result_condition"] as string,
+          points: Number(r["points"] ?? 0),
+          status: r["status"] as "awarded" | "blocked",
+          blockedReason: (r["blocked_reason"] as string | null) ?? null,
+          createdAt: r["created_at"] as string,
+        } satisfies ChallengeRewardEvent;
+      }),
+    };
+  });
+
+export const ownerSaveChallengeRewardRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => challengeRewardRuleInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "coupons");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
+    const row = {
+      name: data.name,
+      challenge_id: data.challengeId,
+      result_condition: data.resultCondition,
+      close_threshold_percent: data.closeThresholdPercent,
+      points: data.points,
+      is_enabled: data.isEnabled,
+      first_time_only: data.firstTimeOnly,
+      max_per_customer: data.maxPerCustomer,
+      max_per_day: data.maxPerDay,
+      max_per_challenge: data.maxPerChallenge,
+      allow_repeat_after_limit: data.allowRepeatAfterLimit,
+      starts_on: data.startsOn,
+      ends_on: data.endsOn,
+    };
+    if (data.id) {
+      const { error } = await supabaseAdmin
+        .from("challenge_result_reward_rules")
+        .update(row)
+        .eq("id", data.id);
+      if (error) throw new Error("We couldn't save this challenge reward rule.");
+      return { ok: true };
+    }
+    const { error } = await supabaseAdmin.from("challenge_result_reward_rules").insert(row);
+    if (error) throw new Error("We couldn't create this challenge reward rule.");
+    return { ok: true };
+  });
+
+export const ownerDeleteChallengeRewardRule = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "coupons");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
+    const { error } = await supabaseAdmin.from("challenge_result_reward_rules").delete().eq("id", data.id);
+    if (error) throw new Error("We couldn't delete this challenge reward rule.");
+    return { ok: true };
+  });

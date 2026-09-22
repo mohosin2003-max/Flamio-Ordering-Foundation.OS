@@ -62,6 +62,7 @@ type PlayState = {
     rewardName?: string;
     couponCode?: string | null;
     winnerId?: string;
+    resultRewards?: { ruleName: string; points: number }[];
   };
 };
 
@@ -102,6 +103,12 @@ function ChallengesPage() {
     try {
       const result = await finishPlay({ data: { sessionId: play.sessionId, score } });
       setPlay({ ...play, phase: "result", result });
+      for (const reward of result.resultRewards ?? []) {
+        toast.success(`Challenge Reward +${reward.points} Points`, { description: reward.ruleName });
+      }
+      if ((result.resultRewards ?? []).length > 0) {
+        await queryClient.invalidateQueries({ queryKey: ["my-rewards"] });
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't save your play");
       setPlay(null);
@@ -268,6 +275,11 @@ function ChallengesPage() {
                     {play.result.result === "won" ? "So close!" : "Not this time"}
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">{play.result.message}</p>
+                  {(play.result.resultRewards ?? []).map((reward) => (
+                    <p key={reward.ruleName} className="mt-3 rounded-xl bg-primary/10 px-3 py-2 text-sm font-bold text-primary">
+                      Challenge Reward +{reward.points} Points
+                    </p>
+                  ))}
                   <Button className="mt-6 w-full" onClick={() => setPlay(null)}>
                     Back to challenges
                   </Button>
