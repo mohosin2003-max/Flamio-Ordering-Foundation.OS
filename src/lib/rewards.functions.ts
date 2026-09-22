@@ -328,7 +328,7 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
     const names = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds);
-      for (const profile of profiles ?? []) names.set(profile.id, profile.full_name ?? "Customer");
+      for (const profile of (profiles ?? []) as Record<string, unknown>[]) names.set(profile["id"] as string, (profile["full_name"] as string | null) ?? "Customer");
     }
 
     const pick = (value: unknown): string | null => {
@@ -338,8 +338,8 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
 
     return {
       installed: true,
-      challenges: (challengesResult.data ?? []).map((row) => ({ id: row.id, name: row.name })),
-      rules: ((rulesResult.data ?? []) as Record<string, never>[]).map((row) => {
+      challenges: ((challengesResult.data ?? []) as Record<string, unknown>[]).map((row) => ({ id: row["id"] as string, name: row["name"] as string })),
+      rules: ((rulesResult.data ?? []) as Record<string, unknown>[]).map((row) => {
         const r = row as unknown as Record<string, unknown>;
         return {
           id: r["id"] as string,
@@ -358,7 +358,7 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
           endsOn: (r["ends_on"] as string | null) ?? null,
         } satisfies ChallengeRewardRule;
       }),
-      events: eventRows.map((row) => {
+      events: eventList.map((row) => {
         const r = row as unknown as Record<string, unknown>;
         return {
           id: r["id"] as string,
@@ -381,7 +381,8 @@ export const ownerSaveChallengeRewardRule = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "coupons");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
     const row = {
       name: data.name,
       challenge_id: data.challengeId,
@@ -400,12 +401,12 @@ export const ownerSaveChallengeRewardRule = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabaseAdmin
         .from("challenge_result_reward_rules")
-        .update(row as never)
+        .update(row)
         .eq("id", data.id);
       if (error) throw new Error("We couldn't save this challenge reward rule.");
       return { ok: true };
     }
-    const { error } = await supabaseAdmin.from("challenge_result_reward_rules").insert(row as never);
+    const { error } = await supabaseAdmin.from("challenge_result_reward_rules").insert(row);
     if (error) throw new Error("We couldn't create this challenge reward rule.");
     return { ok: true };
   });
@@ -416,7 +417,8 @@ export const ownerDeleteChallengeRewardRule = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "coupons");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
     const { error } = await supabaseAdmin.from("challenge_result_reward_rules").delete().eq("id", data.id);
     if (error) throw new Error("We couldn't delete this challenge reward rule.");
     return { ok: true };
