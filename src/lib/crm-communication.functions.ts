@@ -303,6 +303,17 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
         .limit(40);
 
       for (const row of (sentRows ?? []) as Record<string, unknown>[]) {
+        const channel = row['channel'] as CommunicationChannel;
+        const status = row['status'] as CommunicationHistoryItem["status"];
+        // Inbox and push messages are stored by the existing inbox /
+        // notification systems and are listed from those records below. Their
+        // send record is shown only when nothing was actually delivered, so one
+        // action reads as one event instead of two. Both records are kept.
+        const deliveredElsewhere =
+          (channel === "in_app" || channel === "push") &&
+          status !== "failed" &&
+          status !== "cancelled";
+        if (deliveredElsewhere) continue;
         history.push({
           id: `c-${row['id'] as string}`,
           channel: row['channel'] as CommunicationChannel,
@@ -427,13 +438,8 @@ export const crmSendCustomerMessage = createServerFn({ method: "POST" })
       const { normalizePhone: canonical } = await import("@/lib/phone");
       const phone = canonical(data.phone);
 
-      const { data: orderRows } = await supabaseAdmin
-        .from("orders")
-        .select("user_id, customer_phone")
-        .not("user_id", "is", null)
-        .limit(5000);
-      const customerUserId =
-        (orderRows ?? []).find((row) => canonical(row.customer_phone) === phone)?.user_id ?? null;
+      const { resolveAuthUserIdByPhone } = await import("@/lib/crm-identity.server");
+      const customerUserId = await resolveAuthUserIdByPhone(data.phone);
 
       let customerEmail: string | null = null;
       if (customerUserId) {
