@@ -75,6 +75,12 @@ function mask(raw: string): string {
   return `+${digits.slice(0, 5)}•••${digits.slice(-3)}`;
 }
 
+function maskEmail(raw: string): string {
+  const [local = "", domain = ""] = raw.split("@");
+  const head = local.slice(0, 2);
+  return `${head}•••@${domain}`;
+}
+
 /** Owner/manager, or staff allowed to open customers. */
 async function assertRead(userId: string) {
   const { assertAnyPermission } = await import("@/lib/owner.server");
