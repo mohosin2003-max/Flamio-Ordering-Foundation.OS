@@ -27,3 +27,15 @@ export function formatPhone(raw: string): string {
 export function phoneToAuthEmail(raw: string): string {
   return `p${normalizePhone(raw)}@phone.flamio.app`;
 }
+
+/**
+ * Canonical Bangladesh phone identity, or null when the value cannot be
+ * trusted as a phone number. Used for CRM identity matching only — historical
+ * order data is never rewritten.
+ */
+export function canonicalPhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = normalizePhone(raw);
+  if (!/^8801[3-9]\d{8}$/.test(digits)) return null;
+  return digits;
+}

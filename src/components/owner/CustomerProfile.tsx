@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Loader2, ShieldAlert } from "lucide-react";
+import { BadgeCheck, Eye, Link2, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CustomerNotes } from "@/components/owner/CustomerNotes";
 import { CustomerTags } from "@/components/owner/CustomerTags";
 import { formatBDT } from "@/lib/format";
-import { crmRevealPhone } from "@/lib/crm.functions";
+import { crmLinkAccount, crmRevealPhone } from "@/lib/crm.functions";
 import type { CrmCustomerDetail } from "@/lib/crm.functions";
 
 export function CustomerProfile({
@@ -25,6 +25,8 @@ export function CustomerProfile({
   phoneKey: string;
 }) {
   const reveal = useServerFn(crmRevealPhone);
+  const linkAccount = useServerFn(crmLinkAccount);
+  const [linking, setLinking] = useState(false);
   const queryClient = useQueryClient();
   const [full, setFull] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
@@ -38,6 +40,19 @@ export function CustomerProfile({
       toast.error(error instanceof Error ? error.message : "Couldn't show this number");
     } finally {
       setRevealing(false);
+    }
+  };
+
+  const link = async (authUserId: string) => {
+    setLinking(true);
+    try {
+      await linkAccount({ data: { phone: phoneKey, authUserId } });
+      toast.success("Account linked to this customer.");
+      await queryClient.invalidateQueries({ queryKey: ["crm-customer", phoneKey] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't link this account");
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -73,15 +88,76 @@ export function CustomerProfile({
             <p className="text-sm text-muted-foreground">{detail.accountEmail}</p>
           ) : null}
 
-          {detail.possibleAccountMatch ? (
-            <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          {detail.identityConflict ? (
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
               <span>
-                An account uses this same phone number. Nothing has been joined — linking past
-                guest orders to an account comes in a later step.
+                Possible duplicate: another customer record already uses one of these details.
+                Nothing has been joined — both records are kept exactly as they are.
               </span>
             </div>
           ) : null}
+
+          {detail.linkCandidate ? (
+            <div className="space-y-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              <div className="flex items-start gap-2">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  A customer account uses this exact phone number
+                  {detail.linkCandidate.emailMasked ? ` (${detail.linkCandidate.emailMasked})` : ""}.
+                  Linking joins their guest history to that account here. Past orders stay exactly
+                  as they were.
+                </span>
+              </div>
+              {detail.canManage ? (
+                <Button
+                  size="sm"
+                  disabled={linking}
+                  onClick={() => void link(detail.linkCandidate!.authUserId)}
+                >
+                  {linking ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Link this account
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
+          {detail.identities.length > 0 ? (
+            <div className="space-y-1.5 rounded-xl border border-border px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Identities
+              </p>
+              {detail.identities.map((identity) => (
+                <div
+                  key={`${identity.kind}-${identity.value}`}
+                  className="flex flex-wrap items-center gap-2 text-sm"
+                >
+                  <span className="font-medium">{identity.label}</span>
+                  <span className="text-muted-foreground">{identity.value}</span>
+                  <Badge variant={identity.verified ? "default" : "secondary"}>
+                    {identity.verified ? (
+                      <BadgeCheck className="mr-1 h-3 w-3" />
+                    ) : null}
+                    {identity.verified ? "Verified" : "Unverified"}
+                  </Badge>
+                  {identity.source ? (
+                    <span className="text-xs text-muted-foreground">
+                      {identity.source.replace(/_/g, " ")}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Account: {detail.accountLinked ? "Linked" : "Not linked"} · Guest orders{" "}
+                {detail.guestOrderCount} · Account orders {detail.accountOrderCount}
+              </p>
+            </div>
+          ) : null}
+
         </CardContent>
       </Card>
 

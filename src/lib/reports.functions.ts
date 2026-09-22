@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { canonicalPhone } from "@/lib/phone";
 
 /**
  * Owner reporting and CRM. Everything here reads the EXISTING orders and
@@ -222,7 +223,8 @@ export const ownerListCustomers = createServerFn({ method: "GET" })
 
     const map = new Map<string, CrmCustomer>();
     for (const row of data ?? []) {
-      const key = row.customer_phone.trim();
+      // Canonical phone identity so 017…, 8801… and +8801… are one customer.
+      const key = canonicalPhone(row.customer_phone) ?? row.customer_phone.trim();
       const total = Number(row.total);
       const existing = map.get(key);
       if (!existing) {
