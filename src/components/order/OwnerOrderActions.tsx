@@ -93,8 +93,31 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
             <Button asChild size="sm" variant="outline">
               <a href={`tel:${order.customerPhone}`}><Phone aria-hidden="true" /> Call Customer</a>
             </Button>
-            <Button size="sm" variant={order.unreadMessages > 0 ? "default" : "outline"} onClick={() => setThreadOpen((open) => !open)} aria-expanded={threadOpen}>
-              <MessageCircle aria-hidden="true" /> Message Customer
+            <Button
+              size="sm"
+              variant={order.unreadMessages > 0 || hasCustomerNote ? "default" : "outline"}
+              onClick={() => {
+                setThreadOpen((wasOpen) => {
+                  if (!wasOpen) {
+                    requestAnimationFrame(() => {
+                      threadRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    });
+                  }
+                  return !wasOpen;
+                });
+              }}
+              aria-expanded={threadOpen}
+            >
+              <span className="relative">
+                <MessageCircle
+                  className={cn("h-4 w-4", hasCustomerNote && "text-primary animate-pulse")}
+                  aria-hidden="true"
+                />
+                {hasCustomerNote ? (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background" aria-hidden="true" />
+                ) : null}
+              </span>
+              Message Customer
               {order.unreadMessages > 0 ? ` (${order.unreadMessages})` : ""}
             </Button>
           </>
