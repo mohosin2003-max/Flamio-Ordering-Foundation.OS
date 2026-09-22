@@ -79,7 +79,8 @@ export async function readStaffGrants(userId: string): Promise<PermissionGrants>
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   let rows: { permission: string; access_level?: string | null }[] = [];
-  const withLevel = await supabaseAdmin
+  const { untypedAdmin } = await import("@/lib/untyped-db.server");
+  const withLevel = await untypedAdmin()
     .from("staff_permissions")
     .select("permission, access_level")
     .eq("user_id", userId);
@@ -91,7 +92,10 @@ export async function readStaffGrants(userId: string): Promise<PermissionGrants>
       .eq("user_id", userId);
     rows = (fallback.data ?? []) as { permission: string }[];
   } else {
-    rows = (withLevel.data ?? []) as { permission: string; access_level?: string | null }[];
+    rows = (withLevel.data ?? []) as unknown as {
+      permission: string;
+      access_level?: string | null;
+    }[];
   }
 
   const grants: PermissionGrants = {};

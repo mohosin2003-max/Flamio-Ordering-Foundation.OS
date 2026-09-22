@@ -119,7 +119,8 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       // Effective access: managers are unrestricted, staff get their own rows.
       let permRows: { user_id: string; permission: string; access_level?: string | null }[] = [];
       if (userIds.length) {
-        const withLevel = await supabaseAdmin
+        const { untypedAdmin } = await import("@/lib/untyped-db.server");
+        const withLevel = await untypedAdmin()
           .from("staff_permissions")
           .select("user_id, permission, access_level")
           .in("user_id", userIds);
@@ -130,7 +131,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
             .in("user_id", userIds);
           permRows = (plain.data ?? []) as typeof permRows;
         } else {
-          permRows = (withLevel.data ?? []) as typeof permRows;
+          permRows = (withLevel.data ?? []) as unknown as typeof permRows;
         }
       }
 
@@ -403,7 +404,8 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
         permission,
         access_level: level,
       }));
-      const { error } = await supabaseAdmin.from("staff_permissions").insert(rows);
+      const { untypedAdmin } = await import("@/lib/untyped-db.server");
+      const { error } = await untypedAdmin().from("staff_permissions").insert(rows);
       if (error) {
         // Database without the access_level column yet: keep existing behaviour.
         const { error: plainError } = await supabaseAdmin
