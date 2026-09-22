@@ -592,10 +592,24 @@ export async function scanStorage(): Promise<StorageFile[]> {
   return files;
 }
 
+/**
+ * Every deletion must be auditable. If the cleanup tables are not installed
+ * yet, refuse rather than delete without a history record.
+ */
+async function assertAuditable(): Promise<void> {
+  const config = await readConfig();
+  if (!config.installed) {
+    throw new Error(
+      "Setup step missing: run docs/sql/data_cleanup.sql once so every cleanup is recorded in history.",
+    );
+  }
+}
+
 export async function deleteStorageFiles(
   userId: string,
   keys: string[],
 ): Promise<CleanupResult> {
+  await assertAuditable();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const scan = await scanStorage();
   const byKey = new Map(scan.map((file) => [`${file.bucket}/${file.path}`, file]));
@@ -784,6 +798,8 @@ export async function deleteRecords(
     if (!actor.userId) throw new Error("Forbidden");
     return deleteStorageFiles(actor.userId, ids);
   }
+
+  await assertAuditable();
 
   const info = CLEANUP_CATEGORY_INFO[category];
   const setting = await getSetting(category);
