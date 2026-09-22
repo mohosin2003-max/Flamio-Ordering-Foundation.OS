@@ -72,6 +72,16 @@ export const signInWithPhonePassword = createServerFn({ method: "POST" })
     const email = authUser.user?.email;
     if (userError || !email) return { ok: false, message: "Incorrect email/phone or password." };
 
+    // When a real SMS provider is active, this compatibility path must never
+    // let an account with an unverified phone number in.
+    if (authUser.user?.phone && !authUser.user.phone_confirmed_at && (await smsVerificationRequired())) {
+      return {
+        ok: false,
+        message: "Please verify your phone number with the code we sent before signing in.",
+      };
+    }
+
+
     const { data: signedIn, error: signInError } = await publicAuthClient().auth.signInWithPassword({
       email,
       password: data.password,
