@@ -129,33 +129,21 @@ function MyAccountPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-xl font-bold">My account</h2>
-          <p className="text-sm text-muted-foreground">
-            Only your own salary and money records are shown here.
-          </p>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="month">Month</Label>
-          <Input
-            id="month"
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value || thisMonth())}
-            className="w-[170px]"
-          />
-        </div>
-      </div>
+      <MonthHeader month={month} setMonth={setMonth} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="Monthly salary" value={formatBDT(data.monthlySalary)} />
-        <Stat label="Paid this month" value={formatBDT(data.paidThisMonth)} />
-        <Stat label="Remaining salary" value={formatBDT(data.salaryDue)} />
-        <Stat label="Advance outstanding" value={formatBDT(data.outstandingAdvance)} />
-        <Stat label="Loan outstanding" value={formatBDT(data.outstandingLoan)} />
-        <Stat label="Waiting for approval" value={formatBDT(data.pendingTotal)} />
-      </div>
+      {partner ? (
+        <ProfitShareSection partner={partner} />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat label="Monthly salary" value={formatBDT(data.monthlySalary)} />
+          <Stat label="Paid this month" value={formatBDT(data.paidThisMonth)} />
+          <Stat label="Remaining salary" value={formatBDT(data.salaryDue)} />
+          <Stat label="Advance outstanding" value={formatBDT(data.outstandingAdvance)} />
+          <Stat label="Loan outstanding" value={formatBDT(data.outstandingLoan)} />
+          <Stat label="Waiting for approval" value={formatBDT(data.pendingTotal)} />
+        </div>
+      )}
+
 
       <Card>
         <CardHeader>
