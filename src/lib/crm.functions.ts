@@ -181,6 +181,8 @@ export const crmGetCustomer = createServerFn({ method: "GET" })
     }
 
     const customerType: "guest" | "account" = accountOrder?.user_id ? "account" : "guest";
+    const accountOrderCount = mine.filter((row) => row.user_id).length;
+    const guestOrderCount = mine.length - accountOrderCount;
 
     // CRM extras. When the Phase 1 tables have not been installed yet the
     // profile still works — notes and tags are simply unavailable.
@@ -188,6 +190,9 @@ export const crmGetCustomer = createServerFn({ method: "GET" })
     let notes: CrmNote[] = [];
     let tags: string[] = [];
     let storageReady = true;
+    let identities: CrmIdentityView[] = [];
+    let identityConflict = false;
+    let accountLinked = false;
 
     try {
       const { ensureCrmCustomer, recordCrmAccess } = await import("@/lib/crm.server");
@@ -197,9 +202,32 @@ export const crmGetCustomer = createServerFn({ method: "GET" })
         customerType,
         firstOrderAt,
         lastOrderAt,
+        // Only deterministic identities are attached automatically: the order
+        // itself carries the auth user id, so that link is certain.
+        authUserId: accountOrder?.user_id ?? null,
+        email: accountOrder?.user_id ? accountEmail : null,
+        emailVerified: Boolean(accountOrder?.user_id && accountEmail),
       });
       crmId = record.id;
+      identityConflict = record.conflict;
       await recordCrmAccess(record.id, context.userId, "view_profile");
+
+      const { readIdentities } = await import("@/lib/crm-identity.server");
+      const rows = await readIdentities(record.id);
+      accountLinked = rows.some((row) => row.kind === "auth_user");
+      identities = rows.map((row) => ({
+        kind: row.kind,
+        label:
+          row.kind === "phone" ? "Phone" : row.kind === "email" ? "Email" : "Customer account",
+        value:
+          row.kind === "phone"
+            ? mask(row.value)
+            : row.kind === "email"
+              ? maskEmail(row.value)
+              : "Linked",
+        verified: Boolean(row.verifiedAt),
+        source: row.source,
+      }));
 
       const db = await (await import("@/lib/untyped-db.server")).untypedAdmin();
       const noteRows = await db
@@ -234,6 +262,8 @@ export const crmGetCustomer = createServerFn({ method: "GET" })
       accountCreatedAt,
       possibleAccountMatch,
       orderCount: orders.length,
+      guestOrderCount,
+      accountOrderCount,
       totalSpent: Number(totalSpent.toFixed(2)),
       averageOrder: Number((totalSpent / orders.length).toFixed(2)),
       firstOrderAt,
@@ -247,7 +277,74 @@ export const crmGetCustomer = createServerFn({ method: "GET" })
       tags,
       canManage: await canWrite(context.userId),
       storageReady,
+      identities,
+      accountLinked,
+      identityConflict,
+      linkCandidate:
+        !accountLinked && possibleAccountMatch && accountUserId
+          ? { authUserId: accountUserId, emailMasked: accountEmail ? maskEmail(accountEmail) : null }
+          : null,
     };
+  });
+
+/**
+ * Owner-controlled SAFE LINK: attaches an existing customer account to this
+ * CRM record. Allowed only when the account's own phone number is an exact
+ * canonical match for this customer, so the link is deterministic. Nothing is
+ * merged and no order row is ever rewritten — a guest order stays a guest
+ * order.
+ */
+export const crmLinkAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { phone: string; authUserId: string }) => input)
+  .handler(async ({ data, context }): Promise<{ ok: true }> => {
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["customer_profiles", "customers"], "manage");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { canonicalPhone, attachIdentity, markCustomerType, findByIdentity, canonicalEmail } =
+      await import("@/lib/crm-identity.server");
+
+    const phone = canonicalPhone(data.phone);
+    if (!phone) throw new Error("This phone number can't be matched safely.");
+
+    const profile = await supabaseAdmin
+      .from("profiles")
+      .select("id, phone, email")
+      .eq("id", data.authUserId)
+      .maybeSingle();
+    if (profile.error || !profile.data) throw new Error("We couldn't find that account.");
+    if (canonicalPhone(profile.data.phone) !== phone) {
+      throw new Error("That account's phone number no longer matches this customer.");
+    }
+
+    const crmId = await findByIdentity("phone", phone);
+    if (!crmId) throw new Error("Open this customer once more, then try again.");
+
+    const linked = await attachIdentity({
+      crmCustomerId: crmId,
+      kind: "auth_user",
+      value: data.authUserId,
+      source: "owner_linked",
+      verified: true,
+    });
+    if (!linked.ok) {
+      throw new Error("That account already belongs to another customer record.");
+    }
+
+    const email = canonicalEmail(profile.data.email);
+    if (email) {
+      await attachIdentity({
+        crmCustomerId: crmId,
+        kind: "email",
+        value: email,
+        source: "owner_linked",
+        verified: true,
+      });
+    }
+
+    await markCustomerType(crmId, "account");
+    return { ok: true };
   });
 
 /** Reveals the full phone number and writes an audit row. */
