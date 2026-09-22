@@ -42,6 +42,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
   const next = counterSale || !canManage ? null : nextOrderStatus(order.status, order.fulfillment);
   const cancellable = canManage && canCancelOrder(order.status, order.channel);
   const hasCustomerNote = Boolean(order.deliveryNotes?.trim());
+  const hasCustomerAlert = hasCustomerNote || order.hasCustomerMessage === true || order.unreadMessages > 0;
 
   useEffect(() => {
     if (scrollToThread && threadRef.current) {
@@ -103,7 +104,11 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
             </Button>
             <Button
               size="sm"
-              variant={order.unreadMessages > 0 || hasCustomerNote ? "default" : "outline"}
+              variant="outline"
+              className={cn(
+                "relative overflow-visible",
+                hasCustomerAlert && "message-alert border-destructive bg-destructive/10 font-bold text-destructive hover:bg-destructive/20 hover:text-destructive",
+              )}
               onClick={() => {
                 setThreadOpen((wasOpen) => {
                   if (!wasOpen) setScrollToThread(true);
@@ -112,19 +117,19 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
               }}
               aria-expanded={threadOpen}
             >
-              <span className="relative">
+              <span className="relative overflow-visible">
                 <MessageCircle
                   className={cn(
                     "h-4 w-4",
-                    hasCustomerNote && order.unreadMessages === 0 && "text-primary animate-pulse",
+                    hasCustomerAlert && "text-destructive",
                   )}
                   aria-hidden="true"
                 />
-                {hasCustomerNote ? (
-                  <span className="absolute -right-1.5 -top-1.5 flex h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background" aria-hidden="true" />
+                {hasCustomerAlert ? (
+                  <span className="absolute -right-2 -top-2 z-20 flex size-3.5 rounded-full border-2 border-background bg-destructive" aria-hidden="true" />
                 ) : null}
               </span>
-              Message Customer
+              {hasCustomerAlert ? "Customer Message" : "Message Customer"}
               {order.unreadMessages > 0 ? ` (${order.unreadMessages})` : ""}
             </Button>
           </>
@@ -175,8 +180,8 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
       ) : null}
 
       {threadOpen ? (
-        <div ref={threadRef} className="mt-4 rounded-lg border border-border/70 bg-background p-3">
-          <OrderMessages orderId={order.id} autoFocus={messageOpenInitially} />
+        <div ref={threadRef} className="mt-4 rounded-lg border border-border/70 bg-background p-3 shadow-card">
+          <OrderMessages orderId={order.id} autoFocus={messageOpenInitially} customerName={order.customerName} ownerView />
         </div>
       ) : null}
     </section>

@@ -21,7 +21,17 @@ function time(iso: string): string {
  * owner/staff order list. The thread is filtered by `orderId` on the server, so
  * messages never cross between orders.
  */
-export function OrderMessages({ orderId, autoFocus = false }: { orderId: string; autoFocus?: boolean }) {
+export function OrderMessages({
+  orderId,
+  autoFocus = false,
+  customerName,
+  ownerView = false,
+}: {
+  orderId: string;
+  autoFocus?: boolean;
+  customerName?: string;
+  ownerView?: boolean;
+}) {
   const fetchThread = useServerFn(listOrderMessages);
   const send = useServerFn(sendOrderMessage);
   const queryClient = useQueryClient();
@@ -55,6 +65,14 @@ export function OrderMessages({ orderId, autoFocus = false }: { orderId: string;
 
   return (
     <div className="space-y-3">
+      {ownerView ? (
+        <div className="border-b border-border/70 pb-3">
+          <p className="text-xs font-bold uppercase text-destructive">Customer conversation</p>
+          <p className="mt-0.5 break-words font-display text-lg font-black text-foreground">
+            {customerName || "Customer"}
+          </p>
+        </div>
+      ) : null}
       {thread.isPending ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading messages…
@@ -69,7 +87,7 @@ export function OrderMessages({ orderId, autoFocus = false }: { orderId: string;
           No messages for this order yet.
         </p>
       ) : (
-        <ul className="max-h-64 space-y-2 overflow-y-auto overscroll-contain pr-1">
+        <ul className="max-h-72 space-y-2 overflow-y-auto overscroll-contain pr-1" aria-label="Order conversation">
           {messages.map((m) => {
             const own = m.senderRole === viewerRole;
             return (
@@ -80,16 +98,24 @@ export function OrderMessages({ orderId, autoFocus = false }: { orderId: string;
                 <div
                   className={cn(
                     "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
-                    own
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border/70 bg-secondary text-foreground",
+                    ownerView
+                      ? own
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-destructive/70 bg-destructive text-destructive-foreground"
+                      : own
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border/70 bg-secondary text-foreground",
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
                   <p
                     className={cn(
                       "mt-1 text-[11px]",
-                      own ? "text-primary-foreground/70" : "text-muted-foreground",
+                      own
+                        ? "text-primary-foreground/70"
+                        : ownerView
+                          ? "text-destructive-foreground/80"
+                          : "text-muted-foreground",
                     )}
                   >
                     {m.senderName ?? (m.senderRole === "staff" ? "Flamio" : "Customer")} ·{" "}
