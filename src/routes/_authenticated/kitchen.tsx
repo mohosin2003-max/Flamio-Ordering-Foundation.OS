@@ -40,8 +40,8 @@ export const Route = createFileRoute("/_authenticated/kitchen")({
 });
 
 /** Next kitchen action for the current status. Delivery dispatch stays owner-side. */
-const NEXT: Record<string, { status: "preparing" | "ready"; label: string }> = {
-  placed: { status: "preparing", label: "Start preparing" },
+const NEXT: Record<string, { status: "confirmed" | "preparing" | "ready"; label: string }> = {
+  placed: { status: "confirmed", label: "Confirm order" },
   confirmed: { status: "preparing", label: "Start preparing" },
   preparing: { status: "ready", label: "Mark ready" },
 };
