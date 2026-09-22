@@ -19,6 +19,8 @@ import {
   staffGetMyFinance,
   staffSubmitMoneyTaken,
 } from "@/lib/staff-finance.functions";
+import { staffGetMyProfitShare, type MyProfitShare } from "@/lib/owner-finance.functions";
+
 
 /**
  * A staff member's OWN account. The server function reads only the signed-in
@@ -35,6 +37,8 @@ function MyAccountPage() {
   const queryClient = useQueryClient();
   const fetchFinance = useServerFn(staffGetMyFinance);
   const submitMoney = useServerFn(staffSubmitMoneyTaken);
+  const fetchShare = useServerFn(staffGetMyProfitShare);
+
 
   const [month, setMonth] = useState(thisMonth);
   const [amount, setAmount] = useState("");
@@ -49,9 +53,20 @@ function MyAccountPage() {
   const finance = useQuery({
     queryKey: ["my-finance", month],
     queryFn: () => fetchFinance({ data: { month } }),
+    retry: false,
   });
 
-  if (finance.isLoading) {
+  // Profit partners see their own profit share instead of a salary. This call
+  // reads only the signed-in person's records; it fails quietly for everyone
+  // who isn't a partner.
+  const share = useQuery({
+    queryKey: ["my-profit-share", month],
+    queryFn: () => fetchShare({ data: { month } }),
+    retry: false,
+  });
+  const partner = share.data?.isPartner ? share.data : null;
+
+  if (finance.isLoading || share.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -61,6 +76,14 @@ function MyAccountPage() {
   }
 
   if (finance.error || !finance.data) {
+    if (partner) {
+      return (
+        <div className="space-y-6">
+          <MonthHeader month={month} setMonth={setMonth} />
+          <ProfitShareSection partner={partner} />
+        </div>
+      );
+    }
     return (
       <EmptyState
         title="Couldn't load your account"
@@ -71,6 +94,7 @@ function MyAccountPage() {
   }
 
   const data = finance.data;
+
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -109,33 +133,21 @@ function MyAccountPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-xl font-bold">My account</h2>
-          <p className="text-sm text-muted-foreground">
-            Only your own salary and money records are shown here.
-          </p>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="month">Month</Label>
-          <Input
-            id="month"
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value || thisMonth())}
-            className="w-[170px]"
-          />
-        </div>
-      </div>
+      <MonthHeader month={month} setMonth={setMonth} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Stat label="Monthly salary" value={formatBDT(data.monthlySalary)} />
-        <Stat label="Paid this month" value={formatBDT(data.paidThisMonth)} />
-        <Stat label="Remaining salary" value={formatBDT(data.salaryDue)} />
-        <Stat label="Advance outstanding" value={formatBDT(data.outstandingAdvance)} />
-        <Stat label="Loan outstanding" value={formatBDT(data.outstandingLoan)} />
-        <Stat label="Waiting for approval" value={formatBDT(data.pendingTotal)} />
-      </div>
+      {partner ? (
+        <ProfitShareSection partner={partner} />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <Stat label="Monthly salary" value={formatBDT(data.monthlySalary)} />
+          <Stat label="Paid this month" value={formatBDT(data.paidThisMonth)} />
+          <Stat label="Remaining salary" value={formatBDT(data.salaryDue)} />
+          <Stat label="Advance outstanding" value={formatBDT(data.outstandingAdvance)} />
+          <Stat label="Loan outstanding" value={formatBDT(data.outstandingLoan)} />
+          <Stat label="Waiting for approval" value={formatBDT(data.pendingTotal)} />
+        </div>
+      )}
+
 
       <Card>
         <CardHeader>
@@ -322,6 +334,87 @@ function MyAccountPage() {
     </div>
   );
 }
+
+function MonthHeader({ month, setMonth }: { month: string; setMonth: (value: string) => void }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 className="font-display text-xl font-bold">My account</h2>
+        <p className="text-sm text-muted-foreground">
+          Only your own salary, profit share and money records are shown here.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="month">Month</Label>
+        <Input
+          id="month"
+          type="month"
+          value={month}
+          onChange={(event) => setMonth(event.target.value || thisMonth())}
+          className="w-[170px]"
+        />
+      </div>
+    </div>
+  );
+}
+
+/** A partner's own profit share. No other person's finances are loaded here. */
+function ProfitShareSection({ partner }: { partner: MyProfitShare }) {
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            My profit share · {partner.sharePercent ?? 0}%
+            {partner.status === "ended" ? " (ended)" : ""}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {partner.month} · Business net profit {formatBDT(partner.monthBusinessProfit)}
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Earned" value={formatBDT(partner.monthEarned)} />
+            <Stat label="Paid" value={formatBDT(partner.monthPaid)} />
+            <Stat label="Remaining" value={formatBDT(partner.monthRemaining)} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Total earned" value={formatBDT(partner.totalEarned)} />
+            <Stat label="Total paid" value={formatBDT(partner.totalPaid)} />
+            <Stat label="Total remaining" value={formatBDT(partner.totalRemaining)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">My profit share history</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {partner.months.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No profit share earned yet.</p>
+          ) : (
+            partner.months.map((row) => (
+              <div
+                key={row.month}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2 text-sm"
+              >
+                <span className="font-medium">
+                  {row.month} · {row.sharePercent}%
+                </span>
+                <span className="text-muted-foreground">
+                  Earned {formatBDT(row.earned)} · Paid {formatBDT(row.paid)} · Remaining{" "}
+                  {formatBDT(row.remaining)}
+                </span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (

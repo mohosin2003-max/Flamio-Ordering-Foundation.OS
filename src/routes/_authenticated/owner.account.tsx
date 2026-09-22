@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { KeyRound, LogOut, Settings2, ShieldCheck, UserRound, Users, WalletCards } from "lucide-react";
+import { HandCoins, KeyRound, LogOut, Settings2, ShieldCheck, UserRound, Users, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -47,12 +47,15 @@ function StaffAccountPage() {
   const initials = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const assigned = Object.entries(access.data?.grants ?? {}).filter(([, level]) => level === "view" || level === "manage");
 
-  const links: { to: "/owner/my-account" | "/owner/staff" | "/owner/staff-accounts" | "/owner/settings"; label: string; detail: string; icon: typeof UserRound; show: boolean }[] = [
-    { to: "/owner/my-account", label: "My salary & money", detail: "Your own salary and money records", icon: WalletCards, show: access.isManager || hasPermission(access.data, "own_salary") || hasPermission(access.data, "own_money_taken") },
+  const links: { to: "/owner/my-account" | "/owner/staff" | "/owner/staff-accounts" | "/owner/finance" | "/owner/settings"; label: string; detail: string; icon: typeof UserRound; show: boolean }[] = [
+    // Owners use Owner Finance instead of the staff "My salary" concept.
+    { to: "/owner/my-account", label: "My salary & money", detail: "Your own salary, profit share and money records", icon: WalletCards, show: !access.isManager && (hasPermission(access.data, "own_salary") || hasPermission(access.data, "own_money_taken") || hasPermission(access.data, "own_profit_share")) },
+    { to: "/owner/finance", label: "Owner finance", detail: "Business profit, withdrawals and profit partners", icon: HandCoins, show: access.isManager },
     { to: "/owner/staff", label: "Staff & permissions", detail: "Team accounts, roles and assigned access", icon: Users, show: hasPermission(access.data, "staff") },
     { to: "/owner/staff-accounts", label: "Staff accounts & payroll", detail: "Salary, advances and payroll records", icon: WalletCards, show: access.isManager },
     { to: "/owner/settings", label: "Business settings", detail: "Restaurant, payments and communication", icon: Settings2, show: hasPermission(access.data, "settings") },
   ];
+
 
   return (
     <div className="space-y-5">
