@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { IntegrationsSection } from "@/components/owner/integration-providers";
 import { PaymentProvidersSection } from "@/components/owner/payment-providers";
 import { SmsProviderSection } from "@/components/owner/sms-provider";
-import { ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
+import { getOwnerAccess, ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
 import type { RestaurantSettings } from "@/lib/owner.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/settings")({
@@ -352,9 +352,10 @@ function OwnerSettings() {
 
 /** Owner-only entry point. Staff never see this card. */
 function DataStorageLink() {
+  const fetchAccess = useServerFn(getOwnerAccess);
   const access = useQuery({
     queryKey: ["owner-access"],
-    queryFn: () => getOwnerAccessFn(),
+    queryFn: () => fetchAccess(),
     staleTime: 60 * 1000,
   });
   if (!access.data?.roles?.includes("owner")) return null;
