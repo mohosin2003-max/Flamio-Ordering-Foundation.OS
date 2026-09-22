@@ -143,6 +143,10 @@ function AuthPage() {
       address_line: address.trim(),
     };
 
+    // Verification priority — exactly one method per signup:
+    //   1. email given            -> email confirmation only (never an SMS code)
+    //   2. no email + SMS usable  -> provider SMS code only
+    //   3. no email + no SMS      -> no verification step
     if (normalizedEmail) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
@@ -339,7 +343,8 @@ function AuthPage() {
                 <Label htmlFor="email">Email (optional)</Label>
                 <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
                 <p className="text-xs text-muted-foreground">
-                  If you add an email, we will send a verification code to it.
+                  If you add an email, we send a confirmation link there and no SMS code to your
+                  phone. Leave it empty to verify by phone instead.
                 </p>
               </div>
               <div className="space-y-2">
