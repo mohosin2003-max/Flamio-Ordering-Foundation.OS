@@ -91,6 +91,28 @@ function OwnerPos() {
     }
   }, [subtotal]);
 
+  const updateDiscountAmount = (value: string) => {
+    setDiscountAmount(value);
+    const parsed = parseFloat(value);
+    if (value === "" || Number.isNaN(parsed) || subtotal <= 0) {
+      setDiscountPercent("");
+      return;
+    }
+    const clamped = clampDiscount(round2(parsed), subtotal);
+    setDiscountPercent(round2((clamped / subtotal) * 100).toString());
+  };
+
+  const updateDiscountPercent = (value: string) => {
+    setDiscountPercent(value);
+    const parsed = parseFloat(value);
+    if (value === "" || Number.isNaN(parsed) || subtotal <= 0) {
+      setDiscountAmount("");
+      return;
+    }
+    const pct = Math.max(0, Math.min(parsed, 100));
+    setDiscountAmount(round2((subtotal * pct) / 100).toString());
+  };
+
   if (catalog.isLoading) return <Skeleton className="h-96 w-full" />;
 
   if (catalog.error) {
