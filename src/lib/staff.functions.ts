@@ -283,7 +283,8 @@ export const ownerSetStaffRole = createServerFn({ method: "POST" })
       }
     }
 
-    return { ok: true };
+    return { ok: true as const, message: null };
+
   });
 
 /** Turns dashboard access off by removing the person's role rows. */
