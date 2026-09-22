@@ -108,19 +108,21 @@ export function OrderMessages({
                   )}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p
-                    className={cn(
-                      "mt-1 text-[11px]",
-                      own
-                        ? "text-primary-foreground/70"
-                        : ownerView
-                          ? "text-destructive-foreground/80"
-                          : "text-muted-foreground",
-                    )}
-                  >
-                    {m.senderName ?? (m.senderRole === "staff" ? "Flamio" : "Customer")} ·{" "}
-                    {time(m.createdAt)}
-                  </p>
+                  {!(ownerView && m.senderRole === "customer") ? (
+                    <p
+                      className={cn(
+                        "mt-1 text-[11px]",
+                        own
+                          ? "text-primary-foreground/70"
+                          : ownerView
+                            ? "text-destructive-foreground/80"
+                            : "text-muted-foreground",
+                      )}
+                    >
+                      {m.senderName ?? (m.senderRole === "staff" ? "Flamio" : "Customer")} ·{" "}
+                      {time(m.createdAt)}
+                    </p>
+                  ) : null}
                 </div>
               </li>
             );
