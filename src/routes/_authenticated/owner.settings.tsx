@@ -341,6 +341,8 @@ function OwnerSettings() {
       <PaymentProvidersSection />
 
       <SmsProviderSection />
+
+      <IntegrationsSection />
     </div>
   );
 }
