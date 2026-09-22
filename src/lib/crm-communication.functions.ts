@@ -266,7 +266,7 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       preferences,
       history: history.slice(0, 40),
       canSeeHistory,
-      canMessage: Boolean(authUserId) && (pushReady || Boolean(conversationId) || true),
+      canMessage: Boolean(authUserId),
       conversationId,
     };
   });
