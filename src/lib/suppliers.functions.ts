@@ -36,7 +36,7 @@ export const ownerListSuppliers = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<SupplierRecord[]> => {
     // Purchase recording needs the supplier names too.
     const { assertAnyPermission } = await import("@/lib/owner.server");
-    await assertAnyPermission(context.userId, ["suppliers", "purchases"]);
+    await assertAnyPermission(context.userId, ["suppliers", "purchases"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

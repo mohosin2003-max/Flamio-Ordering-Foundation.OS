@@ -61,7 +61,7 @@ async function authorizeThread(
   }
 
   const { assertAnyPermission } = await import("@/lib/owner.server");
-  await assertAnyPermission(userId, ["online_orders", "order_management"]);
+  await assertAnyPermission(userId, ["online_orders", "order_management"], "view");
   return { order: order as OrderRow, viewerRole: "staff" };
 }
 

@@ -4,7 +4,7 @@
  * managers keep full access; a `staff` member needs the `kitchen` permission.
  */
 
-export async function assertKitchen(userId: string): Promise<void> {
+export async function assertKitchen(userId: string, level: "view" | "manage" = "manage"): Promise<void> {
   const { assertPermission } = await import("@/lib/owner.server");
-  await assertPermission(userId, "kitchen");
+  await assertPermission(userId, "kitchen", level);
 }

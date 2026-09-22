@@ -148,7 +148,7 @@ export const ownerListContactThreads = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ContactThread[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "customers", "view");
     const database = await db();
     const { data: conversations, error } = await database
       .from("customer_conversations")
@@ -190,7 +190,7 @@ export const ownerGetContactThread = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<ContactThread> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "customers", "view");
     const database = await db();
     const { data: conversation } = await database
       .from("customer_conversations")

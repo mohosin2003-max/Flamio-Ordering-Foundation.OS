@@ -183,7 +183,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<OwnerOrderRow[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders");
+    await assertPermission(context.userId, "online_orders", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -268,7 +268,7 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data: input, context }): Promise<OwnerOrderDetail | null> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders");
+    await assertPermission(context.userId, "online_orders", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: order, error } = await supabaseAdmin
@@ -441,7 +441,7 @@ export const ownerGetCatalog = createServerFn({ method: "GET" })
   .handler(
     async ({ context }): Promise<{ categories: OwnerCategory[]; products: OwnerProduct[] }> => {
       const { assertAnyPermission } = await import("@/lib/owner.server");
-      await assertAnyPermission(context.userId, ["menu", "pos"]);
+      await assertAnyPermission(context.userId, ["menu", "pos"], "view");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const [{ data: categories }, { data: products }, { data: images }] = await Promise.all([
@@ -746,7 +746,7 @@ export const ownerGetSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RestaurantSettings | null> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "settings", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { looseDb } = await import("@/integrations/supabase/loose.server");
 

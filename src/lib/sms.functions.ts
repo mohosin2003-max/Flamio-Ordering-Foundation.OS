@@ -52,7 +52,7 @@ export const ownerGetSmsProvider = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SmsProviderView | null> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "settings", "view");
     const { getSmsConfig, SMS_API_KEY_SECRET } = await import("@/lib/sms.server");
     return toView(await getSmsConfig(), SMS_API_KEY_SECRET);
   });

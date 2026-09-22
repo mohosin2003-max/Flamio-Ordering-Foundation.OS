@@ -477,7 +477,7 @@ export const ownerListReviews = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<OwnerReview[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "reviews", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await loose(supabaseAdmin)
@@ -525,7 +525,7 @@ export const ownerSetReviewStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "reviews");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("order_reviews")
@@ -540,7 +540,7 @@ export const ownerDeleteReview = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "reviews");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rowData } = await loose(supabaseAdmin)

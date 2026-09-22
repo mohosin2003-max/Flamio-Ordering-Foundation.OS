@@ -138,7 +138,7 @@ export const ownerGetRewards = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [rulesResult, claimsResult] = await Promise.all([
       supabaseAdmin.from("reward_rules").select(RULE_COLUMNS).order("sort_order"),
@@ -176,7 +176,7 @@ export const ownerUpdateRewardRule = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("reward_rules")
@@ -193,7 +193,7 @@ export const ownerReviewRewardClaim = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: claim, error: claimError } = await supabaseAdmin
       .from("reward_claims")
@@ -297,7 +297,7 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards", "view");
     const { untypedAdmin } = await import("@/lib/untyped-db.server");
     const supabaseAdmin = await untypedAdmin();
 
@@ -380,7 +380,7 @@ export const ownerSaveChallengeRewardRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => challengeRewardRuleInput.parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards");
     const { untypedAdmin } = await import("@/lib/untyped-db.server");
     const supabaseAdmin = await untypedAdmin();
     const row = {
@@ -416,7 +416,7 @@ export const ownerDeleteChallengeRewardRule = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "rewards");
     const { untypedAdmin } = await import("@/lib/untyped-db.server");
     const supabaseAdmin = await untypedAdmin();
     const { error } = await supabaseAdmin.from("challenge_result_reward_rules").delete().eq("id", data.id);

@@ -51,7 +51,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       context,
     }): Promise<{ members: StaffMember[]; invites: StaffInvite[]; me: string }> => {
       const { assertPermission } = await import("@/lib/owner.server");
-      await assertPermission(context.userId, "staff");
+      await assertPermission(context.userId, "staff", "view");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const [{ data: roleRows }, { data: inviteRows }] = await Promise.all([

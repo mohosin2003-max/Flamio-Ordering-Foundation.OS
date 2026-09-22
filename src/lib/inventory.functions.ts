@@ -38,7 +38,7 @@ export const ownerListInventory = createServerFn({ method: "GET" })
     }): Promise<{ items: InventoryItem[]; lowStockCount: number; recipes: RecipeLine[] }> => {
       // Reading the ingredient list is also needed to record a purchase.
       const { assertAnyPermission } = await import("@/lib/owner.server");
-      await assertAnyPermission(context.userId, ["inventory", "purchases"]);
+      await assertAnyPermission(context.userId, ["inventory", "purchases"], "view");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const [{ data: rows, error }, { data: recipeRows }] = await Promise.all([

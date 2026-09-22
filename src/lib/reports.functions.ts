@@ -39,7 +39,7 @@ export const ownerGetSalesReport = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => rangeSchema.parse(input))
   .handler(async ({ data, context }): Promise<SalesReport> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "reports");
+    await assertPermission(context.userId, "reports", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const fromIso = new Date(`${data.from}T00:00:00+06:00`).toISOString();
@@ -206,7 +206,7 @@ export const ownerListCustomers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<CrmCustomer[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "customers");
+    await assertPermission(context.userId, "customers", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

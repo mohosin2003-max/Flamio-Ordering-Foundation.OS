@@ -101,7 +101,7 @@ export const ownerListDeliveryZones = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<DeliveryZoneRecord[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "delivery", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -156,7 +156,7 @@ export const ownerSaveDeliveryZone = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "delivery");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const payload = {
@@ -207,7 +207,7 @@ export const ownerDeleteDeliveryZone = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "delivery");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Orders keep their own `zone_name` / `delivery_charge` copy, so removing a
@@ -263,7 +263,7 @@ export const ownerSaveRestaurantLocation = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "settings");
+    await assertPermission(context.userId, "delivery");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: row } = await supabaseAdmin
