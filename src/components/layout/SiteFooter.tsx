@@ -1,21 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { ShieldCheck } from "lucide-react";
 
-import { useAuth } from "@/hooks/use-auth";
-import { getOwnerAccess } from "@/lib/owner.functions";
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 
 export function SiteFooter() {
-  const { isAuthenticated } = useAuth();
-  const fetchAccess = useServerFn(getOwnerAccess);
-  const access = useQuery({
-    queryKey: ["owner-access"],
-    queryFn: () => fetchAccess(),
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  });
+  const access = useDashboardAccess();
   const showOwnerLink = Boolean(access.data?.isOwner || access.data?.canClaim);
+
 
   return (
     <footer className="border-t border-border/60 bg-surface">
