@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CustomerCommunication } from "@/components/owner/CustomerCommunication";
 import { CustomerNotes } from "@/components/owner/CustomerNotes";
 import { CustomerTags } from "@/components/owner/CustomerTags";
 import { formatBDT } from "@/lib/format";
@@ -200,6 +201,8 @@ export function CustomerProfile({
           />
         </div>
       )}
+
+      <CustomerCommunication phoneKey={phoneKey} />
 
       <div className="space-y-2">
         <h3 className="font-display text-base font-bold">Order history</h3>
