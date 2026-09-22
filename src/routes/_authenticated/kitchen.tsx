@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CustomerNote, StaffOrderItemList, orderDateParts } from "@/components/order/StaffOrderDetails";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -175,40 +176,23 @@ function KitchenPage() {
               <li key={order.id}>
                 <Card className={isNew ? "border-primary shadow-ember" : undefined}>
                   <CardContent className="space-y-3 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                       <div className="min-w-0">
                         <p className="break-all font-display font-bold">{order.code}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleTimeString()} ·{" "}
+                          {orderDateParts(order.createdAt).time} ·{" "}
                           <span className="capitalize">{order.fulfillment}</span>
                         </p>
                       </div>
-                      <Badge>{statusLabel(order.status, order.fulfillment)}</Badge>
+                      <Badge className="shrink-0">{statusLabel(order.status, order.fulfillment)}</Badge>
                     </div>
 
-                    <ul className="space-y-1 text-sm">
-                      {order.items.map((item, i) => (
-                        <li key={`${order.id}-${i}`} className="flex gap-2">
-                          <span className="font-bold text-primary">{item.quantity}×</span>
-                          <span className="min-w-0">
-                            {item.name}
-                            {item.variantName ? (
-                              <span className="text-muted-foreground"> · {item.variantName}</span>
-                            ) : null}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {order.deliveryNotes ? (
-                      <p className="rounded-lg bg-secondary p-2 text-xs text-muted-foreground">
-                        {order.deliveryNotes}
-                      </p>
-                    ) : null}
+                    <CustomerNote note={order.deliveryNotes} />
+                    <StaffOrderItemList items={order.items} />
 
                     {next ? (
                       <Button
-                        className="w-full"
+                        className="min-h-14 w-full text-base font-black shadow-ember sm:text-lg"
                         disabled={pending === order.id}
                         onClick={async () => {
                           setPending(order.id);
@@ -230,7 +214,7 @@ function KitchenPage() {
                         {pending === order.id ? (
                           <Loader2 aria-hidden="true" className="animate-spin" />
                         ) : null}
-                        {next.label}
+                        {next.status === "ready" ? "READY" : next.label}
                       </Button>
                     ) : null}
                   </CardContent>
