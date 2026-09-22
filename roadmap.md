@@ -20,6 +20,6 @@
 
 - [x] Owner Orders and Kitchen presentation improved for faster processing without changing order logic, permissions, or data structure
 - [x] Owner order cards open one dedicated details page; item photos use stored snapshots with existing menu-image fallback
-## In progress
-- [ ] Unify staff creation, legacy invite claiming, email/phone authentication, staff routing, and password change
+## Done
+- [x] Unified staff creation, secure legacy invite claiming, email/phone authentication, staff routing, and password change
 
