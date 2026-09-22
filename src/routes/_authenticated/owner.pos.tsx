@@ -196,6 +196,24 @@ function OwnerPos() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["owner-inventory"] });
+      setLastSale({
+        orderCode: result.code,
+        orderId: result.id,
+        createdAt: result.createdAt,
+        cashierName: profile?.fullName ?? null,
+        customerName: customerName.trim() || "Walk-in customer",
+        customerPhone: customerPhone.trim() || null,
+        items: selected.map((p) => ({
+          productName: p.name,
+          quantity: lines[p.id] ?? 1,
+          unitPrice: p.basePrice,
+        })),
+        subtotal,
+        discount: discountAmountNum,
+        deliveryCharge: 0,
+        total: finalTotal,
+        paymentLabel: "Cash at counter (POS)",
+      });
       setLines({});
       setCustomerPhone("");
       setDiscountAmount("");
