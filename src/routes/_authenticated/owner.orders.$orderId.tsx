@@ -85,6 +85,7 @@ function OwnerOrderDetailPage() {
               <div><dt className="text-xs text-muted-foreground">Date</dt><dd className="font-semibold">{date}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Time</dt><dd className="font-semibold">{time}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Type</dt><dd className="font-semibold capitalize">{details.fulfillment}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Channel</dt><dd className="font-semibold capitalize">{details.channel}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Status</dt><dd className="font-semibold">{statusLabel(details.status, details.fulfillment)}</dd></div>
               {details.zoneName ? <div><dt className="text-xs text-muted-foreground">Delivery zone</dt><dd className="font-semibold">{details.zoneName}</dd></div> : null}
               {details.estimatedTime ? <div><dt className="text-xs text-muted-foreground">Estimated time</dt><dd className="font-semibold">{details.estimatedTime}</dd></div> : null}
@@ -112,6 +113,7 @@ function OwnerOrderDetailPage() {
               </dl>
               <dl className="space-y-2 text-sm">
                 <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd className="font-semibold">{details.paymentLabel}</dd></div>
+                {details.couponCode && details.discount === 0 ? <div><dt className="text-xs text-muted-foreground">Coupon</dt><dd className="font-semibold">{details.couponCode}</dd></div> : null}
                 {details.riderName ? <div><dt className="text-xs text-muted-foreground">Assigned rider</dt><dd className="flex flex-wrap items-center gap-2 font-semibold"><UserRound className="size-4" aria-hidden="true" /> {details.riderName}{details.riderPhone ? <a href={`tel:${details.riderPhone}`} className="inline-flex items-center gap-1 text-primary hover:underline"><Phone className="size-3.5" aria-hidden="true" />{details.riderPhone}</a> : null}</dd></div> : null}
               </dl>
             </div>
