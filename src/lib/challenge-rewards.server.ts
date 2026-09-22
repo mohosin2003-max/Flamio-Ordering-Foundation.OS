@@ -89,7 +89,7 @@ export async function awardChallengeResultRewards(input: {
     for (const rule of rules) {
       const blockedReason = rule.allow_repeat_after_limit && !rule.first_time_only
         ? null
-        : await findLimitBlock(rule, input.userId, today);
+        : await findLimitBlock(rule, input.userId, input.challengeId, today);
 
       const { data: event, error: eventError } = await db
         .from("challenge_result_reward_events")
@@ -132,6 +132,7 @@ export async function awardChallengeResultRewards(input: {
 async function findLimitBlock(
   rule: ChallengeResultRewardRule,
   userId: string,
+  challengeId: string,
   today: string,
 ): Promise<string | null> {
   const db = await admin();
@@ -157,7 +158,7 @@ async function findLimitBlock(
       if ((count ?? 0) >= rule.max_per_day) return "Daily limit reached";
     }
     if (rule.max_per_challenge > 0) {
-      const { count } = await base().eq("user_id", userId).eq("challenge_id", rule.challenge_id ?? "");
+      const { count } = await base().eq("user_id", userId).eq("challenge_id", challengeId);
       if ((count ?? 0) >= rule.max_per_challenge) return "Challenge limit reached";
     }
   }
