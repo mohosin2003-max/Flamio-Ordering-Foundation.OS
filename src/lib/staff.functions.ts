@@ -255,8 +255,13 @@ export const ownerSetStaffRole = createServerFn({ method: "POST" })
           .select("id", { count: "exact", head: true })
           .eq("role", "owner");
         if ((count ?? 0) <= 1 && data.role !== "owner") {
-          throw new Error("This is the only owner — give someone else owner access first.");
+          // Expected validation, not a crash: return it so the UI can show a message.
+          return {
+            ok: false as const,
+            message: "This is the only owner — give someone else owner access first.",
+          };
         }
+
       }
       const { error: delError } = await supabaseAdmin
         .from("user_roles")
@@ -278,7 +283,8 @@ export const ownerSetStaffRole = createServerFn({ method: "POST" })
       }
     }
 
-    return { ok: true };
+    return { ok: true as const, message: null };
+
   });
 
 /** Turns dashboard access off by removing the person's role rows. */

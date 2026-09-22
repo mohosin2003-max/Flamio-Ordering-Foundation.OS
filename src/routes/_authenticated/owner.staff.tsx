@@ -101,8 +101,13 @@ function OwnerStaff() {
     try {
       const match = await findAccount({ data: { query: phone } });
       if (match) {
-        await setRole({ data: { userId: match.userId, role: inviteRole } });
+        const res = await setRole({ data: { userId: match.userId, role: inviteRole } });
+        if (!res.ok) {
+          toast.error(res.message ?? "Couldn't update access");
+          return;
+        }
         toast.success(`${match.fullName ?? "Account"} now has ${ROLE_LABEL[inviteRole]} access`);
+
       } else {
         await createInvite({
           data: { phone, note: inviteNote.trim() ? inviteNote.trim() : null },
@@ -204,9 +209,16 @@ function OwnerStaff() {
                     value={member.roles[0] ?? "staff"}
                     onValueChange={async (value) => {
                       try {
-                        await setRole({ data: { userId: member.userId, role: value as StaffRole } });
+                        const res = await setRole({
+                          data: { userId: member.userId, role: value as StaffRole },
+                        });
+                        if (!res.ok) {
+                          toast.error(res.message ?? "Couldn't update access");
+                          return;
+                        }
                         await invalidate();
                         toast.success("Access updated");
+
                       } catch (error) {
                         toast.error(
                           error instanceof Error ? error.message : "Couldn't update access",
@@ -288,9 +300,14 @@ function OwnerStaff() {
                       size="sm"
                       onClick={async () => {
                         try {
-                          await setRole({
+                          const res = await setRole({
                             data: { userId: invite.matchedUserId as string, role: "staff" },
                           });
+                          if (!res.ok) {
+                            toast.error(res.message ?? "Couldn't grant access");
+                            return;
+                          }
+
                           await deleteInvite({ data: { id: invite.id } });
                           await invalidate();
                           toast.success("Staff access granted");
