@@ -300,9 +300,14 @@ function OwnerStaff() {
                       size="sm"
                       onClick={async () => {
                         try {
-                          await setRole({
+                          const res = await setRole({
                             data: { userId: invite.matchedUserId as string, role: "staff" },
                           });
+                          if (!res.ok) {
+                            toast.error(res.message ?? "Couldn't grant access");
+                            return;
+                          }
+
                           await deleteInvite({ data: { id: invite.id } });
                           await invalidate();
                           toast.success("Staff access granted");
