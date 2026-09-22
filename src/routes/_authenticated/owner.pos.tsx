@@ -17,6 +17,14 @@ import { placeholderByCategorySlug } from "@/lib/menu-repository";
 import { placeOrder } from "@/lib/orders.functions";
 import { ownerGetCatalog } from "@/lib/owner.functions";
 
+function clampDiscount(amount: number, subtotal: number): number {
+  return Math.max(0, Math.min(amount, subtotal));
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 /**
  * Counter (POS) sales. This is a thin till on top of the EXISTING order
  * architecture: it calls the same `placeOrder` server function as checkout, so
