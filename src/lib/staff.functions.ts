@@ -210,13 +210,6 @@ export const ownerCreateInvite = createServerFn({ method: "POST" })
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "staff");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    if (data.role === "owner") {
-      const { data: callerIsOwner } = await supabaseAdmin.rpc("has_role", {
-        _user_id: context.userId,
-        _role: "owner",
-      });
-      if (!callerIsOwner) throw new Error("Only an owner can create another owner.");
-    }
 
     const { error } = await supabaseAdmin
       .from("owner_invites")
