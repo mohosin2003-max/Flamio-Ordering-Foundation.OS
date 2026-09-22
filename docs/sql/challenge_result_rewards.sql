@@ -49,7 +49,8 @@ create table if not exists public.challenge_result_reward_events (
   id uuid primary key default gen_random_uuid(),
   rule_id uuid not null references public.challenge_result_reward_rules(id) on delete cascade,
   challenge_id uuid references public.challenges(id) on delete set null,
-  session_id uuid not null,
+  -- real challenge play session (existing challenge_sessions table)
+  session_id uuid not null references public.challenge_sessions(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   result_condition text not null,
   points integer not null default 0 check (points >= 0),
