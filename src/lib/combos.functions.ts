@@ -80,6 +80,7 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
       slug: slugify(data.name),
       name: data.name,
       description: data.description,
+      imageUrl: data.imageUrl?.trim() ? data.imageUrl.trim() : null,
       pricingMode: data.pricingMode,
       fixedPrice: data.pricingMode === "fixed" ? data.fixedPrice : null,
       isActive: data.isActive,
