@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { signInWithPhonePassword } from "@/lib/auth.functions";
+import { getPhoneAuthMode } from "@/lib/auth-mode.functions";
+import { signInWithPhonePassword, signUpWithPhonePassword } from "@/lib/auth.functions";
 import { getOwnerAccess } from "@/lib/owner.functions";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { claimMyStaffInvite } from "@/lib/staff.functions";
@@ -39,6 +40,8 @@ function AuthPage() {
   const fetchAccess = useServerFn(getOwnerAccess);
   const claimInvite = useServerFn(claimMyStaffInvite);
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
+  const phonePasswordSignUp = useServerFn(signUpWithPhonePassword);
+  const readAuthMode = useServerFn(getPhoneAuthMode);
 
   const [mode, setMode] = useState<Mode>("login");
   const [identity, setIdentity] = useState("");
@@ -161,13 +164,36 @@ function AuthPage() {
       return;
     }
 
+    // The server decides whether SMS verification is genuinely available.
+    const mode = await readAuthMode();
+
+    if (!mode.smsVerificationRequired) {
+      // Mode 1: no usable SMS provider — phone + password is the account.
+      const result = await phonePasswordSignUp({
+        data: { fullName: fullName.trim(), phone: normalizedPhone, password },
+      });
+      if (!result.ok) throw new Error(result.message);
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: result.accessToken,
+        refresh_token: result.refreshToken,
+      });
+      if (sessionError) throw new Error("We couldn't start your session. Please try again.");
+      toast.success("Account created");
+      await goToLanding();
+      return;
+    }
+
+    // Mode 2: a real SMS provider is enabled — the provider's own OTP must be
+    // verified before the account is usable. No bypass.
     const { data, error: signUpError } = await supabase.auth.signUp({
       phone: `+${normalizedPhone}`,
       password,
       options: { data: metadata },
     });
     if (signUpError) throw signUpError;
-    if (!data.session) {
+    const phoneConfirmed = Boolean(data.user?.phone_confirmed_at);
+    if (!phoneConfirmed) {
+      if (data.session) await supabase.auth.signOut();
       setAwaitingPhoneOtp(true);
       toast.success("Enter the code sent to your phone");
       return;
