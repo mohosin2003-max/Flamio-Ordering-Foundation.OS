@@ -279,25 +279,22 @@ function AuthPage() {
       {awaitingEmail ? (
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border border-border bg-muted/40 p-4">
-            <p className="font-semibold">Verify your email</p>
+            <p className="font-semibold">Confirm your email</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              We sent a verification code to {email.trim()}. Enter it below to finish creating your
-              account. The link in the same email also works.
+              We sent a confirmation link to {email.trim()}. Open that email and tap the link to
+              activate your account, then sign in with your phone number and password.
             </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email-otp">Email verification code</Label>
-            <Input
-              id="email-otp"
-              value={otp}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              onChange={(event) => setOtp(event.target.value)}
-            />
-          </div>
-          <Button className="w-full" disabled={busy} onClick={() => void verifyEmail()}>
-            {busy ? <Loader2 className="animate-spin" /> : null}
-            Verify email
+          <Button
+            className="w-full"
+            onClick={() => {
+              setAwaitingEmail(false);
+              setMode("login");
+              setIdentity(phone.trim());
+              setPassword("");
+            }}
+          >
+            I confirmed my email — sign in
           </Button>
         </div>
       ) : awaitingPhoneOtp ? (
