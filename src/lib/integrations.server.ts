@@ -120,7 +120,7 @@ export async function listIntegrations(): Promise<IntegrationConfig[]> {
         status: computeStatus({ isEnabled, missingSecretNames, missingFields, lastTestOk }),
       };
     })
-    .sort((a, b) => a.slug.localeCompare(b.slug));
+    .sort((a: IntegrationConfig, b: IntegrationConfig) => a.slug.localeCompare(b.slug));
 }
 
 export async function getIntegration(slug: IntegrationSlug): Promise<IntegrationConfig | null> {
