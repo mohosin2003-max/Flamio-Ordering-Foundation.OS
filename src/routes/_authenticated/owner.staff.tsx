@@ -196,27 +196,6 @@ function OwnerStaff() {
                   </div>
                 </div>
 
-                {member.roles.includes("owner") || member.roles.includes("admin") ? (
-                  <p className="text-xs text-muted-foreground">
-                    Full access to every section of the dashboard.
-                  </p>
-                ) : (
-                  <StaffPermissionEditor
-                    grants={member.grants}
-                    saving={savingFor === member.userId}
-                    onSave={async (next) => {
-                      setSavingFor(member.userId);
-                      try {
-                        await setPermissions({ data: { userId: member.userId, grants: next } });
-                        await invalidate();
-                      } finally {
-                        setSavingFor(null);
-                      }
-                    }}
-                  />
-                )}
-
-
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Role
                 </p>
@@ -265,6 +244,23 @@ function OwnerStaff() {
                     Remove access
                   </Button>
                 </div>
+
+                <StaffPermissionEditor
+                  grants={member.grants}
+                  saving={savingFor === member.userId}
+                  lockedFullAccess={
+                    member.roles.includes("owner") || member.roles.includes("admin")
+                  }
+                  onSave={async (next) => {
+                    setSavingFor(member.userId);
+                    try {
+                      await setPermissions({ data: { userId: member.userId, grants: next } });
+                      await invalidate();
+                    } finally {
+                      setSavingFor(null);
+                    }
+                  }}
+                />
               </CardContent>
             </Card>
           ))

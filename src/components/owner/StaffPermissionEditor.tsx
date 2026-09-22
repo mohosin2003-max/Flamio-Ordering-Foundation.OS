@@ -35,10 +35,13 @@ export function StaffPermissionEditor({
   grants,
   saving,
   onSave,
+  lockedFullAccess = false,
 }: {
   grants: PermissionGrants;
   saving: boolean;
   onSave: (next: { permission: StaffPermission; level: StaffAccessLevel }[]) => Promise<void>;
+  /** Owner and Manager roles have an existing full-access override. */
+  lockedFullAccess?: boolean;
 }) {
   const [pendingBulk, setPendingBulk] = useState<Choice | null>(null);
 
@@ -82,18 +85,20 @@ export function StaffPermissionEditor({
           Section access
         </p>
         {saving ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
-        {CHOICES.map((choice) => (
-          <Button
-            key={choice.value}
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={saving}
-            onClick={() => setPendingBulk(choice.value)}
-          >
-            {choice.value === "none" ? "No access to all" : `${choice.label} on all`}
-          </Button>
-        ))}
+        {!lockedFullAccess
+          ? CHOICES.map((choice) => (
+              <Button
+                key={choice.value}
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={saving}
+                onClick={() => setPendingBulk(choice.value)}
+              >
+                {choice.value === "none" ? "No access to all" : `${choice.label} on all`}
+              </Button>
+            ))
+          : null}
       </div>
 
       {pendingBulk ? (
@@ -131,7 +136,7 @@ export function StaffPermissionEditor({
                   </span>
                   <Select
                     value={current(permission)}
-                    disabled={saving}
+                     disabled={saving || lockedFullAccess}
                     onValueChange={(value) => void setOne(permission, value as Choice)}
                   >
                     <SelectTrigger className="h-9 w-[130px] shrink-0">
@@ -152,8 +157,9 @@ export function StaffPermissionEditor({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        View only lets this person open the section and read it; adding, editing, deleting and stock
-        changes are refused.
+        {lockedFullAccess
+          ? "This role has Full access to every section. Change the Role to Staff to set individual section levels."
+          : "View only lets this person open the section and read it; adding, editing, deleting and stock changes are refused."}
       </p>
     </div>
   );
