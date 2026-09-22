@@ -13,6 +13,8 @@ export interface KitchenOrderItem {
   name: string;
   variantName: string | null;
   quantity: number;
+  imageUrl: string | null;
+  comboName: string | null;
 }
 
 export interface KitchenOrder {
@@ -56,7 +58,7 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, fulfillment, created_at, delivery_notes, order_items(product_name, variant_name, quantity)",
+        "id, code, status, fulfillment, created_at, delivery_notes, order_items(product_name, variant_name, quantity, image_url, combo_name, created_at)",
       )
       .in("status", ["placed", "confirmed", "preparing", "ready"])
       .eq("channel", "online")
@@ -75,11 +77,15 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
       fulfillment: o.fulfillment as "delivery" | "pickup",
       createdAt: o.created_at,
       deliveryNotes: o.delivery_notes,
-      items: (o.order_items ?? []).map((i) => ({
-        name: i.product_name,
-        variantName: i.variant_name,
-        quantity: i.quantity,
-      })),
+      items: (o.order_items ?? [])
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map((i) => ({
+          name: i.product_name,
+          variantName: i.variant_name,
+          quantity: i.quantity,
+          imageUrl: i.image_url,
+          comboName: i.combo_name,
+        })),
     }));
   });
 
