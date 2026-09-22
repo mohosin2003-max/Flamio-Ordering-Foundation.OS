@@ -100,7 +100,9 @@ export function ComboBuilder({ combo, products }: { combo: ComboDto; products: P
     const comboKey = `${combo.id}-${Date.now().toString(36)}`;
     const prices = distributeComboPrices(pricing.total, selections);
     const lines: CartLine[] = selections.map((s, index) => ({
-      lineId: `${comboKey}::${s.productId}::${s.variantId ?? "base"}`,
+      // The step id keeps every line unique when the same item is eligible in
+      // (and chosen from) more than one step.
+      lineId: `${comboKey}::${s.groupId}::${s.productId}::${s.variantId ?? "base"}`,
       productId: s.productId,
       productName: s.productName,
       productSlug: s.productSlug,
