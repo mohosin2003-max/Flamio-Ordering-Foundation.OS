@@ -147,9 +147,14 @@ function AuthPage() {
         options: { emailRedirectTo: window.location.origin + "/auth", data: metadata },
       });
       if (signUpError) throw signUpError;
-      if (!data.session) {
+      // The email must be confirmed by the provider before the account is
+      // usable. If a session is handed back while the address is still
+      // unconfirmed, we end it so the account is never treated as verified.
+      const emailConfirmed = Boolean(data.user?.email_confirmed_at ?? data.user?.confirmed_at);
+      if (!emailConfirmed) {
+        if (data.session) await supabase.auth.signOut();
         setAwaitingEmail(true);
-        toast.success("We sent a verification code to your email");
+        toast.success("Check your email to confirm your account");
         return;
       }
       await goToLanding();
