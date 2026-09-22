@@ -421,11 +421,12 @@ export const crmSendCustomerMessage = createServerFn({ method: "POST" })
       const { assertPermission } = await import("@/lib/owner.server");
       await assertPermission(context.userId, "customer_messaging");
 
-      const view = await crmGetCommunication({ data: { phone: data.phone } });
-      if (!view.sendableChannels.includes(data.channel)) {
-        const status = view.channels.find((row) => row.channel === data.channel);
-        return { ok: false, message: status?.detail ?? "That channel can't reach this customer." };
-      }
+      // Provider readiness is re-checked here on the server, never trusted from
+      // the browser. (Server-only helpers, not the read server function.)
+      const { assertChannelReady } = await import("@/lib/communication.server");
+      const ready = await assertChannelReady(data.phone, data.channel);
+      if (!ready.ok) return { ok: false, message: ready.message };
+
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { normalizePhone: canonical } = await import("@/lib/phone");
