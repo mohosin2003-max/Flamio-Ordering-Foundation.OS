@@ -1,24 +1,6 @@
 -- Flamio — Global Brand Logo & Branding Management
--- SAFE, ADDITIVE, MANUAL MIGRATION ONLY.
--- Do not run from chat. Review and execute manually in Supabase when ready.
---
--- Purpose:
---   Adds owner-controlled brand logo references to the existing single-row
---   public.restaurant_settings table. Logo files remain in the existing private
---   banner-images storage bucket under the brand/ folder and are displayed only
---   through short-lived signed URLs created by server code.
---
--- Destructive operations:
---   None. This migration does not delete, truncate, reset, rename, or overwrite
---   any rows, buckets, policies, roles, auth users, or files.
---
--- Existing-object changes:
---   1) Adds nullable brand path/audit columns to public.restaurant_settings.
---   2) Adds CHECK constraints for safe brand storage paths.
---   3) Adds comments for auditability.
---   No RLS policy is weakened and no storage policy is changed.
-
-BEGIN;
+-- SAFE, ADDITIVE, MANUAL MIGRATION ONLY. Copy the ENTIRE file as-is; do not type anything before line 1.
+-- Adds nullable brand columns + CHECK constraints to public.restaurant_settings. No deletes, no RLS/storage changes.
 
 ALTER TABLE public.restaurant_settings
   ADD COLUMN IF NOT EXISTS brand_primary_logo_path text,
@@ -95,5 +77,3 @@ COMMENT ON COLUMN public.restaurant_settings.brand_updated_at IS
 --   No new function, trigger, or index is created. The existing
 --   update_restaurant_settings_updated_at trigger continues to maintain
 --   restaurant_settings.updated_at.
-
-COMMIT;
