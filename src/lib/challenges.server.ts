@@ -476,6 +476,7 @@ export async function resolveSession(
   couponCode?: string | null;
   winnerId?: string;
   outcome?: ChanceOutcome | null;
+  resultRewards?: { ruleName: string; points: number }[];
 }> {
   const db = await admin();
   const { data: session } = await db
