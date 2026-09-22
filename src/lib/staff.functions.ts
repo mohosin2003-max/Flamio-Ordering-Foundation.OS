@@ -113,23 +113,44 @@ export const ownerListStaff = createServerFn({ method: "GET" })
         });
       }
 
-      // Effective permissions: managers are unrestricted, staff get their rows.
-      const { data: permRows } = userIds.length
-        ? await supabaseAdmin
+      // Effective access: managers are unrestricted, staff get their own rows.
+      let permRows: { user_id: string; permission: string; access_level?: string | null }[] = [];
+      if (userIds.length) {
+        const withLevel = await supabaseAdmin
+          .from("staff_permissions")
+          .select("user_id, permission, access_level")
+          .in("user_id", userIds);
+        if (withLevel.error) {
+          const plain = await supabaseAdmin
             .from("staff_permissions")
             .select("user_id, permission")
-            .in("user_id", userIds)
-        : { data: [] as { user_id: string; permission: string }[] };
+            .in("user_id", userIds);
+          permRows = (plain.data ?? []) as typeof permRows;
+        } else {
+          permRows = (withLevel.data ?? []) as typeof permRows;
+        }
+      }
 
       for (const member of byUser.values()) {
         const isManager = member.roles.includes("owner") || member.roles.includes("admin");
-        member.permissions = isManager
-          ? [...STAFF_PERMISSIONS]
-          : (permRows ?? [])
-              .filter((r) => r.user_id === member.userId)
-              .map((r) => r.permission as StaffPermission)
-              .filter((p) => (STAFF_PERMISSIONS as readonly string[]).includes(p));
+        if (isManager) {
+          member.permissions = [...STAFF_PERMISSIONS];
+          member.grants = Object.fromEntries(
+            STAFF_PERMISSIONS.map((p) => [p, "manage" as StaffAccessLevel]),
+          );
+          continue;
+        }
+        const grants: PermissionGrants = {};
+        for (const row of permRows) {
+          if (row.user_id !== member.userId) continue;
+          if (!isStaffPermission(row.permission)) continue;
+          grants[row.permission] =
+            row.access_level && isAccessLevel(row.access_level) ? row.access_level : "manage";
+        }
+        member.grants = grants;
+        member.permissions = Object.keys(grants) as StaffPermission[];
       }
+
 
       const invites: StaffInvite[] = (inviteRows ?? []).map((invite) => {
         const match = profileByPhone.get(normalizePhone(invite.phone)) ?? null;
