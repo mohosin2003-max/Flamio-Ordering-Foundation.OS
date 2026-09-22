@@ -1,4 +1,4 @@
-import { ImageIcon, MessageSquare } from "lucide-react";
+import { ImageIcon, StickyNote } from "lucide-react";
 import { useId, useState } from "react";
 
 import { formatBDT } from "@/lib/format";
@@ -37,14 +37,11 @@ export function CustomerNote({ note }: { note: string | null | undefined }) {
   if (!note?.trim()) return null;
 
   return (
-    <section
-      className="rounded-xl border border-primary/30 border-l-4 border-l-primary bg-primary/[0.12] p-4 shadow-sm"
-      aria-label="Customer message"
-    >
-      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
-        <MessageSquare className="size-5" aria-hidden="true" /> Customer message
+    <section className="rounded-lg border border-primary/35 bg-primary/10 p-3" aria-label="Customer note">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase text-primary">
+        <StickyNote className="size-4" aria-hidden="true" /> Customer note
       </p>
-      <p className="mt-2 whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-foreground">
+      <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-medium text-foreground">
         {note}
       </p>
     </section>
