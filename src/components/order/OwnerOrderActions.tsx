@@ -106,11 +106,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
               variant={order.unreadMessages > 0 || hasCustomerNote ? "default" : "outline"}
               onClick={() => {
                 setThreadOpen((wasOpen) => {
-                  if (!wasOpen) {
-                    requestAnimationFrame(() => {
-                      threadRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                    });
-                  }
+                  if (!wasOpen) setScrollToThread(true);
                   return !wasOpen;
                 });
               }}
