@@ -166,6 +166,7 @@ export async function loadCustomerCombos(): Promise<ComboDto[]> {
       slug: config.slug,
       name: config.name,
       description: config.description,
+      imageUrl: config.imageUrl,
       pricingMode: config.pricingMode,
       fixedPrice: config.fixedPrice,
       isActive: config.isActive,
