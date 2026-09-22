@@ -84,18 +84,25 @@ function mapCombo(row: ComboRow, groups: GroupRow[]): ComboConfig {
 export async function loadComboConfigs(comboId?: string): Promise<ComboConfig[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  let comboQuery = supabaseAdmin
-    .from("combos")
-    .select("id, slug, name, description, pricing_mode, fixed_price, is_active, sort_order")
-    .order("sort_order", { ascending: true });
-  if (comboId) comboQuery = comboQuery.eq("id", comboId);
+  const run = async (columns: string) => {
+    let query = supabaseAdmin
+      .from("combos")
+      .select(columns)
+      .order("sort_order", { ascending: true });
+    if (comboId) query = query.eq("id", comboId);
+    return query;
+  };
 
-  const { data: combos, error } = await comboQuery;
+  let { data: combos, error } = await run(COMBO_COLUMNS);
+  if (error && missingComboImageColumn(error)) {
+    // The optional combo image column isn't installed yet — combos still work.
+    ({ data: combos, error } = await run(COMBO_BASE_COLUMNS));
+  }
   if (error) {
     console.error("Combo load failed", error);
     throw new Error("We couldn't load the combos. Please try again.");
   }
-  const rows = (combos ?? []) as ComboRow[];
+  const rows = (combos ?? []) as unknown as ComboRow[];
   if (rows.length === 0) return [];
 
   const { data: groups } = await supabaseAdmin
