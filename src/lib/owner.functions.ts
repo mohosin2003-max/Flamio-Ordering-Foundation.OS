@@ -20,6 +20,8 @@ export interface OwnerOrderRow {
   channel: "online" | "counter" | "platform";
   /** Unread customer messages in this order's thread. */
   unreadMessages: number;
+  /** Whether the existing order thread contains any customer-authored message. */
+  hasCustomerMessage?: boolean;
   fulfillment: "delivery" | "pickup";
   customerName: string;
   customerPhone: string;
@@ -300,12 +302,19 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
       }
     }
 
-    const { count: unreadMessages } = await supabaseAdmin
-      .from("order_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("order_id", order.id)
-      .eq("sender_role", "customer")
-      .eq("read_by_staff", false);
+    const [{ count: customerMessageCount }, { count: unreadMessages }] = await Promise.all([
+      supabaseAdmin
+        .from("order_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("order_id", order.id)
+        .eq("sender_role", "customer"),
+      supabaseAdmin
+        .from("order_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("order_id", order.id)
+        .eq("sender_role", "customer")
+        .eq("read_by_staff", false),
+    ]);
 
     return {
       id: order.id,
@@ -313,6 +322,7 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
       status: order.status,
       channel: (order.channel ?? "online") as "online" | "counter" | "platform",
       unreadMessages: unreadMessages ?? 0,
+      hasCustomerMessage: (customerMessageCount ?? 0) > 0,
       fulfillment: order.fulfillment as "delivery" | "pickup",
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
