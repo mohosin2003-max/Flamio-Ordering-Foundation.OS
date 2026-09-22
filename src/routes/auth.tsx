@@ -16,6 +16,7 @@ import { claimMyStaffInvite } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Sign in or create an account — Flamio" },
@@ -98,6 +99,12 @@ function AuthPage() {
     let directSession = null;
     if (value.includes("@")) {
       const direct = await supabase.auth.signInWithPassword({ email: value.toLowerCase(), password });
+      directSession = direct.data.session;
+    } else {
+      const direct = await supabase.auth.signInWithPassword({
+        phone: `+${normalizePhone(value)}`,
+        password,
+      });
       directSession = direct.data.session;
     }
     if (!directSession) {

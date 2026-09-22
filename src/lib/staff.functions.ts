@@ -523,13 +523,24 @@ export const claimMyStaffInvite = createServerFn({ method: "POST" })
     if (syntheticMatch?.[1]) addPhone(syntheticMatch[1]);
     if (authEmail && !syntheticMatch) addEmail(authEmail);
 
+    const profilePhone =
+      profile?.phone ??
+      (typeof metadata["phone"] === "string" && isValidPhone(metadata["phone"])
+        ? normalizePhone(metadata["phone"])
+        : null);
+    const profileEmail =
+      profile?.email ??
+      (typeof metadata["contact_email"] === "string" && isEmail(metadata["contact_email"])
+        ? normalizeEmail(metadata["contact_email"])
+        : null);
+
     await supabaseAdmin.from("profiles").upsert({
       id: context.userId,
       full_name:
         profile?.full_name ??
         (typeof metadata["full_name"] === "string" ? metadata["full_name"] : null),
-      phone: profile?.phone ?? [...phones][0] ?? null,
-      email: profile?.email ?? [...emails][0] ?? null,
+      phone: profilePhone ?? [...phones][0] ?? null,
+      email: profileEmail ?? [...emails][0] ?? null,
     });
 
     const { data: invites } = await supabaseAdmin
