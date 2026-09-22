@@ -34,6 +34,8 @@ export const STAFF_PERMISSIONS = [
   "staff_finance",
   "own_salary",
   "own_money_taken",
+  "own_profit_share",
+
   "settings",
 ] as const;
 
