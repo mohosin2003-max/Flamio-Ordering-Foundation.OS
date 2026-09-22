@@ -49,9 +49,20 @@ function MyAccountPage() {
   const finance = useQuery({
     queryKey: ["my-finance", month],
     queryFn: () => fetchFinance({ data: { month } }),
+    retry: false,
   });
 
-  if (finance.isLoading) {
+  // Profit partners see their own profit share instead of a salary. This call
+  // reads only the signed-in person's records; it fails quietly for everyone
+  // who isn't a partner.
+  const share = useQuery({
+    queryKey: ["my-profit-share", month],
+    queryFn: () => fetchShare({ data: { month } }),
+    retry: false,
+  });
+  const partner = share.data?.isPartner ? share.data : null;
+
+  if (finance.isLoading || share.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -61,6 +72,14 @@ function MyAccountPage() {
   }
 
   if (finance.error || !finance.data) {
+    if (partner) {
+      return (
+        <div className="space-y-6">
+          <MonthHeader month={month} setMonth={setMonth} />
+          <ProfitShareSection partner={partner} />
+        </div>
+      );
+    }
     return (
       <EmptyState
         title="Couldn't load your account"
@@ -71,6 +90,7 @@ function MyAccountPage() {
   }
 
   const data = finance.data;
+
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
