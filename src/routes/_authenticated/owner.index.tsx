@@ -51,6 +51,7 @@ const MODULES: Module[] = [
   { to: "/owner/finance", label: "Owner Finance", description: "Profit, withdrawals and partners", icon: HandCoins, permission: "staff_finance", ownerOnly: true },
 
   { to: "/owner/settings", label: "Settings", description: "Business configuration", icon: Settings2, permission: "settings" },
+  { to: "/owner/data-storage", label: "Data & Storage", description: "Retention, cleanup and files", icon: Settings2, permission: "settings", ownerRoleOnly: true },
 ];
 
 function OwnerHome() {

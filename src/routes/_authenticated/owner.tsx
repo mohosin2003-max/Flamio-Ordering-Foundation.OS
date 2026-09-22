@@ -37,6 +37,8 @@ const TABS: {
   label: string;
   exact: boolean;
   permission: StaffPermission | StaffPermission[] | null;
+  /** Strictly the owner role — managers and staff never see these. */
+  ownerRoleOnly?: boolean;
 }[] = [
   { to: "/owner", label: "Home", exact: true, permission: null },
   { to: "/owner/account", label: "Account", exact: false, permission: null },
@@ -81,6 +83,13 @@ const TABS: {
   },
   { to: "/owner/finance", label: "Owner finance", exact: false, permission: "staff_finance" },
   { to: "/owner/settings", label: "Settings", exact: false, permission: "settings" },
+  {
+    to: "/owner/data-storage",
+    label: "Data & storage",
+    exact: false,
+    permission: "settings",
+    ownerRoleOnly: true,
+  },
 
 ];
 
