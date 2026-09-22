@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Minus, Percent, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { PrintReceiptButton, type PrintReceiptOrder } from "@/components/order/PrintReceiptButton";
+import { useAuth } from "@/hooks/use-auth";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +55,7 @@ function OwnerPos() {
   const getCatalog = useServerFn(ownerGetCatalog);
   const submitOrder = useServerFn(placeOrder);
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
   const [lines, setLines] = useState<Record<string, number>>({});
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -62,6 +66,9 @@ function OwnerPos() {
   const [saving, setSaving] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
+  // Snapshot of the last SAVED sale, kept only so the cashier can optionally
+  // print its receipt. It never re-submits anything.
+  const [lastSale, setLastSale] = useState<PrintReceiptOrder | null>(null);
 
   const catalog = useQuery({
     queryKey: ["owner-catalog"],
@@ -190,6 +197,24 @@ function OwnerPos() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["owner-inventory"] });
+      setLastSale({
+        orderCode: result.code,
+        orderId: result.id,
+        createdAt: result.createdAt,
+        cashierName: profile?.fullName ?? null,
+        customerName: customerName.trim() || "Walk-in customer",
+        customerPhone: customerPhone.trim() || null,
+        items: selected.map((p) => ({
+          productName: p.name,
+          quantity: lines[p.id] ?? 1,
+          unitPrice: p.basePrice,
+        })),
+        subtotal,
+        discount: discountAmountNum,
+        deliveryCharge: 0,
+        total: finalTotal,
+        paymentLabel: "Cash at counter (POS)",
+      });
       setLines({});
       setCustomerPhone("");
       setDiscountAmount("");
@@ -422,6 +447,26 @@ function OwnerPos() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Optional receipt for the last saved sale. Printing is never required. */}
+      {lastSale ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Sale saved — {lastSale.orderCode}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatBDT(lastSale.total)} · printing is optional
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <PrintReceiptButton order={lastSale} />
+              <Button variant="ghost" size="sm" onClick={() => setLastSale(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, MapPin, Phone, UserRound } from "lucide-react";
 
 import { OwnerOrderActions } from "@/components/order/OwnerOrderActions";
+import { PrintReceiptButton } from "@/components/order/PrintReceiptButton";
 import { CustomerNote, StaffOrderItemList, orderDateParts } from "@/components/order/StaffOrderDetails";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,33 @@ function OwnerOrderDetailPage() {
               </dl>
             </div>
           </section>
+
+          {details.channel === "counter" ? (
+            <div className="border-t border-border/70 pt-3">
+              <PrintReceiptButton
+                label="Print Receipt"
+                order={{
+                  orderCode: details.code,
+                  orderId: details.id,
+                  createdAt: details.createdAt,
+                  customerName: details.customerName,
+                  customerPhone: details.customerPhone,
+                  items: details.items.map((item) => ({
+                    productName: item.name,
+                    variantName: item.variantName,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                  })),
+                  subtotal: details.subtotal,
+                  discount: details.discount,
+                  deliveryCharge: details.deliveryCharge,
+                  total: details.total,
+                  paymentLabel: details.paymentLabel,
+                  reprint: true,
+                }}
+              />
+            </div>
+          ) : null}
 
           <OwnerOrderActions order={details} messageOpenInitially={message === true} />
         </CardContent>
