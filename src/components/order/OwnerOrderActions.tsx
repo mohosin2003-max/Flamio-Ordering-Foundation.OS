@@ -35,12 +35,20 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
   const [pending, setPending] = useState(false);
   const [riderPending, setRiderPending] = useState(false);
   const [threadOpen, setThreadOpen] = useState(messageOpenInitially);
+  const [scrollToThread, setScrollToThread] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const canManage = hasPermission(access.data, "order_management");
   const counterSale = !isOnlineChannel(order.channel);
   const next = counterSale || !canManage ? null : nextOrderStatus(order.status, order.fulfillment);
   const cancellable = canManage && canCancelOrder(order.status, order.channel);
   const hasCustomerNote = Boolean(order.deliveryNotes?.trim());
+
+  useEffect(() => {
+    if (scrollToThread && threadRef.current) {
+      threadRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setScrollToThread(false);
+    }
+  }, [scrollToThread]);
 
   const riders = useQuery({
     queryKey: ["owner-riders"],
