@@ -326,24 +326,11 @@ export const getOrder = createServerFn({ method: "GET" })
       // Guest order: the code alone is not enough. The caller must also know
       // the last 4 digits of the order's phone number. Nothing about the
       // order is returned until that check passes.
-      const callerId = await getOptionalUserId();
-      let allowed = false;
-      if (callerId) {
-        const { data: role } = await supabaseAdmin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", callerId)
-          .limit(1)
-          .maybeSingle();
-        allowed = Boolean(role);
-      }
-      if (!allowed) {
-        const digits = (order.customer_phone ?? "").replace(/\D/g, "");
-        const expected = digits.slice(-4);
-        const provided = (data.phoneLast4 ?? "").replace(/\D/g, "").slice(-4);
-        if (expected.length !== 4 || provided.length !== 4 || provided !== expected) {
-          return { requiresPhone: true as const };
-        }
+      const digits = (order.customer_phone ?? "").replace(/\D/g, "");
+      const expected = digits.slice(-4);
+      const provided = (data.phoneLast4 ?? "").replace(/\D/g, "").slice(-4);
+      if (expected.length !== 4 || provided.length !== 4 || provided !== expected) {
+        return { requiresPhone: true as const };
       }
     }
 
