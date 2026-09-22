@@ -120,7 +120,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       let permRows: { user_id: string; permission: string; access_level?: string | null }[] = [];
       if (userIds.length) {
         const { untypedAdmin } = await import("@/lib/untyped-db.server");
-        const withLevel = await untypedAdmin()
+        const withLevel = await (await untypedAdmin())
           .from("staff_permissions")
           .select("user_id, permission, access_level")
           .in("user_id", userIds);
@@ -405,7 +405,7 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
         access_level: level,
       }));
       const { untypedAdmin } = await import("@/lib/untyped-db.server");
-      const { error } = await untypedAdmin().from("staff_permissions").insert(rows);
+      const { error } = await (await untypedAdmin()).from("staff_permissions").insert(rows);
       if (error) {
         // Database without the access_level column yet: keep existing behaviour.
         const { error: plainError } = await supabaseAdmin

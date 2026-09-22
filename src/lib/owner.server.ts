@@ -80,7 +80,7 @@ export async function readStaffGrants(userId: string): Promise<PermissionGrants>
 
   let rows: { permission: string; access_level?: string | null }[] = [];
   const { untypedAdmin } = await import("@/lib/untyped-db.server");
-  const withLevel = await untypedAdmin()
+  const withLevel = await (await untypedAdmin())
     .from("staff_permissions")
     .select("permission, access_level")
     .eq("user_id", userId);
