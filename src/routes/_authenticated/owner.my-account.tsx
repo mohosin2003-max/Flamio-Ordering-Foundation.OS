@@ -37,6 +37,8 @@ function MyAccountPage() {
   const queryClient = useQueryClient();
   const fetchFinance = useServerFn(staffGetMyFinance);
   const submitMoney = useServerFn(staffSubmitMoneyTaken);
+  const fetchShare = useServerFn(staffGetMyProfitShare);
+
 
   const [month, setMonth] = useState(thisMonth);
   const [amount, setAmount] = useState("");
