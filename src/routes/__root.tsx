@@ -3,7 +3,9 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,8 +17,11 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { FloatingCartBar, FloatingCartSpacer } from "@/components/cart/FloatingCartBar";
 import { BottomNav, BottomNavSpacer } from "@/components/layout/BottomNav";
+import { StaffBottomNav, StaffBottomNavSpacer } from "@/components/layout/StaffBottomNav";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/cart";
+import { useAuth } from "@/hooks/use-auth";
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 
 function NotFoundComponent() {
   return (
@@ -125,20 +130,55 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
-          </main>
-          <FloatingCartSpacer />
-          <SiteFooter />
-          <BottomNavSpacer />
-        </div>
-        <FloatingCartBar />
-        <BottomNav />
+        <AppExperience />
         <Toaster position="top-center" />
       </CartProvider>
     </QueryClientProvider>
+  );
+}
+
+const CUSTOMER_PATHS = ["/", "/menu", "/combos", "/offers", "/contact", "/account", "/cart", "/checkout", "/order", "/track"];
+
+function AppExperience() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
+  const access = useDashboardAccess(isAuthenticated);
+  const workspace = pathname === "/owner" || pathname.startsWith("/owner/") || pathname === "/kitchen";
+  const staffAccount = Boolean(access.data?.isManager || access.data?.isStaff);
+  const customerSurface = CUSTOMER_PATHS.some((path) => path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && !access.isLoading && staffAccount && customerSurface) {
+      void navigate({ to: "/owner", replace: true });
+    }
+  }, [access.isLoading, customerSurface, isAuthenticated, loading, navigate, staffAccount]);
+
+  if (!workspace && isAuthenticated && (access.isLoading || (staffAccount && customerSurface))) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  if (workspace) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <main className="flex-1"><Outlet /></main>
+        <StaffBottomNavSpacer />
+        <StaffBottomNav />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex-1"><Outlet /></main>
+        <FloatingCartSpacer />
+        <SiteFooter />
+        <BottomNavSpacer />
+      </div>
+      <FloatingCartBar />
+      <BottomNav />
+    </>
   );
 }

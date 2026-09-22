@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { claimOwnership, getOwnerAccess } from "@/lib/owner.functions";
 import { canManage, hasPermission } from "@/lib/permissions";
 import type { StaffPermission } from "@/lib/permissions";
-import { cn } from "@/lib/utils";
 
 /**
  * Owner area shell. The real access boundary lives in the server functions
@@ -40,7 +39,8 @@ const TABS: {
   permission: StaffPermission | StaffPermission[] | null;
 }[] = [
   { to: "/owner", label: "Home", exact: true, permission: null },
-  { to: "/owner/orders", label: "Orders", exact: false, permission: "online_orders" },
+  { to: "/owner/account", label: "Account", exact: false, permission: null },
+  { to: "/owner/orders", label: "Orders", exact: false, permission: ["online_orders", "order_management"] },
   { to: "/owner/pos", label: "Counter sale", exact: false, permission: "pos" },
   { to: "/owner/platforms", label: "Platforms", exact: false, permission: "platform_sales" },
   { to: "/owner/platform-sale", label: "Platform sale", exact: false, permission: "platform_sales" },
@@ -199,30 +199,13 @@ function OwnerLayout() {
 
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6">
+    <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-7">
       <header className="mb-5">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <ShieldCheck className="h-4 w-4" /> {access.data.isManager ? "Owner" : "Staff"}
         </p>
-        <h1 className="font-display text-2xl font-bold">Dashboard</h1>
+        <h1 className="font-display text-2xl font-bold">{pathname.startsWith("/owner/inbox") ? "Messages" : pathname.startsWith("/owner/orders") ? "Orders" : pathname.startsWith("/owner/account") ? "Account" : "Workspace"}</h1>
       </header>
-
-      <nav className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {TABS.filter((tab) => allows(access.data, tab.permission)).map((tab) => (
-          <Link
-            key={tab.to}
-            to={tab.to as never}
-            activeOptions={{ exact: tab.exact }}
-            className={cn(
-              "whitespace-nowrap rounded-full border border-border px-4 py-2 text-sm font-medium transition-colors",
-              "hover:bg-muted",
-            )}
-            activeProps={{ className: "bg-primary text-primary-foreground border-primary" }}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
 
       {viewOnlySection ? (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">

@@ -184,8 +184,8 @@ export const claimOwnership = createServerFn({ method: "POST" })
 export const ownerListOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<OwnerOrderRow[]> => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders", "view");
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["online_orders", "order_management"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -193,6 +193,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       .select(
         "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
+      .eq("channel", "online")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -269,8 +270,8 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data: input, context }): Promise<OwnerOrderDetail | null> => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders", "view");
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["online_orders", "order_management"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: order, error } = await supabaseAdmin

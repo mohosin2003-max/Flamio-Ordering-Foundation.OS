@@ -8,11 +8,12 @@ import { getOwnerAccess } from "@/lib/owner.functions";
  * shell, so it is fetched once). The real boundary lives in the server
  * functions — this only decides what the UI offers.
  */
-export function useDashboardAccess() {
+export function useDashboardAccess(enabled = true) {
   const fetchAccess = useServerFn(getOwnerAccess);
   const query = useQuery({
     queryKey: ["owner-access"],
     queryFn: () => fetchAccess(),
+    enabled,
     staleTime: 60 * 1000,
   });
 

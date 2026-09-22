@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Clock3,
   MapPin,
+  MessageCircle,
 } from "lucide-react";
 
 import { orderDateParts } from "@/components/order/StaffOrderDetails";
@@ -95,7 +96,7 @@ function OwnerOrders() {
         const address = [order.addressLine, order.area].filter(Boolean).join(", ");
 
         return (
-          <Card key={order.id} className="overflow-hidden transition-colors hover:border-primary/40">
+          <Card key={order.id} className={order.unreadMessages > 0 ? "overflow-hidden border-destructive/60 shadow-card transition-colors" : "overflow-hidden transition-colors hover:border-primary/40"}>
             <CardContent className="p-0">
               <Link
                 to="/owner/orders/$orderId"
@@ -113,6 +114,7 @@ function OwnerOrders() {
                       <Badge variant="secondary" className="shrink-0 capitalize">
                         {order.fulfillment}
                       </Badge>
+                      {order.unreadMessages > 0 ? <Badge variant="destructive" className="shrink-0 gap-1"><MessageCircle className="size-3" />{order.unreadMessages} unread</Badge> : null}
                     </div>
                     <p className="mt-2 truncate text-sm font-bold">{order.customerName}</p>
                     <p className="mt-0.5 text-sm text-muted-foreground">

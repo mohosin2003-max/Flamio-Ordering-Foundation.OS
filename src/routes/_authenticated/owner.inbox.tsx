@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { MessageCircle } from "lucide-react";
@@ -29,6 +29,7 @@ function OwnerInbox() {
   const listThreads = useServerFn(ownerListContactThreads);
   const getThread = useServerFn(ownerGetContactThread);
   const reply = useServerFn(ownerSendContactReply);
+  const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const threads = useQuery({ queryKey: ["contact-inbox", "owner"], queryFn: () => listThreads(), refetchInterval: 20_000 });
   const selected = useQuery({
@@ -44,9 +45,9 @@ function OwnerInbox() {
       <div className="space-y-2">
         <div className="mb-3 flex items-center gap-2"><MessageCircle className="size-5 text-primary" /><h2 className="font-display text-xl font-bold">Customer inbox</h2></div>
         {threads.data?.length ? threads.data.map((thread) => (
-          <Button key={thread.id} variant={selectedId === thread.id ? "secondary" : "outline"} className="h-auto w-full justify-between px-3 py-3 text-left" onClick={() => setSelectedId(thread.id)}>
+          <Button key={thread.id} variant={selectedId === thread.id ? "secondary" : "outline"} className={thread.unreadCount ? "h-auto w-full justify-between border-destructive/60 bg-destructive/10 px-3 py-3 text-left" : "h-auto w-full justify-between px-3 py-3 text-left"} onClick={() => { setSelectedId(thread.id); void queryClient.setQueryData(["contact-inbox", "owner"], (current: typeof threads.data) => current?.map((row) => row.id === thread.id ? { ...row, unreadCount: 0 } : row)); }}>
             <span className="min-w-0"><span className="block truncate font-semibold">{thread.customerName ?? "Customer"}</span><span className="block text-xs text-muted-foreground">{thread.customerPhone ?? "No phone"}</span></span>
-            {thread.unreadCount ? <Badge>{thread.unreadCount}</Badge> : null}
+            {thread.unreadCount ? <Badge variant="destructive">{thread.unreadCount}</Badge> : null}
           </Button>
         )) : <EmptyState title="No conversations" description="Customer messages will appear here." />}
       </div>

@@ -11,11 +11,11 @@ export function StaffCartNotice() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
       <EmptyState
-        title="Staff accounts can't order here"
-        description="Use Counter sale in the dashboard to record a sale for a customer."
+        title="Team accounts can't order here"
+        description="Use Counter Sale in the workspace to record a sale for a customer."
         action={
           <Button asChild>
-            <Link to="/owner">Go to dashboard</Link>
+            <Link to="/owner">Go to workspace</Link>
           </Button>
         }
       />

@@ -32,16 +32,11 @@ export interface KitchenOrder {
 export const getKitchenAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId);
-
-    const roles = (data ?? []).map((r) => r.role as string);
+    const { getAccessProfile } = await import("@/lib/owner.server");
+    const access = await getAccessProfile(context.userId);
     return {
-      hasAccess: roles.some((r) => r === "owner" || r === "admin" || r === "staff"),
-      roles,
+      hasAccess: access.isManager || access.permissions.includes("kitchen"),
+      roles: access.isManager ? ["owner"] : access.isStaff ? ["staff"] : [],
     };
   });
 
