@@ -358,7 +358,7 @@ function AuthPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{mode === "login" ? "Password" : "Password (required)"}</Label>
               {mode === "login" ? <Link to="/forgot-password" className="text-sm font-semibold text-muted-foreground hover:text-foreground">Forgot password?</Link> : null}
             </div>
             <Input id="password" type="password" value={password} autoComplete={mode === "login" ? "current-password" : "new-password"} onChange={(e) => setPassword(e.target.value)} />
