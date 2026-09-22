@@ -54,8 +54,19 @@ function groupLines(lines: CartLine[]): CartGroup[] {
 }
 
 function CartPage() {
-  const { lines, subtotal, total, isHydrated, increment, decrement, removeItem, removeCombo, clear } =
-    useCart();
+  const {
+    lines,
+    subtotal,
+    total,
+    isHydrated,
+    increment,
+    decrement,
+    removeItem,
+    removeCombo,
+    incrementCombo,
+    decrementCombo,
+    clear,
+  } = useCart();
   const groups = groupLines(lines);
   const { isStaffOnly } = useDashboardAccess();
 

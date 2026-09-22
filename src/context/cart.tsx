@@ -103,6 +103,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLines((current) => current.filter((l) => l.comboKey !== comboKey));
   }, []);
 
+  const setComboQuantity = useCallback((comboKey: string, quantity: number) => {
+    setLines((current) =>
+      quantity <= 0
+        ? current.filter((l) => l.comboKey !== comboKey)
+        : current.map((l) =>
+            l.comboKey === comboKey ? { ...l, quantity: Math.min(quantity, 20) } : l,
+          ),
+    );
+  }, []);
+
+  const incrementCombo = useCallback((comboKey: string) => {
+    setLines((current) => {
+      const next = Math.min(
+        (current.find((l) => l.comboKey === comboKey)?.quantity ?? 1) + 1,
+        20,
+      );
+      return current.map((l) => (l.comboKey === comboKey ? { ...l, quantity: next } : l));
+    });
+  }, []);
+
+  const decrementCombo = useCallback((comboKey: string) => {
+    setLines((current) => {
+      const currentQty = current.find((l) => l.comboKey === comboKey)?.quantity ?? 1;
+      if (currentQty <= 1) return current.filter((l) => l.comboKey !== comboKey);
+      return current.map((l) =>
+        l.comboKey === comboKey ? { ...l, quantity: currentQty - 1 } : l,
+      );
+    });
+  }, []);
+
   const setQuantity = useCallback((lineId: string, quantity: number) => {
     setLines((current) =>
       quantity <= 0
