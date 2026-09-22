@@ -143,7 +143,7 @@ function AppExperience() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
-  const access = useDashboardAccess();
+  const access = useDashboardAccess(isAuthenticated);
   const workspace = pathname === "/owner" || pathname.startsWith("/owner/") || pathname === "/kitchen";
   const staffAccount = Boolean(access.data?.isManager || access.data?.isStaff);
   const customerSurface = CUSTOMER_PATHS.some((path) => path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
