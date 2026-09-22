@@ -30,6 +30,7 @@ export const STAFF_PERMISSIONS = [
   "customer_profiles",
   "customer_notes",
   "communication_logs",
+  "customer_messaging",
   "reviews",
   "reports",
   "delivery",
@@ -39,6 +40,7 @@ export const STAFF_PERMISSIONS = [
   "own_money_taken",
   "own_profit_share",
   "settings",
+  "integrations",
 
 ] as const;
 
@@ -74,6 +76,7 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   customer_profiles: "Customer Profiles",
   customer_notes: "Customer Notes & Tags",
   communication_logs: "Communication History",
+  customer_messaging: "Message Customers",
   reviews: "Reviews",
   reports: "Reports",
   delivery: "Delivery zones",
@@ -84,6 +87,7 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   own_profit_share: "Own Profit Share",
 
   settings: "Settings",
+  integrations: "Integrations & Providers",
 };
 
 export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
@@ -95,6 +99,8 @@ export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
   customer_profiles: "Open a customer's profile and reveal their phone number",
   customer_notes: "Add internal notes and tags on a customer",
   communication_logs: "See what was sent to a customer",
+  customer_messaging: "Send a message to a customer (inbox, push, SMS, WhatsApp, email)",
+  integrations: "Set up SMS, WhatsApp, email and payment providers",
 };
 
 
@@ -110,6 +116,10 @@ export const PERMISSION_FALLBACK: Partial<Record<StaffPermission, StaffPermissio
   riders: "order_management",
   banners: "menu",
   combos: "menu",
+  // Provider setup already lived under Settings, so that stays consistent.
+  integrations: "settings",
+  // Sending to customers is a new capability on purpose: it has NO fallback,
+  // so nobody gains it implicitly from an older permission.
 };
 
 /** Grouping used by the owner's permission editor. */
@@ -133,6 +143,7 @@ export const PERMISSION_GROUPS: { title: string; permissions: StaffPermission[] 
       "customer_profiles",
       "customer_notes",
       "communication_logs",
+      "customer_messaging",
       "reviews",
     ],
   },
@@ -142,7 +153,7 @@ export const PERMISSION_GROUPS: { title: string; permissions: StaffPermission[] 
   },
   {
     title: "Reports & setup",
-    permissions: ["reports", "delivery", "settings"],
+    permissions: ["reports", "delivery", "settings", "integrations"],
   },
 ];
 
