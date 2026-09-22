@@ -60,6 +60,7 @@ import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
+import { Route as AuthenticatedOwnerCustomersCustomerIdRouteImport } from './routes/_authenticated/owner.customers.$customerId'
 import { Route as AuthenticatedOwnerOrdersIndexRouteImport } from './routes/_authenticated/owner.orders.index'
 import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
@@ -350,6 +351,12 @@ const AuthenticatedAccountReviewOrderIdRoute =
     path: '/account/review/$orderId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOwnerCustomersCustomerIdRoute =
+  AuthenticatedOwnerCustomersCustomerIdRouteImport.update({
+    id: '/$customerId',
+    path: '/$customerId',
+    getParentRoute: () => AuthenticatedOwnerCustomersRoute,
+  } as any)
 const AuthenticatedOwnerOrdersIndexRoute =
   AuthenticatedOwnerOrdersIndexRouteImport.update({
     id: '/',
@@ -402,7 +409,7 @@ export interface FileRoutesByFullPath {
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
-  '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
+  '/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -425,6 +432,7 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
@@ -457,7 +465,7 @@ export interface FileRoutesByTo {
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
-  '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
+  '/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -479,6 +487,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
@@ -514,7 +523,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
   '/_authenticated/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
-  '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
+  '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/_authenticated/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/_authenticated/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -537,6 +546,7 @@ export interface FileRoutesById {
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/_authenticated/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/_authenticated/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/_authenticated/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
@@ -595,6 +605,7 @@ export interface FileRouteTypes {
     | '/account/'
     | '/owner/'
     | '/account/review/$orderId'
+    | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
@@ -649,6 +660,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/owner'
     | '/account/review/$orderId'
+    | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
@@ -706,6 +718,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
     | '/_authenticated/account/review/$orderId'
+    | '/_authenticated/owner/customers/$customerId'
     | '/_authenticated/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
@@ -1089,6 +1102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountReviewOrderIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/owner/customers/$customerId': {
+      id: '/_authenticated/owner/customers/$customerId'
+      path: '/$customerId'
+      fullPath: '/owner/customers/$customerId'
+      preLoaderRoute: typeof AuthenticatedOwnerCustomersCustomerIdRouteImport
+      parentRoute: typeof AuthenticatedOwnerCustomersRoute
+    }
     '/_authenticated/owner/orders/': {
       id: '/_authenticated/owner/orders/'
       path: '/'
@@ -1120,6 +1140,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedOwnerCustomersRouteChildren {
+  AuthenticatedOwnerCustomersCustomerIdRoute: typeof AuthenticatedOwnerCustomersCustomerIdRoute
+}
+
+const AuthenticatedOwnerCustomersRouteChildren: AuthenticatedOwnerCustomersRouteChildren =
+  {
+    AuthenticatedOwnerCustomersCustomerIdRoute:
+      AuthenticatedOwnerCustomersCustomerIdRoute,
+  }
+
+const AuthenticatedOwnerCustomersRouteWithChildren =
+  AuthenticatedOwnerCustomersRoute._addFileChildren(
+    AuthenticatedOwnerCustomersRouteChildren,
+  )
+
 interface AuthenticatedOwnerOrdersRouteChildren {
   AuthenticatedOwnerOrdersOrderIdRoute: typeof AuthenticatedOwnerOrdersOrderIdRoute
   AuthenticatedOwnerOrdersIndexRoute: typeof AuthenticatedOwnerOrdersIndexRoute
@@ -1142,7 +1177,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerChallengesRoute: typeof AuthenticatedOwnerChallengesRoute
   AuthenticatedOwnerCombosRoute: typeof AuthenticatedOwnerCombosRoute
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
-  AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
+  AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRouteWithChildren
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
   AuthenticatedOwnerFinanceRoute: typeof AuthenticatedOwnerFinanceRoute
   AuthenticatedOwnerInboxRoute: typeof AuthenticatedOwnerInboxRoute
@@ -1171,7 +1206,8 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerChallengesRoute: AuthenticatedOwnerChallengesRoute,
   AuthenticatedOwnerCombosRoute: AuthenticatedOwnerCombosRoute,
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
-  AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
+  AuthenticatedOwnerCustomersRoute:
+    AuthenticatedOwnerCustomersRouteWithChildren,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
   AuthenticatedOwnerFinanceRoute: AuthenticatedOwnerFinanceRoute,
   AuthenticatedOwnerInboxRoute: AuthenticatedOwnerInboxRoute,
