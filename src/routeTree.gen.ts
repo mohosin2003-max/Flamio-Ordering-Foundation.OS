@@ -65,6 +65,7 @@ import { Route as AuthenticatedOwnerOrdersIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
+import { Route as ApiPublicCommunicationWebhookProviderRouteImport } from './routes/api/public/communication/webhook.$provider'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -380,6 +381,12 @@ const ApiPublicNotificationsDispatchRoute =
     path: '/api/public/notifications/dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicCommunicationWebhookProviderRoute =
+  ApiPublicCommunicationWebhookProviderRouteImport.update({
+    id: '/api/public/communication/webhook/$provider',
+    path: '/api/public/communication/webhook/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -437,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
+  '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -492,6 +500,7 @@ export interface FileRoutesByTo {
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersIndexRoute
+  '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -551,6 +560,7 @@ export interface FileRoutesById {
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/_authenticated/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
+  '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -610,6 +620,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
     | '/owner/orders/'
+    | '/api/public/communication/webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
     | '/owner/orders'
+    | '/api/public/communication/webhook/$provider'
   id:
     | '__root__'
     | '/'
@@ -723,6 +735,7 @@ export interface FileRouteTypes {
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
     | '/_authenticated/owner/orders/'
+    | '/api/public/communication/webhook/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -741,6 +754,7 @@ export interface RootRouteChildren {
   MenuIndexRoute: typeof MenuIndexRoute
   ApiPublicAuthSmsHookRoute: typeof ApiPublicAuthSmsHookRoute
   ApiPublicNotificationsDispatchRoute: typeof ApiPublicNotificationsDispatchRoute
+  ApiPublicCommunicationWebhookProviderRoute: typeof ApiPublicCommunicationWebhookProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1137,6 +1151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNotificationsDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/communication/webhook/$provider': {
+      id: '/api/public/communication/webhook/$provider'
+      path: '/api/public/communication/webhook/$provider'
+      fullPath: '/api/public/communication/webhook/$provider'
+      preLoaderRoute: typeof ApiPublicCommunicationWebhookProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1284,6 +1305,8 @@ const rootRouteChildren: RootRouteChildren = {
   MenuIndexRoute: MenuIndexRoute,
   ApiPublicAuthSmsHookRoute: ApiPublicAuthSmsHookRoute,
   ApiPublicNotificationsDispatchRoute: ApiPublicNotificationsDispatchRoute,
+  ApiPublicCommunicationWebhookProviderRoute:
+    ApiPublicCommunicationWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

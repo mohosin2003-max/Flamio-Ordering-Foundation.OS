@@ -1,26 +1,22 @@
 /**
- * Customer CRM (Phase 3) — communication FOUNDATION. Read-only.
+ * Customer CRM — communication status, history and sending.
  *
- * This module answers three questions for one CRM customer, using only tables
- * that already exist:
+ * Everything here is built on tables and helpers that already exist:
  *
- *   1. Which channels can actually reach this customer right now?
- *      - IN_APP  → existing `customer_conversations` inbox (account holders)
- *      - PUSH    → existing `push_tokens` + configured VAPID keys
- *      - SMS / WHATSAPP / EMAIL → no customer-messaging provider is connected,
- *        so they are reported as "not configured". A stored phone number or
- *        email address is NEVER treated as a usable channel.
- *   2. Which communication categories are allowed (transactional vs marketing)?
- *      There is no preference table yet, so conservative product defaults are
- *      reported and marketing is reported as not enabled for anyone.
- *   3. What has already been sent? Built from the existing `notifications`
- *      history and the existing customer conversation messages.
+ *   IN_APP   → existing `customer_conversations` inbox (account holders)
+ *   PUSH     → existing `push_tokens` + configured VAPID keys
+ *   SMS      → existing `sms_providers` row used by the login-code provider
+ *              (same vendor, separate purpose; no OTP logic is touched)
+ *   WHATSAPP → `sms_providers` row 'whatsapp' + server credential
+ *   EMAIL    → `sms_providers` row 'email' + server credential
  *
- * Nothing here sends anything, calls any provider, writes any row, or changes
- * any notification, push, auth or order behaviour.
+ * A stored phone number or email address is never treated as a usable channel —
+ * the provider must be configured, enabled and confirmed by a real connection
+ * test first. Sending is idempotent and logged in `communication_messages`.
  */
 
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePhone } from "@/lib/phone";
@@ -51,7 +47,7 @@ export interface CommunicationHistoryItem {
   title: string;
   preview: string;
   createdAt: string;
-  status: "sent" | "delivered" | "queued" | "failed";
+  status: "sent" | "delivered" | "queued" | "failed" | "cancelled" | "sending";
 }
 
 export interface CrmCommunicationView {
@@ -65,16 +61,22 @@ export interface CrmCommunicationView {
   canSeeHistory: boolean;
   /** True only when at least one channel can genuinely deliver today. */
   canMessage: boolean;
+  /** True when this staff member is allowed to send, not just to look. */
+  canSend: boolean;
+  /** Channels a message can actually be sent on right now. */
+  sendableChannels: CommunicationChannel[];
   /** Existing owner inbox conversation for this customer, when one exists. */
   conversationId: string | null;
+  marketingOptIns: { channel: CommunicationChannel; optedIn: boolean }[];
 }
 
-const NOT_CONFIGURED = (channel: CommunicationChannel, label: string, detail: string): ChannelStatus => ({
-  channel,
-  label,
-  state: "not_configured",
-  detail,
-});
+const CHANNEL_LABELS: Record<CommunicationChannel, string> = {
+  in_app: "In-app inbox",
+  push: "Phone / browser push",
+  sms: "SMS",
+  whatsapp: "WhatsApp",
+  email: "Email",
+};
 
 export const crmGetCommunication = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -94,6 +96,13 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       canSeeHistory = false;
     }
 
+    let canSend = true;
+    try {
+      await assertAnyPermission(context.userId, ["customer_messaging"], "manage");
+    } catch {
+      canSend = false;
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { looseDb } = await import("@/integrations/supabase/loose.server");
     const { canonicalEmail } = await import("@/lib/crm-identity.server");
@@ -108,16 +117,18 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       .select("user_id, customer_phone")
       .not("user_id", "is", null)
       .limit(5000);
-    let authUserId: string | null =
+    const authUserId: string | null =
       (orderRows ?? []).find((row) => normalizePhone(row.customer_phone) === phone)?.user_id ?? null;
 
-    const { data: profileRows } = await supabaseAdmin
-      .from("profiles")
-      .select("id, phone, email")
-      .limit(5000);
-    const profile = (profileRows ?? []).find((row) => row.phone && normalizePhone(row.phone) === phone);
-    if (!authUserId && profile) authUserId = null; // an unlinked match is not an identity
-    const email = authUserId ? canonicalEmail(profile?.email ?? null) : null;
+    let email: string | null = null;
+    if (authUserId) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("email")
+        .eq("id", authUserId)
+        .maybeSingle();
+      email = canonicalEmail(profile?.email ?? null);
+    }
 
     // PUSH — a real, active subscription plus configured server keys.
     const { pushConfigured } = await import("@/lib/push.server");
@@ -142,22 +153,59 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       conversationId = (conversation?.id as string | undefined) ?? null;
     }
 
+    // Provider readiness, from the owner's own configuration.
+    const { getSmsConfig } = await import("@/lib/sms.server");
+    const { listIntegrations } = await import("@/lib/integrations.server");
+    const [smsConfig, integrations] = await Promise.all([
+      getSmsConfig().catch(() => null),
+      listIntegrations().catch(() => []),
+    ]);
+    const whatsapp = integrations.find((row) => row.slug === "whatsapp") ?? null;
+    const emailProvider = integrations.find((row) => row.slug === "email") ?? null;
+
+    const validPhone = /^8801\d{9}$/.test(phone);
+    const smsReady = Boolean(smsConfig?.isEnabled && smsConfig?.apiKeyStored) && validPhone;
+    const whatsappReady = whatsapp?.status === "active" && validPhone;
+    const emailReady = emailProvider?.status === "active" && Boolean(email);
     const pushReady = Boolean(authUserId) && activeDevices > 0 && pushConfigured();
+
+    const providerDetail = (
+      row: { status: string; missingFields: string[]; missingSecretNames: string[] } | null,
+      channelName: string,
+    ): string => {
+      if (!row) return `${channelName} isn't set up yet.`;
+      switch (row.status) {
+        case "active":
+          return `Connected and switched on.`;
+        case "disabled":
+          return `Configured but switched off in Settings → Integrations.`;
+        case "configuration_required":
+          return row.missingSecretNames.length > 0
+            ? "The access credential isn't stored on the server yet."
+            : row.missingFields.length > 0
+              ? `Still needed: ${row.missingFields.join(", ")}.`
+              : "Run a connection test in Settings → Integrations first.";
+        case "error":
+          return "The last connection test failed. Check Settings → Integrations.";
+        default:
+          return `${channelName} isn't configured yet.`;
+      }
+    };
 
     const channels: ChannelStatus[] = [
       {
         channel: "in_app",
-        label: "In-app inbox",
+        label: CHANNEL_LABELS.in_app,
         state: authUserId ? "available" : "unavailable",
         detail: authUserId
           ? conversationId
             ? "Account holder with an existing conversation."
-            : "Account holder — a conversation can be opened when they write in."
+            : "Account holder — a conversation is opened on the first message."
           : "Guest customer — there is no account inbox to deliver to.",
       },
       {
         channel: "push",
-        label: "Phone / browser push",
+        label: CHANNEL_LABELS.push,
         state: pushReady ? "available" : "unavailable",
         detail: !authUserId
           ? "Guest customer — push needs a signed-in device."
@@ -167,14 +215,58 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
               ? `${activeDevices} device${activeDevices === 1 ? "" : "s"} switched on.`
               : "Push keys are not configured on the server.",
       },
-      NOT_CONFIGURED(
-        "sms",
-        "SMS",
-        "No customer-messaging SMS provider is connected. The existing SMS setup is used only for login codes.",
-      ),
-      NOT_CONFIGURED("whatsapp", "WhatsApp", "No WhatsApp provider is connected."),
-      NOT_CONFIGURED("email", "Email", "No email delivery provider is connected."),
+      {
+        channel: "sms",
+        label: CHANNEL_LABELS.sms,
+        state: smsReady ? "available" : smsConfig?.isEnabled ? "unavailable" : "not_configured",
+        detail: !validPhone
+          ? "This phone number isn't a valid Bangladeshi mobile number."
+          : !smsConfig
+            ? "No SMS provider row exists."
+            : !smsConfig.isEnabled
+              ? "The SMS provider is switched off in Settings."
+              : smsConfig.apiKeyStored
+                ? "Connected through the configured SMS provider."
+                : "No SMS credential is stored on the server.",
+      },
+      {
+        channel: "whatsapp",
+        label: CHANNEL_LABELS.whatsapp,
+        state: whatsappReady
+          ? "available"
+          : whatsapp && whatsapp.status !== "not_configured"
+            ? "unavailable"
+            : "not_configured",
+        detail: !validPhone
+          ? "This phone number isn't a valid mobile number for WhatsApp."
+          : providerDetail(whatsapp, "WhatsApp"),
+      },
+      {
+        channel: "email",
+        label: CHANNEL_LABELS.email,
+        state: emailReady
+          ? "available"
+          : emailProvider && emailProvider.status !== "not_configured"
+            ? "unavailable"
+            : "not_configured",
+        detail: !email
+          ? "No email address is on this customer's account."
+          : providerDetail(emailProvider, "Email"),
+      },
     ];
+
+    // Stored consent (Phase 4). Marketing needs an explicit opt-in per channel.
+    const { readPreferences } = await import("@/lib/communication.server");
+    const stored = await readPreferences(phone).catch(() => []);
+    const marketingOptIns = (["push", "sms", "whatsapp", "email", "in_app"] as const).map(
+      (channel) => ({
+        channel: channel as CommunicationChannel,
+        optedIn: stored.some(
+          (row) => row.channel === channel && row.category === "marketing" && row.optedIn,
+        ),
+      }),
+    );
+    const anyMarketing = marketingOptIns.some((row) => row.optedIn);
 
     const preferences: CommunicationPreference[] = [
       {
@@ -186,20 +278,48 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       {
         category: "service",
         label: "Customer service replies",
-        enabled: Boolean(authUserId),
+        enabled: Boolean(authUserId) || smsReady || whatsappReady || emailReady,
         detail: authUserId
-          ? "Replies reach this customer through their inbox."
-          : "Guest customer — no inbox to reply into.",
+          ? "Replies reach this customer through their inbox and any connected channel."
+          : smsReady || whatsappReady
+            ? "No account inbox, but a connected channel can reach this phone number."
+            : "Guest customer with no connected channel — nothing can be delivered.",
       },
       {
         category: "marketing",
         label: "Offers & promotions",
-        enabled: false,
-        detail: "Nobody is opted in. Marketing sending is not built, and no consent is stored yet.",
+        enabled: anyMarketing,
+        detail: anyMarketing
+          ? `Opted in on: ${marketingOptIns
+              .filter((row) => row.optedIn)
+              .map((row) => CHANNEL_LABELS[row.channel])
+              .join(", ")}.`
+          : "Not opted in, so promotional messages are blocked for this customer.",
       },
     ];
 
     const history: CommunicationHistoryItem[] = [];
+    if (canSeeHistory) {
+      const { data: sentRows } = await db
+        .from("communication_messages")
+        .select("id, channel, category, status, body_preview, created_at")
+        .eq("customer_phone", phone)
+        .order("created_at", { ascending: false })
+        .limit(40);
+
+      for (const row of (sentRows ?? []) as Record<string, unknown>[]) {
+        history.push({
+          id: `c-${row['id'] as string}`,
+          channel: row['channel'] as CommunicationChannel,
+          category: row['category'] as CommunicationHistoryItem["category"],
+          title: `Sent via ${CHANNEL_LABELS[row['channel'] as CommunicationChannel] ?? "channel"}`,
+          preview: String(row['body_preview'] ?? "").slice(0, 140),
+          createdAt: row['created_at'] as string,
+          status: row['status'] as CommunicationHistoryItem["status"],
+        });
+      }
+    }
+
     if (canSeeHistory && authUserId) {
       const [{ data: notifications }, { data: messages }] = await Promise.all([
         db
@@ -253,9 +373,13 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
           status: "sent",
         });
       }
-
-      history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     }
+
+    history.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    const sendableChannels = channels
+      .filter((row) => row.state === "available")
+      .map((row) => row.channel);
 
     return {
       customerType: authUserId ? "account" : "guest",
@@ -266,7 +390,105 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       preferences,
       history: history.slice(0, 40),
       canSeeHistory,
-      canMessage: Boolean(authUserId),
+      canMessage: sendableChannels.length > 0,
+      canSend,
+      sendableChannels,
       conversationId,
+      marketingOptIns,
     };
+  });
+
+/**
+ * Sends one message to one customer on one channel. Permission, consent,
+ * provider readiness and idempotency are all enforced on the server.
+ */
+export const crmSendCustomerMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        phone: z.string().min(6).max(30),
+        channel: z.enum(["in_app", "push", "sms", "whatsapp", "email"]),
+        category: z.enum(["transactional", "service", "marketing"]),
+        subject: z.string().trim().max(150).nullable().optional(),
+        body: z.string().trim().min(1).max(1200),
+        requestId: z.string().min(8).max(80),
+      })
+      .parse(input),
+  )
+  .handler(
+    async ({ data, context }): Promise<{ ok: boolean; message: string; duplicate?: boolean }> => {
+      const { assertPermission } = await import("@/lib/owner.server");
+      await assertPermission(context.userId, "customer_messaging");
+
+      // Provider readiness is re-checked here on the server, never trusted from
+      // the browser. (Server-only helpers, not the read server function.)
+      const { assertChannelReady } = await import("@/lib/communication.server");
+      const ready = await assertChannelReady(data.phone, data.channel);
+      if (!ready.ok) return { ok: false, message: ready.message };
+
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { normalizePhone: canonical } = await import("@/lib/phone");
+      const phone = canonical(data.phone);
+
+      const { data: orderRows } = await supabaseAdmin
+        .from("orders")
+        .select("user_id, customer_phone")
+        .not("user_id", "is", null)
+        .limit(5000);
+      const customerUserId =
+        (orderRows ?? []).find((row) => canonical(row.customer_phone) === phone)?.user_id ?? null;
+
+      let customerEmail: string | null = null;
+      if (customerUserId) {
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("id", customerUserId)
+          .maybeSingle();
+        customerEmail = profile?.email ?? null;
+      }
+
+      const { sendCustomerMessage } = await import("@/lib/communication.server");
+      const result = await sendCustomerMessage({
+        phone: data.phone,
+        channel: data.channel,
+        category: data.category,
+        body: data.body,
+        subject: data.subject ?? null,
+        actorUserId: context.userId,
+        customerUserId,
+        customerEmail,
+        requestId: data.requestId,
+      });
+
+      return { ok: result.ok, message: result.message, duplicate: Boolean(result.duplicate) };
+    },
+  );
+
+/** Owner-recorded marketing consent per channel. Transactional is never gated. */
+export const crmSetMarketingConsent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        phone: z.string().min(6).max(30),
+        channel: z.enum(["in_app", "push", "sms", "whatsapp", "email"]),
+        optedIn: z.boolean(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "customer_messaging");
+    const { setPreference } = await import("@/lib/communication.server");
+    await setPreference({
+      phone: data.phone,
+      channel: data.channel,
+      category: "marketing",
+      optedIn: data.optedIn,
+      actorUserId: context.userId,
+    });
+    return { ok: true };
   });

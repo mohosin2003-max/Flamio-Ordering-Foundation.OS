@@ -30,3 +30,6 @@
 
 - [x] Customer CRM Phase 1: customer profile page, search/sort, internal notes and tags, CRM identity records, phone-reveal audit (run docs/sql/customer_crm_phase1.sql once)
 - [ ] Customer CRM Phase 1: run `docs/sql/customer_crm_phase1.sql` once in Supabase
+
+- [x] Communication Phase 4: owner self-service WhatsApp/Email integration setup, provider status states, real connection tests, one server-side sender with consent + idempotency, message log, owner-started inbox conversation, signed delivery webhooks, new Message Customers / Integrations permissions
+- [ ] Communication Phase 4: run `docs/sql/communication_phase4.sql` once in Supabase, then store the credentials (WhatsApp access token, email API key, webhook secrets)
