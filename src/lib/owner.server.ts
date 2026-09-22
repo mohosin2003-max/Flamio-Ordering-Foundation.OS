@@ -42,10 +42,10 @@ export async function getAccessProfile(userId: string): Promise<AccessProfile> {
 
   const roles = (roleRows ?? []).map((r) => r.role as string);
   const isOwner = roles.includes("owner");
-  const isManager = isOwner || roles.includes("admin");
+  const isAdmin = roles.includes("admin");
   const isStaff = roles.includes("staff");
 
-  if (isManager) {
+  if (isOwner) {
     return {
       isOwner,
       isManager: true,
@@ -55,11 +55,23 @@ export async function getAccessProfile(userId: string): Promise<AccessProfile> {
     };
   }
 
-  if (!isStaff) {
-    return { isOwner: false, isManager: false, isStaff: false, permissions: [], grants: {} };
+  const grants = await readStaffGrants(userId);
+
+  // Existing managers with no explicit rows retain their historic full-access
+  // behaviour. Once the Owner saves section levels, those become authoritative.
+  if (isAdmin && Object.keys(grants).length === 0) {
+    return {
+      isOwner: false,
+      isManager: true,
+      isStaff: true,
+      permissions: [...STAFF_PERMISSIONS],
+      grants: MANAGER_GRANTS(),
+    };
   }
 
-  const grants = await readStaffGrants(userId);
+  if (!isStaff && !isAdmin) {
+    return { isOwner: false, isManager: false, isStaff: false, permissions: [], grants: {} };
+  }
 
   return {
     isOwner: false,

@@ -143,7 +143,7 @@ export const getOwnerAccess = createServerFn({ method: "GET" })
       .select("id", { count: "exact", head: true })
       .eq("role", "owner");
 
-    const hasAccess = access.isManager || access.permissions.length > 0;
+    const hasAccess = access.isManager || access.isStaff || access.permissions.length > 0;
 
     return {
       isOwner: hasAccess,

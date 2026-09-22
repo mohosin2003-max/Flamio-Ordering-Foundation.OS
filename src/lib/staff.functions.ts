@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ACCESS_LEVELS, STAFF_PERMISSIONS, isAccessLevel, isStaffPermission } from "@/lib/permissions";
 import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
+import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
 
 /**
  * Staff / role management for the owner area.
@@ -44,7 +45,12 @@ export type StaffInvite = {
 
 const rolesEnum = z.enum(["owner", "admin", "staff"]);
 
-const normalizePhone = (value: string) => value.replace(/\s+/g, "");
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const isEmail = (value: string) => /^\S+@\S+\.\S+$/.test(value.trim());
+
+function inviteIdentity(value: string): string {
+  return isEmail(value) ? normalizeEmail(value) : normalizePhone(value);
+}
 
 export const ownerListStaff = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -68,17 +74,31 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       ]);
 
       const userIds = Array.from(new Set((roleRows ?? []).map((r) => r.user_id)));
-      const invitePhones = (inviteRows ?? []).map((i) => normalizePhone(i.phone));
+      const invitePhones = (inviteRows ?? [])
+        .map((i) => i.phone)
+        .filter((value) => !isEmail(value))
+        .map(normalizePhone);
+      const inviteEmails = (inviteRows ?? [])
+        .map((i) => i.phone)
+        .filter(isEmail)
+        .map(normalizeEmail);
 
       const [{ data: staffProfiles }, { data: invitedProfiles }] = await Promise.all([
         userIds.length
           ? supabaseAdmin.from("profiles").select("id, full_name, phone, email").in("id", userIds)
           : Promise.resolve({ data: [] as never[] }),
-        invitePhones.length
+        invitePhones.length || inviteEmails.length
           ? supabaseAdmin
               .from("profiles")
-              .select("id, full_name, phone")
-              .in("phone", invitePhones)
+              .select("id, full_name, phone, email")
+              .or(
+                [
+                  invitePhones.length ? `phone.in.(${invitePhones.join(",")})` : "",
+                  inviteEmails.length ? `email.in.(${inviteEmails.join(",")})` : "",
+                ]
+                  .filter(Boolean)
+                  .join(","),
+              )
           : Promise.resolve({ data: [] as never[] }),
       ]);
 
@@ -89,12 +109,17 @@ export const ownerListStaff = createServerFn({ method: "GET" })
         ]),
       );
 
-      const profileByPhone = new Map(
-        (invitedProfiles ?? []).map((p) => [
-          normalizePhone((p as { phone: string | null }).phone ?? ""),
-          p as { id: string; full_name: string | null; phone: string | null },
-        ]),
-      );
+      const profileByIdentity = new Map<string, { id: string; full_name: string | null }>();
+      for (const row of invitedProfiles ?? []) {
+        const profile = row as {
+          id: string;
+          full_name: string | null;
+          phone: string | null;
+          email: string | null;
+        };
+        if (profile.phone) profileByIdentity.set(normalizePhone(profile.phone), profile);
+        if (profile.email) profileByIdentity.set(normalizeEmail(profile.email), profile);
+      }
 
       const byUser = new Map<string, StaffMember>();
       for (const row of roleRows ?? []) {
@@ -157,7 +182,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
 
 
       const invites: StaffInvite[] = (inviteRows ?? []).map((invite) => {
-        const match = profileByPhone.get(normalizePhone(invite.phone)) ?? null;
+        const match = profileByIdentity.get(inviteIdentity(invite.phone)) ?? null;
         const alreadyStaff = match ? byUser.has(match.id) : false;
         return {
           id: invite.id,
@@ -173,7 +198,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
     },
   );
 
-/** Records a pending invite by phone number (reuses `owner_invites`). */
+/** Records a pending invite by phone or email (legacy compatibility). */
 export const ownerCreateInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -191,7 +216,7 @@ export const ownerCreateInvite = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("owner_invites")
-      .insert({ phone: normalizePhone(data.phone), note: data.note });
+      .insert({ phone: inviteIdentity(data.phone), note: data.note });
 
     if (error) {
       console.error("Create invite failed", error);
@@ -348,11 +373,11 @@ export const ownerFindAccount = createServerFn({ method: "POST" })
       await assertPermission(context.userId, "staff");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      const value = normalizePhone(data.query);
+      const value = isEmail(data.query) ? normalizeEmail(data.query) : normalizePhone(data.query);
       const { data: rows } = await supabaseAdmin
         .from("profiles")
         .select("id, full_name, phone")
-        .or(`phone.eq.${value},email.eq.${data.query.trim()}`)
+        .or(isEmail(data.query) ? `email.eq.${value}` : `phone.eq.${value}`)
         .limit(1);
 
       const match = (rows ?? [])[0];
@@ -360,6 +385,182 @@ export const ownerFindAccount = createServerFn({ method: "POST" })
       return { userId: match.id, fullName: match.full_name, phone: match.phone };
     },
   );
+
+const grantSchema = z.object({
+  permission: z.enum(STAFF_PERMISSIONS),
+  level: z.enum(ACCESS_LEVELS),
+});
+
+/** Creates or links one real auth account, then applies existing role/permission rows. */
+export const ownerCreateStaffAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2).max(120),
+        phone: z.string().trim().min(6).max(24),
+        email: z.string().trim().max(160).nullable(),
+        password: z.string().min(8).max(200),
+        role: rolesEnum,
+        grants: z.array(grantSchema).max(STAFF_PERMISSIONS.length),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
+    if (!isValidPhone(data.phone)) throw new Error("Enter a valid phone number.");
+    const phone = normalizePhone(data.phone);
+    const email = data.email ? normalizeEmail(data.email) : null;
+    if (email && !isEmail(email)) throw new Error("Enter a valid email address.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: matches } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name")
+      .or(email ? `phone.eq.${phone},email.eq.${email}` : `phone.eq.${phone}`)
+      .limit(2);
+
+    let userId = matches?.[0]?.id ?? null;
+    let created = false;
+    if (!userId) {
+      const authEmail = email ?? phoneToAuthEmail(phone);
+      const { data: createdUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: authEmail,
+        phone: `+${phone}`,
+        password: data.password,
+        email_confirm: true,
+        phone_confirm: true,
+        user_metadata: { full_name: data.fullName, phone, contact_email: email ?? "" },
+      });
+      if (createError || !createdUser.user) {
+        if (/already|registered|exists/i.test(createError?.message ?? "")) {
+          throw new Error("An account already uses that email or phone. Add its existing login instead.");
+        }
+        console.error("Create staff auth user failed", createError);
+        throw new Error("We couldn't create this staff account. Please try again.");
+      }
+      userId = createdUser.user.id;
+      created = true;
+    }
+
+    const failAndRollback = async (message: string, detail: unknown) => {
+      console.error(message, detail);
+      if (created && userId) await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw new Error("We couldn't finish creating this staff account. Please try again.");
+    };
+
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      full_name: data.fullName,
+      phone,
+      email,
+    });
+    if (profileError) await failAndRollback("Create staff profile failed", profileError);
+
+    const { error: roleDeleteError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId);
+    if (roleDeleteError) await failAndRollback("Replace staff role failed", roleDeleteError);
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: userId, role: data.role });
+    if (roleError) await failAndRollback("Create staff role failed", roleError);
+
+    const { error: clearError } = await supabaseAdmin
+      .from("staff_permissions")
+      .delete()
+      .eq("user_id", userId);
+    if (clearError) await failAndRollback("Clear staff permissions failed", clearError);
+    if (data.grants.length) {
+      const { untypedAdmin } = await import("@/lib/untyped-db.server");
+      const { error: grantsError } = await (await untypedAdmin()).from("staff_permissions").insert(
+        data.grants.map((grant) => ({
+          user_id: userId,
+          permission: grant.permission,
+          access_level: grant.level,
+        })),
+      );
+      if (grantsError) await failAndRollback("Create staff permissions failed", grantsError);
+    }
+
+    await supabaseAdmin
+      .from("owner_invites")
+      .delete()
+      .in("phone", [phone, data.phone.trim(), ...(email ? [email] : [])]);
+
+    return { ok: true, existingAccount: !created };
+  });
+
+/** Claims a legacy invite using only identities attached to the authenticated user. */
+export const claimMyStaffInvite = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: authResult, error: authError } = await context.supabase.auth.getUser();
+    if (authError || !authResult.user) throw new Error("We couldn't verify your account.");
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("phone, email, full_name")
+      .eq("id", context.userId)
+      .maybeSingle();
+    const metadata = authResult.user.user_metadata ?? {};
+    const authEmail = authResult.user.email?.toLowerCase() ?? null;
+    const syntheticMatch = authEmail?.match(/^p(\d+)@phone\.flamio\.app$/);
+    const phones = new Set<string>();
+    const emails = new Set<string>();
+    const addPhone = (value: unknown) => {
+      if (typeof value === "string" && isValidPhone(value)) phones.add(normalizePhone(value));
+    };
+    const addEmail = (value: unknown) => {
+      if (typeof value === "string" && isEmail(value)) emails.add(normalizeEmail(value));
+    };
+    addPhone(authResult.user.phone);
+    addPhone(profile?.phone);
+    addPhone(metadata.phone);
+    if (syntheticMatch?.[1]) addPhone(syntheticMatch[1]);
+    if (authEmail && !syntheticMatch) addEmail(authEmail);
+    addEmail(profile?.email);
+    addEmail(metadata.contact_email);
+
+    await supabaseAdmin.from("profiles").upsert({
+      id: context.userId,
+      full_name: profile?.full_name ?? (typeof metadata.full_name === "string" ? metadata.full_name : null),
+      phone: profile?.phone ?? [...phones][0] ?? null,
+      email: profile?.email ?? [...emails][0] ?? null,
+    });
+
+    const { data: invites } = await supabaseAdmin
+      .from("owner_invites")
+      .select("id, phone")
+      .order("created_at", { ascending: true });
+    const matching = (invites ?? []).filter((invite) => {
+      const value = invite.phone;
+      return isEmail(value) ? emails.has(normalizeEmail(value)) : phones.has(normalizePhone(value));
+    });
+    if (!matching.length) return { claimed: false };
+
+    const { data: otherRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .neq("user_id", context.userId)
+      .limit(1);
+    void otherRole;
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: context.userId, role: "staff" }, { onConflict: "user_id,role" });
+    if (roleError && roleError.code !== "23505") {
+      console.error("Claim staff role failed", roleError);
+      throw new Error("We couldn't activate your staff access.");
+    }
+    await supabaseAdmin
+      .from("owner_invites")
+      .delete()
+      .in("id", matching.map((invite) => invite.id));
+    return { claimed: true };
+  });
 
 /**
  * Replaces the sections a `staff` member can open. Owners and managers are

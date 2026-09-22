@@ -36,12 +36,14 @@ export function StaffPermissionEditor({
   saving,
   onSave,
   lockedFullAccess = false,
+  title = "Section access",
 }: {
   grants: PermissionGrants;
   saving: boolean;
   onSave: (next: { permission: StaffPermission; level: StaffAccessLevel }[]) => Promise<void>;
   /** Owner and Manager roles have an existing full-access override. */
   lockedFullAccess?: boolean;
+  title?: string;
 }) {
   const [pendingBulk, setPendingBulk] = useState<Choice | null>(null);
 
@@ -82,7 +84,7 @@ export function StaffPermissionEditor({
     <div className="space-y-3 rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="mr-auto text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Section access
+          {title}
         </p>
         {saving ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
         {!lockedFullAccess
