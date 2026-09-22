@@ -77,5 +77,3 @@ COMMENT ON COLUMN public.restaurant_settings.brand_updated_at IS
 --   No new function, trigger, or index is created. The existing
 --   update_restaurant_settings_updated_at trigger continues to maintain
 --   restaurant_settings.updated_at.
-
-COMMIT;
