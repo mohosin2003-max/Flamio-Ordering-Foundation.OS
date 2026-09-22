@@ -68,7 +68,7 @@ export const Route = createFileRoute("/_authenticated/owner/data-storage")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: DataStoragePage;
+  component: DataStoragePage,
 });
 
 function DataStoragePage() {
