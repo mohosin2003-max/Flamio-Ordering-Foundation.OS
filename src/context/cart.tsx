@@ -23,6 +23,10 @@ interface CartContextValue {
   addComboLines: (lines: CartLine[]) => void;
   /** Removes every line of one built combo. */
   removeCombo: (comboKey: string) => void;
+  /** Changes the quantity of one built combo, keeping all its lines in step. */
+  setComboQuantity: (comboKey: string, quantity: number) => void;
+  incrementCombo: (comboKey: string) => void;
+  decrementCombo: (comboKey: string) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   increment: (lineId: string) => void;
   decrement: (lineId: string) => void;
