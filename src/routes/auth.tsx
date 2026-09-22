@@ -215,34 +215,6 @@ function AuthPage() {
     }
   }
 
-  /**
-   * Verifies the signup code emailed by the existing authentication provider.
-   * The code is only ever typed in by the customer — it is never generated,
-   * stored or logged here.
-   */
-  async function verifyEmail() {
-    if (otp.trim().length < 4) {
-      fail("Enter the code sent to your email.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
-        token: otp.trim(),
-        type: "signup",
-      });
-      if (verifyError) throw verifyError;
-      setAwaitingEmail(false);
-      toast.success("Email verified");
-      await goToLanding();
-    } catch (err) {
-      fail(err instanceof Error ? err.message : "We couldn't verify that code.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
 
 
