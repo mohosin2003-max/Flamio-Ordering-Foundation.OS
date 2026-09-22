@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/states";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,11 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  PERMISSION_HINTS,
-  PERMISSION_LABELS,
-  STAFF_PERMISSIONS,
-} from "@/lib/permissions";
+import { StaffPermissionEditor } from "@/components/owner/StaffPermissionEditor";
 import {
   ownerCreateInvite,
   ownerDeleteInvite,
