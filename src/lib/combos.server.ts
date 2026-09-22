@@ -58,6 +58,7 @@ function mapCombo(row: ComboRow, groups: GroupRow[]): ComboConfig {
     slug: row.slug,
     name: row.name,
     description: row.description,
+    imageUrl: row.image_url ?? null,
     pricingMode: row.pricing_mode as ComboPricingMode,
     fixedPrice: row.fixed_price === null ? null : Number(row.fixed_price),
     isActive: row.is_active,
