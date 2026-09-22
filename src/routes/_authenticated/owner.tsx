@@ -57,6 +57,12 @@ const TABS: {
   { to: "/owner/banners", label: "Banners", exact: false, permission: "banners" },
   { to: "/owner/reports", label: "Reports", exact: false, permission: "reports" },
   { to: "/owner/customers", label: "Customers", exact: false, permission: "customers" },
+  {
+    to: "/owner/customers/$customerId",
+    label: "Customer",
+    exact: false,
+    permission: ["customer_profiles", "customers"],
+  },
   { to: "/owner/inbox", label: "Inbox", exact: false, permission: "customers" },
   { to: "/owner/reviews", label: "Reviews", exact: false, permission: "reviews" },
 
