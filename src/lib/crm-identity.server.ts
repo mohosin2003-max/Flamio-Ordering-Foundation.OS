@@ -14,7 +14,9 @@
  *    is reported for owner review.
  */
 
-import { normalizePhone } from "@/lib/phone";
+import { canonicalPhone } from "@/lib/phone";
+
+export { canonicalPhone };
 
 export type CrmIdentityKind = "auth_user" | "phone" | "email";
 
@@ -44,18 +46,6 @@ export interface CrmResolution {
 
 /** Synthetic addresses created for phone-password login are not real emails. */
 const SYNTHETIC_EMAIL_DOMAIN = "@phone.flamio.app";
-
-/**
- * Canonical Bangladesh phone identity, or null when the value is not a phone
- * number we can trust. Never guesses: only 01XXXXXXXXX / 8801XXXXXXXXX /
- * +8801XXXXXXXXX / 008801XXXXXXXXX shapes resolve.
- */
-export function canonicalPhone(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const digits = normalizePhone(raw);
-  if (!/^8801[3-9]\d{8}$/.test(digits)) return null;
-  return digits;
-}
 
 /** Canonical email identity, or null for blank/synthetic/invalid values. */
 export function canonicalEmail(raw: string | null | undefined): string | null {
