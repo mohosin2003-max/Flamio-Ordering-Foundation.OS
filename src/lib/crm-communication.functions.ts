@@ -109,16 +109,11 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
     const db = looseDb(supabaseAdmin);
     const phone = normalizePhone(data.phone);
 
-    // Who is this, as an authentication identity? Only deterministic matches:
-    // an order that carries the auth user id, or a profile whose own phone
-    // number is an exact canonical match (same rule as Phase 2).
-    const { data: orderRows } = await supabaseAdmin
-      .from("orders")
-      .select("user_id, customer_phone")
-      .not("user_id", "is", null)
-      .limit(5000);
-    const authUserId: string | null =
-      (orderRows ?? []).find((row) => normalizePhone(row.customer_phone) === phone)?.user_id ?? null;
+    // Who is this, as an authentication identity? Same deterministic rule as
+    // Phase 2, resolved through the CRM identity index and indexed order
+    // queries instead of reading thousands of historical orders.
+    const { resolveAuthUserIdByPhone } = await import("@/lib/crm-identity.server");
+    const authUserId: string | null = await resolveAuthUserIdByPhone(data.phone);
 
     let email: string | null = null;
     if (authUserId) {
