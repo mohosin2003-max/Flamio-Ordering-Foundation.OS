@@ -39,12 +39,11 @@ export const Route = createFileRoute("/_authenticated/kitchen")({
   component: KitchenPage,
 });
 
-/** Next kitchen action for the current status. */
-const NEXT: Record<string, { status: "preparing" | "ready" | "completed"; label: string }> = {
+/** Next kitchen action for the current status. Delivery dispatch stays owner-side. */
+const NEXT: Record<string, { status: "preparing" | "ready"; label: string }> = {
   placed: { status: "preparing", label: "Start preparing" },
   confirmed: { status: "preparing", label: "Start preparing" },
   preparing: { status: "ready", label: "Mark ready" },
-  ready: { status: "completed", label: "Complete" },
 };
 
 function KitchenPage() {
@@ -170,7 +169,10 @@ function KitchenPage() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {orders.data.map((order) => {
-            const next = NEXT[order.status];
+            const next =
+              order.status === "ready" && order.fulfillment === "pickup"
+                ? ({ status: "completed", label: "Complete pickup" } as const)
+                : NEXT[order.status];
             const isNew = newIds.includes(order.id);
             return (
               <li key={order.id}>
