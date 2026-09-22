@@ -298,7 +298,8 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "coupons");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { untypedAdmin } = await import("@/lib/untyped-db.server");
+    const supabaseAdmin = await untypedAdmin();
 
     const [rulesResult, eventsResult, challengesResult] = await Promise.all([
       supabaseAdmin
@@ -322,7 +323,8 @@ export const ownerGetChallengeRewards = createServerFn({ method: "GET" })
     if (rulesResult.error) throw new Error("We couldn't load challenge reward rules.");
 
     const eventRows = eventsResult.error ? [] : (eventsResult.data ?? []);
-    const userIds = [...new Set(eventRows.map((row) => row.user_id as string))];
+    const eventList = eventRows as Record<string, unknown>[];
+    const userIds = [...new Set(eventList.map((row) => row["user_id"] as string))];
     const names = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: profiles } = await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds);
