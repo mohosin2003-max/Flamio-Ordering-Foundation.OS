@@ -18,6 +18,7 @@ import { Route as CombosRouteImport } from './routes/combos'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as OffersRouteImport } from './routes/offers'
+import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticated/kitchen'
 import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
 import { Route as MenuIndexRouteImport } from './routes/menu.index'
@@ -113,6 +114,12 @@ const OffersRoute = OffersRouteImport.update({
   path: '/offers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedChangePasswordRoute =
+  AuthenticatedChangePasswordRouteImport.update({
+    id: '/change-password',
+    path: '/change-password',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedKitchenRoute = AuthenticatedKitchenRouteImport.update({
   id: '/kitchen',
   path: '/kitchen',
@@ -410,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
   '/owner': typeof AuthenticatedOwnerRouteWithChildren
   '/menu/$productSlug': typeof MenuProductSlugRoute
@@ -470,6 +478,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
   '/menu/$productSlug': typeof MenuProductSlugRoute
   '/order/$orderId': typeof OrderOrderIdRoute
@@ -530,6 +539,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/offers': typeof OffersRoute
+  '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/kitchen': typeof AuthenticatedKitchenRoute
   '/_authenticated/owner': typeof AuthenticatedOwnerRouteWithChildren
   '/menu/$productSlug': typeof MenuProductSlugRoute
@@ -592,6 +602,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/offers'
+    | '/change-password'
     | '/kitchen'
     | '/owner'
     | '/menu/$productSlug'
@@ -652,6 +663,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/offers'
+    | '/change-password'
     | '/kitchen'
     | '/menu/$productSlug'
     | '/order/$orderId'
@@ -711,6 +723,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/offers'
+    | '/_authenticated/change-password'
     | '/_authenticated/kitchen'
     | '/_authenticated/owner'
     | '/menu/$productSlug'
@@ -847,6 +860,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/offers'
       preLoaderRoute: typeof OffersRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/change-password': {
+      id: '/_authenticated/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/kitchen': {
       id: '/_authenticated/kitchen'
@@ -1297,6 +1317,7 @@ const AuthenticatedOwnerRouteWithChildren =
   AuthenticatedOwnerRoute._addFileChildren(AuthenticatedOwnerRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
   AuthenticatedOwnerRoute: typeof AuthenticatedOwnerRouteWithChildren
   AuthenticatedAccountAddressesRoute: typeof AuthenticatedAccountAddressesRoute
@@ -1312,6 +1333,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
   AuthenticatedOwnerRoute: AuthenticatedOwnerRouteWithChildren,
   AuthenticatedAccountAddressesRoute: AuthenticatedAccountAddressesRoute,
