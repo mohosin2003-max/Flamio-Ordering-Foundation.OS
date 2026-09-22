@@ -123,50 +123,45 @@ function AuthPage() {
 
   async function signup() {
     if (fullName.trim().length < 2) throw new Error("Please enter your full name.");
+    // Phone is always required: it stays the primary login identifier.
+    if (!phone.trim()) throw new Error("Phone number is required.");
     if (!isValidPhone(phone)) throw new Error("Please enter a valid phone number.");
+    if (!password) throw new Error("Password is required.");
     if (password.length < 8) throw new Error("Password must be at least 8 characters.");
     const normalizedPhone = normalizePhone(phone);
     const normalizedEmail = email.trim().toLowerCase();
+    // Email is optional; when given it must be valid.
+    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      throw new Error("Enter a valid email address or leave it empty.");
+    }
 
-    if (signupMethod === "email") {
-      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+    const metadata = {
+      full_name: fullName.trim(),
+      phone: normalizedPhone,
+      contact_email: normalizedEmail,
+      address_line: address.trim(),
+    };
+
+    if (normalizedEmail) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-          data: {
-            full_name: fullName.trim(),
-            phone: normalizedPhone,
-            contact_email: normalizedEmail,
-            address_line: address.trim(),
-          },
-        },
+        options: { emailRedirectTo: window.location.origin + "/auth", data: metadata },
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
         setAwaitingEmail(true);
-        toast.success("Check your email to verify your account");
+        toast.success("We sent a verification code to your email");
         return;
       }
       await goToLanding();
       return;
     }
 
-    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-      throw new Error("Enter a valid email address or leave it empty.");
-    }
     const { data, error: signUpError } = await supabase.auth.signUp({
       phone: `+${normalizedPhone}`,
       password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          phone: normalizedPhone,
-          contact_email: normalizedEmail,
-          address_line: address.trim(),
-        },
-      },
+      options: { data: metadata },
     });
     if (signUpError) throw signUpError;
     if (!data.session) {
@@ -176,6 +171,7 @@ function AuthPage() {
     }
     await goToLanding();
   }
+
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
