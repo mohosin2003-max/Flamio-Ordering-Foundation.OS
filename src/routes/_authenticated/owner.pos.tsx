@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,6 +16,14 @@ import { formatBDT } from "@/lib/format";
 import { placeholderByCategorySlug } from "@/lib/menu-repository";
 import { placeOrder } from "@/lib/orders.functions";
 import { ownerGetCatalog } from "@/lib/owner.functions";
+
+function clampDiscount(amount: number, subtotal: number): number {
+  return Math.max(0, Math.min(amount, subtotal));
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
 
 /**
  * Counter (POS) sales. This is a thin till on top of the EXISTING order
@@ -37,6 +45,8 @@ function OwnerPos() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("Walk-in customer");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
   const [saving, setSaving] = useState(false);
 
   const catalog = useQuery({
@@ -53,6 +63,55 @@ function OwnerPos() {
     [products, lines],
   );
   const itemCount = Object.values(lines).reduce((sum, n) => sum + n, 0);
+
+  const subtotal = total;
+  const discountAmountNum = useMemo(() => {
+    const parsed = parseFloat(discountAmount);
+    return Number.isNaN(parsed) ? 0 : clampDiscount(round2(parsed), subtotal);
+  }, [discountAmount, subtotal]);
+  const discountPercentNum = useMemo(() => {
+    if (subtotal <= 0 || discountAmountNum <= 0) return 0;
+    return round2((discountAmountNum / subtotal) * 100);
+  }, [discountAmountNum, subtotal]);
+  const finalTotal = useMemo(
+    () => Math.max(round2(subtotal - discountAmountNum), 0),
+    [subtotal, discountAmountNum],
+  );
+
+  useEffect(() => {
+    if (subtotal <= 0) {
+      setDiscountAmount("");
+      setDiscountPercent("");
+      return;
+    }
+    const parsed = parseFloat(discountAmount);
+    if (discountAmount !== "" && !Number.isNaN(parsed) && parsed > subtotal) {
+      setDiscountAmount(round2(subtotal).toString());
+      setDiscountPercent("100");
+    }
+  }, [subtotal]);
+
+  const updateDiscountAmount = (value: string) => {
+    setDiscountAmount(value);
+    const parsed = parseFloat(value);
+    if (value === "" || Number.isNaN(parsed) || subtotal <= 0) {
+      setDiscountPercent("");
+      return;
+    }
+    const clamped = clampDiscount(round2(parsed), subtotal);
+    setDiscountPercent(round2((clamped / subtotal) * 100).toString());
+  };
+
+  const updateDiscountPercent = (value: string) => {
+    setDiscountPercent(value);
+    const parsed = parseFloat(value);
+    if (value === "" || Number.isNaN(parsed) || subtotal <= 0) {
+      setDiscountAmount("");
+      return;
+    }
+    const pct = Math.max(0, Math.min(parsed, 100));
+    setDiscountAmount(round2((subtotal * pct) / 100).toString());
+  };
 
   if (catalog.isLoading) return <Skeleton className="h-96 w-full" />;
 
@@ -100,10 +159,10 @@ function OwnerPos() {
           zoneName: null,
           estimatedTime: null,
           pickupNote: "Counter sale",
-          subtotal: total,
-          discount: 0,
+          subtotal,
+          discount: discountAmountNum,
           deliveryCharge: 0,
-          total,
+          total: finalTotal,
           items: selected.map((p) => ({
             productId: p.id,
             productSlug: p.slug,
@@ -119,6 +178,8 @@ function OwnerPos() {
       await queryClient.invalidateQueries({ queryKey: ["owner-inventory"] });
       setLines({});
       setCustomerPhone("");
+      setDiscountAmount("");
+      setDiscountPercent("");
       toast.success(`Sale recorded — ${result.code}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't record this sale");
@@ -251,12 +312,51 @@ function OwnerPos() {
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{itemCount} items</Badge>
-              <span className="text-sm text-muted-foreground">Cash sale</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="pos-discount-amount">Discount Amount (৳)</Label>
+              <Input
+                id="pos-discount-amount"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0"
+                value={discountAmount}
+                onChange={(e) => updateDiscountAmount(e.target.value)}
+              />
             </div>
-            <span className="font-display text-lg font-bold">{formatBDT(total)}</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="pos-discount-percent">Discount (%)</Label>
+              <Input
+                id="pos-discount-percent"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                placeholder="0"
+                value={discountPercent}
+                onChange={(e) => updateDiscountPercent(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatBDT(subtotal)}</span>
+            </div>
+            {discountAmountNum > 0 ? (
+              <div className="flex items-center justify-between text-sm text-destructive">
+                <span>Discount</span>
+                <span>-{formatBDT(discountAmountNum)} ({discountPercentNum}%)</span>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{itemCount} items</Badge>
+                <span className="text-sm text-muted-foreground">Cash sale</span>
+              </div>
+              <span className="font-display text-lg font-bold">{formatBDT(finalTotal)}</span>
+            </div>
           </div>
           <Button disabled={saving} onClick={() => void charge()}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
