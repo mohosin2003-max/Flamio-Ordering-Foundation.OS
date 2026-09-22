@@ -619,7 +619,7 @@ function HistorySection() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
-                    {(details.data ?? []).map((item) => (
+                    {(details.data ?? []).map((item: { id: string; label: string; outcome: string; reason: string | null }) => (
                       <li key={item.id}>
                         {item.outcome}: {item.label}
                         {item.reason ? ` — ${item.reason}` : ""}
