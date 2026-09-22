@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Percent, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/states";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatBDT } from "@/lib/format";
 import { placeholderByCategorySlug } from "@/lib/menu-repository";
 import { placeOrder } from "@/lib/orders.functions";
@@ -48,6 +49,8 @@ function OwnerPos() {
   const [discountAmount, setDiscountAmount] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
 
   const catalog = useQuery({
     queryKey: ["owner-catalog"],
@@ -312,32 +315,76 @@ function OwnerPos() {
               />
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="pos-discount-amount">Discount Amount (৳)</Label>
-              <Input
-                id="pos-discount-amount"
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="0"
-                value={discountAmount}
-                onChange={(e) => updateDiscountAmount(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pos-discount-percent">Discount (%)</Label>
-              <Input
-                id="pos-discount-percent"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                placeholder="0"
-                value={discountPercent}
-                onChange={(e) => updateDiscountPercent(e.target.value)}
-              />
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {discountAmountNum > 0
+                ? `Discount: ${formatBDT(discountAmountNum)} (${discountPercentNum}%)`
+                : "No discount applied"}
+            </span>
+            <Popover open={discountOpen} onOpenChange={setDiscountOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Percent className="h-4 w-4" />
+                  {discountAmountNum > 0 ? `${formatBDT(discountAmountNum)} off` : "Discount"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 space-y-3" align="end">
+                <p className="text-sm font-medium">Add discount</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={discountMode === "amount" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDiscountMode("amount")}
+                  >
+                    ৳ Amount
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={discountMode === "percent" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setDiscountMode("percent")}
+                  >
+                    % Percentage
+                  </Button>
+                </div>
+                {discountMode === "amount" ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pos-discount-amount">Discount Amount (৳)</Label>
+                    <Input
+                      id="pos-discount-amount"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="0"
+                      value={discountAmount}
+                      onChange={(e) => updateDiscountAmount(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pos-discount-percent">Discount (%)</Label>
+                    <Input
+                      id="pos-discount-percent"
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.01"
+                      placeholder="0"
+                      value={discountPercent}
+                      onChange={(e) => updateDiscountPercent(e.target.value)}
+                    />
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => setDiscountOpen(false)}
+                >
+                  Apply
+                </Button>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between text-sm">
