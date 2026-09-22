@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { formatBDT } from "@/lib/format";
+import { normalizePhone } from "@/lib/phone";
 import {
   ownerListNotifiableCustomers,
   ownerSendCustomerNotification,
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/_authenticated/owner/customers")({
 });
 
 type Segment = "all" | "new" | "returning" | "frequent" | "inactive";
+type SortKey = "recent" | "spend" | "orders" | "name";
 
 function OwnerCustomers() {
   const listCustomers = useServerFn(ownerListCustomers);
@@ -44,6 +46,8 @@ function OwnerCustomers() {
   const sendCustomerNotification = useServerFn(ownerSendCustomerNotification);
 
   const [segment, setSegment] = useState<Segment>("all");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [promo, setPromo] = useState({ title: "", body: "" });
   const [sending, setSending] = useState(false);
   const [personal, setPersonal] = useState({ userId: "", title: "", body: "" });
@@ -97,7 +101,21 @@ function OwnerCustomers() {
   }
 
   const rows = customers.data ?? [];
-  const visible = segment === "all" ? rows : rows.filter((c) => c.segment === segment);
+  const needle = search.trim().toLowerCase();
+  const digits = needle.replace(/\D/g, "");
+  const visible = rows
+    .filter((c) => (segment === "all" ? true : c.segment === segment))
+    .filter((c) => {
+      if (!needle) return true;
+      if (c.name.toLowerCase().includes(needle)) return true;
+      return digits.length > 0 && normalizePhone(c.key).includes(digits);
+    })
+    .sort((a, b) => {
+      if (sort === "spend") return b.totalSpent - a.totalSpent;
+      if (sort === "orders") return b.orderCount - a.orderCount;
+      if (sort === "name") return a.name.localeCompare(b.name);
+      return b.lastOrderAt.localeCompare(a.lastOrderAt);
+    });
 
   const send = async () => {
     setSending(true);
@@ -244,6 +262,26 @@ function OwnerCustomers() {
         <h2 className="font-display text-base font-bold">
           Customers {segment === "all" ? "" : `· ${segment}`}
         </h2>
+
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <Input
+            value={search}
+            placeholder="Search by name or phone"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <Select value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+            <SelectTrigger className="sm:w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most recent order</SelectItem>
+              <SelectItem value="spend">Highest spend</SelectItem>
+              <SelectItem value="orders">Most orders</SelectItem>
+              <SelectItem value="name">Name (A–Z)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {visible.length === 0 ? (
           <EmptyState
             title="No customers yet"
@@ -251,22 +289,29 @@ function OwnerCustomers() {
           />
         ) : (
           visible.map((c) => (
-            <Card key={c.key}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 font-semibold">
-                    {c.name}
-                    <Badge variant="secondary">{c.segment}</Badge>
-                  </div>
+            <Link
+              key={c.key}
+              to="/owner/customers/$customerId"
+              params={{ customerId: normalizePhone(c.key) }}
+              className="block"
+            >
+              <Card className="transition-colors hover:border-primary/60">
+                <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 font-semibold">
+                      {c.name}
+                      <Badge variant="secondary">{c.segment}</Badge>
+                    </div>
 
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {c.phoneMasked} · {c.orderCount} order{c.orderCount === 1 ? "" : "s"} · last{" "}
-                    {c.lastOrderAt.slice(0, 10)}
-                  </p>
-                </div>
-                <span className="font-semibold">{formatBDT(c.totalSpent)}</span>
-              </CardContent>
-            </Card>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {c.phoneMasked} · {c.orderCount} order{c.orderCount === 1 ? "" : "s"} · last{" "}
+                      {c.lastOrderAt.slice(0, 10)}
+                    </p>
+                  </div>
+                  <span className="font-semibold">{formatBDT(c.totalSpent)}</span>
+                </CardContent>
+              </Card>
+            </Link>
           ))
         )}
       </div>
