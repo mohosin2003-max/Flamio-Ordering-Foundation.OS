@@ -19,6 +19,8 @@ import {
   staffGetMyFinance,
   staffSubmitMoneyTaken,
 } from "@/lib/staff-finance.functions";
+import { staffGetMyProfitShare, type MyProfitShare } from "@/lib/owner-finance.functions";
+
 
 /**
  * A staff member's OWN account. The server function reads only the signed-in
