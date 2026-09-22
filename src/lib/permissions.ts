@@ -35,8 +35,8 @@ export const STAFF_PERMISSIONS = [
   "own_salary",
   "own_money_taken",
   "own_profit_share",
-
   "settings",
+
 ] as const;
 
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
@@ -75,6 +75,8 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
   staff_finance: "Staff Accounts",
   own_salary: "Own Salary",
   own_money_taken: "Own Money-Taken",
+  own_profit_share: "Own Profit Share",
+
   settings: "Settings",
 };
 
