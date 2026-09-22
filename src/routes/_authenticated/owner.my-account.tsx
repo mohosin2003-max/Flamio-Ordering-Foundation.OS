@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/states";
 import { formatBDT } from "@/lib/format";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LEDGER_TYPE_LABELS,
   staffGetMyFinance,
@@ -41,6 +42,9 @@ function MyAccountPage() {
   const [entryDate, setEntryDate] = useState(today);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
 
   const finance = useQuery({
     queryKey: ["my-finance", month],
@@ -132,6 +136,71 @@ function MyAccountPage() {
         <Stat label="Loan outstanding" value={formatBDT(data.outstandingLoan)} />
         <Stat label="Waiting for approval" value={formatBDT(data.pendingTotal)} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Change password</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="grid gap-3 sm:grid-cols-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (passwordBusy) return;
+              if (!currentPassword) {
+                toast.error("Enter your current password.");
+                return;
+              }
+              if (newPassword.length < 8) {
+                toast.error("New password must be at least 8 characters.");
+                return;
+              }
+              setPasswordBusy(true);
+              try {
+                const { error } = await supabase.auth.updateUser({
+                  password: newPassword,
+                  current_password: currentPassword,
+                });
+                if (error) throw error;
+                setCurrentPassword("");
+                setNewPassword("");
+                toast.success("Password changed");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "We couldn't change your password.");
+              } finally {
+                setPasswordBusy(false);
+              }
+            }}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="current-password">Current password</Label>
+              <Input
+                id="current-password"
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                disabled={passwordBusy}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-password">New password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                disabled={passwordBusy}
+              />
+            </div>
+            <Button type="submit" className="sm:col-span-2" disabled={passwordBusy}>
+              {passwordBusy ? <Loader2 className="animate-spin" /> : null}
+              Change password
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat label="Bonus this month" value={formatBDT(data.bonusThisMonth)} />

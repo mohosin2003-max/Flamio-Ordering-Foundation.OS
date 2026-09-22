@@ -94,15 +94,14 @@ function AuthPage() {
       return;
     }
     const value = identity.trim();
+    if (!value.includes("@") && !isValidPhone(value)) throw new Error("Enter a valid email or phone number.");
+    let directSession = null;
     if (value.includes("@")) {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: value.toLowerCase(),
-        password,
-      });
-      if (signInError) throw new Error("Incorrect email/phone or password.");
-    } else {
-      if (!isValidPhone(value)) throw new Error("Enter a valid phone number.");
-      const result = await phonePasswordLogin({ data: { phone: value, password } });
+      const direct = await supabase.auth.signInWithPassword({ email: value.toLowerCase(), password });
+      directSession = direct.data.session;
+    }
+    if (!directSession) {
+      const result = await phonePasswordLogin({ data: { identity: value, password } });
       if (!result.ok) throw new Error(result.message);
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: result.accessToken,

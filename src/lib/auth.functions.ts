@@ -34,15 +34,16 @@ function publicAuthClient() {
  */
 export const signInWithPhonePassword = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({ phone: z.string().trim().min(6).max(24), password: z.string().min(1).max(200) }).parse(input),
+    z.object({ identity: z.string().trim().min(3).max(160), password: z.string().min(1).max(200) }).parse(input),
   )
   .handler(async ({ data }): Promise<LoginResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const phone = normalizePhone(data.phone);
+    const isEmail = data.identity.includes("@");
+    const identity = isEmail ? data.identity.toLowerCase() : normalizePhone(data.identity);
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
       .select("id")
-      .eq("phone", phone)
+      .eq(isEmail ? "email" : "phone", identity)
       .limit(2);
 
     if (error || profiles?.length !== 1) {

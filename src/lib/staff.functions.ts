@@ -518,12 +518,10 @@ export const claimMyStaffInvite = createServerFn({ method: "POST" })
       if (typeof value === "string" && isEmail(value)) emails.add(normalizeEmail(value));
     };
     addPhone(authResult.user.phone);
-    addPhone(profile?.phone);
-    addPhone(metadata.phone);
+    // Only provider-backed identities can claim an invitation. Profile and
+    // metadata values are retained for display, but are not proof of identity.
     if (syntheticMatch?.[1]) addPhone(syntheticMatch[1]);
     if (authEmail && !syntheticMatch) addEmail(authEmail);
-    addEmail(profile?.email);
-    addEmail(metadata.contact_email);
 
     await supabaseAdmin.from("profiles").upsert({
       id: context.userId,
