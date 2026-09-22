@@ -512,7 +512,22 @@ export async function resolveSession(
     .eq("status", "in_progress");
 
   if (!won) {
-    return { result: "lost", message: "Not this time — your play has been used.", outcome };
+    // Optional owner-configured consolation rewards (lost / almost won).
+    const { awardChallengeResultRewards } = await import("@/lib/challenge-rewards.server");
+    const resultRewards = await awardChallengeResultRewards({
+      userId,
+      challengeId: challenge.id,
+      sessionId: session.id,
+      score: reportedScore,
+      requiredScore: Number(challenge.required_score),
+      scored: !outcome,
+    });
+    return {
+      result: "lost",
+      message: "Not this time — your play has been used.",
+      outcome,
+      resultRewards,
+    };
   }
 
   // Reward protection: every limit is checked here, server-side.
