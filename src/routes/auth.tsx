@@ -273,33 +273,29 @@ function AuthPage() {
         ))}
       </div>
 
-      {mode === "signup" ? (
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
-          {(["email", "phone"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              size="sm"
-              variant={signupMethod === value ? "secondary" : "ghost"}
-              onClick={() => {
-                setSignupMethod(value);
-                setAwaitingEmail(false);
-                setAwaitingPhoneOtp(false);
-              }}
-            >
-              {value === "email" ? "Verify by email" : "Verify by phone"}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-
       {awaitingEmail ? (
-        <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4">
-          <p className="font-semibold">Check your email</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Open the verification link sent to {email.trim()}. Your account will finish setup when
-            you return.
-          </p>
+        <div className="mt-6 space-y-4">
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
+            <p className="font-semibold">Verify your email</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We sent a verification code to {email.trim()}. Enter it below to finish creating your
+              account. The link in the same email also works.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email-otp">Email verification code</Label>
+            <Input
+              id="email-otp"
+              value={otp}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              onChange={(event) => setOtp(event.target.value)}
+            />
+          </div>
+          <Button className="w-full" disabled={busy} onClick={() => void verifyEmail()}>
+            {busy ? <Loader2 className="animate-spin" /> : null}
+            Verify email
+          </Button>
         </div>
       ) : awaitingPhoneOtp ? (
         <div className="mt-6 space-y-4">
@@ -336,24 +332,23 @@ function AuthPage() {
                 <Label htmlFor="full-name">Full name</Label>
                 <Input id="full-name" value={fullName} autoComplete="name" onChange={(e) => setFullName(e.target.value)} />
               </div>
-              {signupMethod === "email" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Verification will be sent to this email.</p>
-                </div>
-              ) : null}
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone number</Label>
-                <Input id="phone" value={phone} inputMode="tel" autoComplete="tel" placeholder="01712345678" onChange={(e) => setPhone(e.target.value)} />
-                {signupMethod === "phone" ? <p className="text-xs text-muted-foreground">A verification code will be sent to this phone.</p> : null}
+                <Label htmlFor="phone">Phone number (required)</Label>
+                <Input id="phone" value={phone} inputMode="tel" autoComplete="tel" required placeholder="01712345678" onChange={(e) => setPhone(e.target.value)} />
+                <p className="text-xs text-muted-foreground">You will sign in with this number.</p>
               </div>
-              {signupMethod === "phone" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="optional-email">Email (optional)</Label>
-                  <Input id="optional-email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
-                </div>
-              ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
+                <p className="text-xs text-muted-foreground">
+                  If you add an email, we will send a verification code to it.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Delivery location (optional)</Label>
+                <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="address">Delivery location (optional)</Label>
                 <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
