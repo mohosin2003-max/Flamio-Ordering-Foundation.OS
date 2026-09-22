@@ -202,6 +202,56 @@ export async function attachIdentity(input: {
   return { ok: true };
 }
 
+/**
+ * Auth user id behind a customer phone number, using indexed lookups only.
+ *
+ * Exactly the same rule as before (an order that already carries the auth user
+ * id, matched on canonical phone) — but resolved through the CRM identity index
+ * first and then through an indexed, filtered order query instead of reading
+ * thousands of historical orders. Nothing is written, no order row is changed.
+ */
+export async function resolveAuthUserIdByPhone(rawPhone: string): Promise<string | null> {
+  const phone = canonicalPhone(rawPhone);
+  if (!phone) return null;
+  const client = await db();
+
+  // 1. CRM identity index (unique on kind+value).
+  try {
+    const crmCustomerId = await findByIdentity("phone", phone);
+    if (crmCustomerId) {
+      const identities = await readIdentities(crmCustomerId);
+      const authIdentity = identities.find((row) => row.kind === "auth_user");
+      if (authIdentity) return authIdentity.value;
+    }
+  } catch {
+    // CRM identity tables unavailable — fall through to the order lookup.
+  }
+
+  // 2. Indexed order lookup on the stored phone formats. No full-table scan.
+  const local = phone.slice(3); // 01XXXXXXXXX without the country code
+  const variants = [phone, `+${phone}`, `0${local}`, local, `88${local}`];
+  const direct = await client
+    .from("orders")
+    .select("user_id")
+    .in("customer_phone", variants)
+    .not("user_id", "is", null)
+    .limit(1);
+  const directMatch = (direct.data?.[0]?.user_id as string | undefined) ?? null;
+  if (directMatch) return directMatch;
+
+  // 3. Bounded legacy fallback for oddly formatted historical phone values.
+  const recent = await client
+    .from("orders")
+    .select("user_id, customer_phone")
+    .not("user_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  const match = ((recent.data ?? []) as { user_id: string; customer_phone: string | null }[]).find(
+    (row) => canonicalPhone(row.customer_phone) === phone,
+  );
+  return match?.user_id ?? null;
+}
+
 /** Flips a CRM customer to `account` once an auth identity is attached. */
 export async function markCustomerType(
   crmCustomerId: string,

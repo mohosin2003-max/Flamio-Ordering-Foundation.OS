@@ -473,6 +473,19 @@ export function normalizeProviderStatus(raw: string): CommStatus | null {
   return null;
 }
 
+/**
+ * Progress ranking. A webhook that arrives late must never walk a message
+ * backwards: delivered stays delivered when a "sent" event turns up after it.
+ */
+const STATUS_RANK: Record<CommStatus, number> = {
+  cancelled: 0,
+  queued: 1,
+  sending: 2,
+  sent: 3,
+  failed: 4,
+  delivered: 5,
+};
+
 export async function applyProviderStatus(input: {
   providerSlug: string;
   providerMessageId: string;
@@ -480,13 +493,28 @@ export async function applyProviderStatus(input: {
 }): Promise<void> {
   const client = await db();
   const now = new Date().toISOString();
-  await client
+
+  const { data: rows } = await client
     .from("communication_messages")
-    .update({
-      status: input.status,
-      updated_at: now,
-      delivered_at: input.status === "delivered" ? now : null,
-    })
+    .select("id, status, delivered_at")
     .eq("provider_slug", input.providerSlug)
     .eq("provider_message_id", input.providerMessageId);
+
+  for (const row of (rows ?? []) as {
+    id: string;
+    status: CommStatus;
+    delivered_at: string | null;
+  }[]) {
+    const current = STATUS_RANK[row.status] ?? 0;
+    const incoming = STATUS_RANK[input.status] ?? 0;
+    // A genuine provider failure is authoritative unless the message was
+    // already confirmed delivered; every other weaker status is ignored.
+    const isAuthoritativeFailure = input.status === "failed" && row.status !== "delivered";
+    if (incoming <= current && !isAuthoritativeFailure) continue;
+
+    const patch: Record<string, unknown> = { status: input.status, updated_at: now };
+    if (input.status === "delivered" && !row.delivered_at) patch['delivered_at'] = now;
+    // An existing delivered_at is never cleared.
+    await client.from("communication_messages").update(patch).eq("id", row.id);
+  }
 }

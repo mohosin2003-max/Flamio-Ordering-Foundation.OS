@@ -27,7 +27,6 @@ import type { IntegrationView } from "@/lib/integrations.functions";
 const STATUS_LABELS: Record<IntegrationView["status"], string> = {
   not_configured: "Not configured",
   configuration_required: "Configuration required",
-  connected: "Connected",
   active: "Active",
   disabled: "Disabled",
   error: "Error",

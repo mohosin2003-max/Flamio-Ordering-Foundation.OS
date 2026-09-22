@@ -10,10 +10,10 @@
 
 export type IntegrationSlug = "whatsapp" | "email";
 
+/** Only the states the implementation can actually produce. */
 export type IntegrationStatus =
   | "not_configured"
   | "configuration_required"
-  | "connected"
   | "active"
   | "disabled"
   | "error";

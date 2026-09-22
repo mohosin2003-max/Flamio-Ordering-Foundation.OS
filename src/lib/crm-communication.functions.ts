@@ -109,16 +109,11 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
     const db = looseDb(supabaseAdmin);
     const phone = normalizePhone(data.phone);
 
-    // Who is this, as an authentication identity? Only deterministic matches:
-    // an order that carries the auth user id, or a profile whose own phone
-    // number is an exact canonical match (same rule as Phase 2).
-    const { data: orderRows } = await supabaseAdmin
-      .from("orders")
-      .select("user_id, customer_phone")
-      .not("user_id", "is", null)
-      .limit(5000);
-    const authUserId: string | null =
-      (orderRows ?? []).find((row) => normalizePhone(row.customer_phone) === phone)?.user_id ?? null;
+    // Who is this, as an authentication identity? Same deterministic rule as
+    // Phase 2, resolved through the CRM identity index and indexed order
+    // queries instead of reading thousands of historical orders.
+    const { resolveAuthUserIdByPhone } = await import("@/lib/crm-identity.server");
+    const authUserId: string | null = await resolveAuthUserIdByPhone(data.phone);
 
     let email: string | null = null;
     if (authUserId) {
@@ -308,6 +303,17 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
         .limit(40);
 
       for (const row of (sentRows ?? []) as Record<string, unknown>[]) {
+        const channel = row['channel'] as CommunicationChannel;
+        const status = row['status'] as CommunicationHistoryItem["status"];
+        // Inbox and push messages are stored by the existing inbox /
+        // notification systems and are listed from those records below. Their
+        // send record is shown only when nothing was actually delivered, so one
+        // action reads as one event instead of two. Both records are kept.
+        const deliveredElsewhere =
+          (channel === "in_app" || channel === "push") &&
+          status !== "failed" &&
+          status !== "cancelled";
+        if (deliveredElsewhere) continue;
         history.push({
           id: `c-${row['id'] as string}`,
           channel: row['channel'] as CommunicationChannel,
@@ -324,7 +330,7 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       const [{ data: notifications }, { data: messages }] = await Promise.all([
         db
           .from("notifications")
-          .select("id, kind, title, body, created_at")
+          .select("id, kind, status, title, body, created_at")
           .eq("user_id", authUserId)
           .order("created_at", { ascending: false })
           .limit(30),
@@ -341,13 +347,18 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       for (const row of (notifications ?? []) as {
         id: string;
         kind: string | null;
+        status: string | null;
         title: string;
         body: string | null;
         created_at: string;
       }[]) {
+        // An inbox message also raises a notification for the same action; the
+        // conversation message below is the single event for it. The
+        // notification row itself is left untouched for the existing bell.
+        if (row.status === "contact_message" && conversationId) continue;
         history.push({
           id: `n-${row.id}`,
-          channel: "in_app",
+          channel: row.status === "owner_message" ? "push" : "in_app",
           category: row.kind === "broadcast" ? "marketing" : "transactional",
           title: row.title,
           preview: (row.body ?? "").slice(0, 140),
@@ -432,13 +443,8 @@ export const crmSendCustomerMessage = createServerFn({ method: "POST" })
       const { normalizePhone: canonical } = await import("@/lib/phone");
       const phone = canonical(data.phone);
 
-      const { data: orderRows } = await supabaseAdmin
-        .from("orders")
-        .select("user_id, customer_phone")
-        .not("user_id", "is", null)
-        .limit(5000);
-      const customerUserId =
-        (orderRows ?? []).find((row) => canonical(row.customer_phone) === phone)?.user_id ?? null;
+      const { resolveAuthUserIdByPhone } = await import("@/lib/crm-identity.server");
+      const customerUserId = await resolveAuthUserIdByPhone(data.phone);
 
       let customerEmail: string | null = null;
       if (customerUserId) {
