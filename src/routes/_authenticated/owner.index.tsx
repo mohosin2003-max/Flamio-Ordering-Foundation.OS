@@ -79,7 +79,7 @@ function OwnerHome() {
         <h2 className="mb-3 font-display text-lg font-black">Your workspace</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {modules.map((module) => (
-            <Link key={module.to} to={module.to as never} search={{}} className={module.prominent ? "min-h-28 rounded-lg border border-primary/40 bg-card p-4 shadow-ember transition-colors hover:bg-muted" : "min-h-24 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted"}>
+            <Link key={module.to} to={module.to as never} className={module.prominent ? "min-h-28 rounded-lg border border-primary/40 bg-card p-4 shadow-ember transition-colors hover:bg-muted" : "min-h-24 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted"}>
               <module.icon className="size-5 text-primary" aria-hidden="true" />
               <span className="mt-3 block font-display font-bold">{module.label}</span>
               <span className="mt-1 block text-xs text-muted-foreground">{module.description}</span>
