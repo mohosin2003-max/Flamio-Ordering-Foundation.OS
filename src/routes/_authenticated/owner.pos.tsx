@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Minus, Percent, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { PrintReceiptButton, type PrintReceiptOrder } from "@/components/order/PrintReceiptButton";
+import { useAuth } from "@/hooks/use-auth";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
