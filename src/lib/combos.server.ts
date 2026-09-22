@@ -22,11 +22,22 @@ type ComboRow = {
   slug: string;
   name: string;
   description: string | null;
+  image_url?: string | null;
   pricing_mode: string;
   fixed_price: number | string | null;
   is_active: boolean;
   sort_order: number;
 };
+
+const COMBO_BASE_COLUMNS =
+  "id, slug, name, description, pricing_mode, fixed_price, is_active, sort_order";
+const COMBO_COLUMNS = `${COMBO_BASE_COLUMNS}, image_url`;
+
+/** True when the database doesn't have the optional combo image column yet. */
+export function missingComboImageColumn(error: { message?: string } | null): boolean {
+  return Boolean(error?.message && /image_url/i.test(error.message));
+}
+
 
 type GroupRow = {
   id: string;
