@@ -8,7 +8,7 @@
  * while a `staff` member only gets the sections switched on for them.
  */
 
-import { STAFF_PERMISSIONS, isAccessLevel, isStaffPermission } from "@/lib/permissions";
+import { STAFF_PERMISSIONS, isAccessLevel, isStaffPermission, permissionLevel } from "@/lib/permissions";
 import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
 
 export type OwnerContext = { userId: string };
@@ -138,7 +138,6 @@ function satisfies(
   permission: StaffPermission,
   level: StaffAccessLevel,
 ): boolean {
-  const { permissionLevel } = require("@/lib/permissions") as typeof import("@/lib/permissions");
   const current = permissionLevel(
     { isManager: access.isManager, grants: access.grants as Record<string, string> },
     permission,
