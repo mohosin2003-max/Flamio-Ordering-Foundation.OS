@@ -113,20 +113,35 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
       is_active: candidate.isActive,
       sort_order: candidate.sortOrder,
     };
+    // The combo picture is an optional extra column; where it isn't installed
+    // yet the save still goes through without it.
+    const withImage = { ...payload, image_url: candidate.imageUrl };
+    const { missingComboImageColumn } = await import("@/lib/combos.server");
 
     let comboId = data.id;
     if (comboId) {
-      const { error } = await supabaseAdmin.from("combos").update(payload).eq("id", comboId);
+      let { error } = await supabaseAdmin.from("combos").update(withImage).eq("id", comboId);
+      if (error && missingComboImageColumn(error)) {
+        ({ error } = await supabaseAdmin.from("combos").update(payload).eq("id", comboId));
+      }
       if (error) {
         console.error("Combo update failed", error);
         throw new Error("We couldn't save this combo. Please try again.");
       }
     } else {
-      const { data: row, error } = await supabaseAdmin
+      const slug = `${candidate.slug}-${Date.now().toString(36)}`;
+      let { data: row, error } = await supabaseAdmin
         .from("combos")
-        .insert({ ...payload, slug: `${candidate.slug}-${Date.now().toString(36)}` })
+        .insert({ ...withImage, slug })
         .select("id")
         .single();
+      if (error && missingComboImageColumn(error)) {
+        ({ data: row, error } = await supabaseAdmin
+          .from("combos")
+          .insert({ ...payload, slug })
+          .select("id")
+          .single());
+      }
       if (error || !row) {
         console.error("Combo insert failed", error);
         throw new Error("We couldn't create this combo. Please try again.");
