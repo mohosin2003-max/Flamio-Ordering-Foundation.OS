@@ -64,6 +64,7 @@ type ComboForm = {
   id: string | null;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   pricingMode: "calculated" | "fixed";
   fixedPrice: number | null;
   isActive: boolean;
@@ -77,6 +78,7 @@ const emptyCombo: ComboForm = {
   id: null,
   name: "",
   description: null,
+  imageUrl: null,
   pricingMode: "calculated",
   fixedPrice: null,
   isActive: false,
