@@ -104,7 +104,13 @@ export const placeOrder = createServerFn({ method: "POST" })
     const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
     // Coupons are validated and priced on the server only.
     let couponCode: string | null = null;
-    let discount = Math.min(data.discount, subtotal);
+    /**
+     * A manual discount is only ever entered at the counter till, which is
+     * authorized above with the `pos` permission. A customer order can only be
+     * discounted by a coupon, which is re-priced on the server below, so a
+     * discount sent from the browser is ignored for online orders.
+     */
+    let discount = channel === "counter" ? Math.min(data.discount, subtotal) : 0;
     if (data.couponCode) {
       const { couponDiscountFor, loadCouponByCode } = await import("@/lib/coupons.functions");
       const coupon = await loadCouponByCode(data.couponCode);
