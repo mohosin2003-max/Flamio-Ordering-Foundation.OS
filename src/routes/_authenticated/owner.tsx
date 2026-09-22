@@ -40,7 +40,7 @@ const TABS: {
 }[] = [
   { to: "/owner", label: "Home", exact: true, permission: null },
   { to: "/owner/account", label: "Account", exact: false, permission: null },
-  { to: "/owner/orders", label: "Orders", exact: false, permission: "online_orders" },
+  { to: "/owner/orders", label: "Orders", exact: false, permission: ["online_orders", "order_management"] },
   { to: "/owner/pos", label: "Counter sale", exact: false, permission: "pos" },
   { to: "/owner/platforms", label: "Platforms", exact: false, permission: "platform_sales" },
   { to: "/owner/platform-sale", label: "Platform sale", exact: false, permission: "platform_sales" },

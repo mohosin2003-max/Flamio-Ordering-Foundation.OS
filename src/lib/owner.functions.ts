@@ -194,6 +194,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       .select(
         "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
+      .eq("channel", "online")
       .order("created_at", { ascending: false })
       .limit(100);
 

@@ -1,10 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { KeyRound, LogOut, Settings2, ShieldCheck, UserRound, Users, WalletCards } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,10 +29,20 @@ export const Route = createFileRoute("/_authenticated/owner/account")({
 });
 
 function StaffAccountPage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const access = useDashboardAccess();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  useEffect(() => {
+    setName(profile?.fullName ?? "");
+    setEmail(profile?.email ?? "");
+  }, [profile?.email, profile?.fullName]);
   const displayName = profile?.fullName?.trim() || (access.isManager ? "Flamio owner" : "Flamio staff");
   const initials = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const assigned = Object.entries(access.data?.grants ?? {}).filter(([, level]) => level === "view" || level === "manage");
@@ -57,6 +71,50 @@ function StaffAccountPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <h2 className="font-display text-lg font-black">Profile</h2>
+          <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
+            event.preventDefault();
+            if (!profile || name.trim().length < 2) return toast.error("Enter your full name.");
+            if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return toast.error("Enter a valid email address.");
+            setSavingProfile(true);
+            const { error } = await supabase.from("profiles").update({ full_name: name.trim(), email: email.trim() || null }).eq("id", profile.id);
+            setSavingProfile(false);
+            if (error) return toast.error("We couldn't save your profile.");
+            refreshProfile();
+            toast.success("Profile saved");
+          }}>
+            <div className="space-y-1.5"><Label htmlFor="staff-profile-name">Name</Label><Input id="staff-profile-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" /></div>
+            <div className="space-y-1.5"><Label htmlFor="staff-profile-email">Email</Label><Input id="staff-profile-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></div>
+            <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="staff-profile-phone">Phone</Label><Input id="staff-profile-phone" value={profile?.phone ? formatPhone(profile.phone) : "Not added"} readOnly /><p className="text-xs text-muted-foreground">Your verified login phone is managed by the owner.</p></div>
+            <Button type="submit" className="sm:col-span-2" disabled={savingProfile}>{savingProfile ? "Saving…" : "Save profile"}</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <h2 className="flex items-center gap-2 font-display text-lg font-black"><KeyRound className="size-5 text-primary" /> Change password</h2>
+          <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
+            event.preventDefault();
+            if (!currentPassword) return toast.error("Enter your current password.");
+            if (newPassword.length < 8) return toast.error("New password must be at least 8 characters.");
+            setSavingPassword(true);
+            const { error } = await supabase.auth.updateUser({ password: newPassword, current_password: currentPassword });
+            setSavingPassword(false);
+            if (error) return toast.error(error.message);
+            setCurrentPassword("");
+            setNewPassword("");
+            toast.success("Password changed");
+          }}>
+            <div className="space-y-1.5"><Label htmlFor="staff-current-password">Current password</Label><Input id="staff-current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></div>
+            <div className="space-y-1.5"><Label htmlFor="staff-new-password">New password</Label><Input id="staff-new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></div>
+            <Button type="submit" className="sm:col-span-2" disabled={savingPassword}>{savingPassword ? "Changing…" : "Change password"}</Button>
+          </form>
+        </CardContent>
+      </Card>
+
       {!access.isManager ? (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-bold"><ShieldCheck className="size-4 text-primary" /> Assigned access</h2>
@@ -73,10 +131,6 @@ function StaffAccountPage() {
             <span><span className="block font-bold">{item.label}</span><span className="block text-xs text-muted-foreground">{item.detail}</span></span>
           </Link>
         ))}
-        <Link to="/owner/my-account" className="flex min-h-20 items-center gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted">
-          <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-primary"><KeyRound className="size-5" /></span>
-          <span><span className="block font-bold">Change password</span><span className="block text-xs text-muted-foreground">Update your secure sign-in password</span></span>
-        </Link>
       </section>
 
       <Button variant="outline" className="w-full" onClick={async () => {
