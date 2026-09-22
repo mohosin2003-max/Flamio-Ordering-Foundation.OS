@@ -130,14 +130,23 @@ function CartPage() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-3 flex items-baseline justify-between border-t border-border/70 pt-3">
-                    <span className="text-sm font-semibold">Combo total</span>
-                    <span className="font-display text-lg font-bold">
-                      {formatBDT(
-                        group.lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
-                      )}
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+                    <QuantityStepper
+                      value={group.lines[0]?.quantity ?? 1}
+                      label={group.comboName ?? "combo"}
+                      min={0}
+                      onDecrease={() => decrementCombo(group.comboKey as string)}
+                      onIncrease={() => incrementCombo(group.comboKey as string)}
+                    />
+                    <span className="text-right">
+                      <span className="block text-xs text-muted-foreground">Combo total</span>
+                      <span className="font-display text-lg font-bold">
+                        {formatBDT(
+                          group.lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
+                        )}
+                      </span>
                     </span>
-                  </p>
+                  </div>
                 </li>
               ) : (
                 group.lines.map((line) => (
