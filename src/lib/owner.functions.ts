@@ -150,6 +150,8 @@ export const getOwnerAccess = createServerFn({ method: "GET" })
       isManager: access.isManager,
       isStaff: access.isStaff,
       permissions: access.permissions as string[],
+      grants: access.grants as Record<string, string>,
+
       roles,
       canClaim: !hasAccess && (count ?? 0) === 0,
     };
