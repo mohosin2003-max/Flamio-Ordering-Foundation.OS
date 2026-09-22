@@ -88,17 +88,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
           ? supabaseAdmin.from("profiles").select("id, full_name, phone, email").in("id", userIds)
           : Promise.resolve({ data: [] as never[] }),
         invitePhones.length || inviteEmails.length
-          ? supabaseAdmin
-              .from("profiles")
-              .select("id, full_name, phone, email")
-              .or(
-                [
-                  invitePhones.length ? `phone.in.(${invitePhones.join(",")})` : "",
-                  inviteEmails.length ? `email.in.(${inviteEmails.join(",")})` : "",
-                ]
-                  .filter(Boolean)
-                  .join(","),
-              )
+          ? supabaseAdmin.from("profiles").select("id, full_name, phone, email")
           : Promise.resolve({ data: [] as never[] }),
       ]);
 
@@ -161,8 +151,8 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       }
 
       for (const member of byUser.values()) {
-        const isManager = member.roles.includes("owner") || member.roles.includes("admin");
-        if (isManager) {
+        const isOwner = member.roles.includes("owner");
+        if (isOwner) {
           member.permissions = [...STAFF_PERMISSIONS];
           member.grants = Object.fromEntries(
             STAFF_PERMISSIONS.map((p) => [p, "manage" as StaffAccessLevel]),
@@ -177,7 +167,14 @@ export const ownerListStaff = createServerFn({ method: "GET" })
             row.access_level && isAccessLevel(row.access_level) ? row.access_level : "manage";
         }
         member.grants = grants;
-        member.permissions = Object.keys(grants) as StaffPermission[];
+        if (member.roles.includes("admin") && Object.keys(grants).length === 0) {
+          member.permissions = [...STAFF_PERMISSIONS];
+          member.grants = Object.fromEntries(
+            STAFF_PERMISSIONS.map((permission) => [permission, "manage" as StaffAccessLevel]),
+          );
+        } else {
+          member.permissions = Object.keys(grants) as StaffPermission[];
+        }
       }
 
 
@@ -213,6 +210,13 @@ export const ownerCreateInvite = createServerFn({ method: "POST" })
     const { assertPermission } = await import("@/lib/owner.server");
     await assertPermission(context.userId, "staff");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.role === "owner") {
+      const { data: callerIsOwner } = await supabaseAdmin.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "owner",
+      });
+      if (!callerIsOwner) throw new Error("Only an owner can create another owner.");
+    }
 
     const { error } = await supabaseAdmin
       .from("owner_invites")
