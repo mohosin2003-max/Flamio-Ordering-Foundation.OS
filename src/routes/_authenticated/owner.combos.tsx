@@ -275,6 +275,9 @@ function OwnerCombos() {
                     className="mt-2 h-28 w-full rounded-lg object-cover"
                   />
                 ) : null}
+              </div>
+
+
 
               <div className="rounded-xl border border-border p-3">
                 <div className="flex items-center justify-between gap-3">
