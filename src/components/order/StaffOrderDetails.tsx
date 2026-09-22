@@ -1,5 +1,5 @@
 import { ImageIcon, StickyNote } from "lucide-react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { formatBDT } from "@/lib/format";
 
@@ -10,6 +10,27 @@ export interface StaffOrderItem {
   unitPrice?: number | null;
   imageUrl?: string | null;
   comboName?: string | null;
+}
+
+function OrderItemImage({ src, name }: { src: string | null | undefined; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const visible = Boolean(src) && !failed;
+
+  return (
+    <div className="grid aspect-[4/3] w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-secondary sm:w-24">
+      {visible ? (
+        <img
+          src={src ?? undefined}
+          alt={name}
+          className="size-full object-cover"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <ImageIcon className="size-6 text-muted-foreground" aria-hidden="true" />
+      )}
+    </div>
+  );
 }
 
 export function CustomerNote({ note }: { note: string | null | undefined }) {
@@ -45,20 +66,9 @@ export function StaffOrderItemList({
         {items.map((item, index) => (
           <li
             key={`${item.name}-${item.variantName ?? "standard"}-${index}`}
-            className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 p-3"
+            className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3 p-3 sm:grid-cols-[6rem_minmax(0,1fr)_auto]"
           >
-            <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-md bg-secondary">
-              {item.imageUrl ? (
-                <img
-                  src={item.imageUrl}
-                  alt=""
-                  className="size-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <ImageIcon className="size-5 text-muted-foreground" aria-hidden="true" />
-              )}
-            </div>
+            <OrderItemImage src={item.imageUrl} name={item.name} />
             <div className="min-w-0">
               <p className="break-words text-sm font-bold text-foreground">{item.name}</p>
               {item.variantName || item.comboName ? (
@@ -72,7 +82,7 @@ export function StaffOrderItemList({
                 </p>
               ) : null}
             </div>
-            <div className="shrink-0 text-right">
+            <div className="col-start-2 shrink-0 text-left sm:col-start-auto sm:text-right">
               <span className="inline-flex min-w-10 justify-center rounded-md bg-secondary px-2 py-1 text-base font-black text-primary">
                 {item.quantity}×
               </span>
