@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, Navigate, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -92,15 +92,7 @@ function OwnerOrders() {
   });
 
   if (legacyOrderId) {
-    return (
-      <div className="py-6 text-center">
-        <Button asChild>
-          <Link to="/owner/orders/$orderId" params={{ orderId: legacyOrderId }} search={{ message: true }}>
-            Open order
-          </Link>
-        </Button>
-      </div>
-    );
+    return <Navigate to="/owner/orders/$orderId" params={{ orderId: legacyOrderId }} search={{ message: true }} replace />;
   }
 
   return (

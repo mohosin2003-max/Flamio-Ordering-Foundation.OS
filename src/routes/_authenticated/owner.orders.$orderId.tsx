@@ -1,0 +1,126 @@
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, MapPin, Phone, UserRound } from "lucide-react";
+
+import { OwnerOrderActions } from "@/components/order/OwnerOrderActions";
+import { CustomerNote, StaffOrderItemList, orderDateParts } from "@/components/order/StaffOrderDetails";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/states";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatBDT } from "@/lib/format";
+import { ownerGetOrder } from "@/lib/owner.functions";
+import { statusLabel } from "@/lib/order-status";
+
+export const Route = createFileRoute("/_authenticated/owner/orders/$orderId")({
+  validateSearch: (search: Record<string, unknown>): { message?: boolean } => ({
+    message: search["message"] === true || search["message"] === "true" || undefined,
+  }),
+  head: () => ({
+    meta: [
+      { title: "Order Details — Flamio Owner Dashboard" },
+      { name: "description", content: "Review and process a Flamio order." },
+      { property: "og:title", content: "Order Details — Flamio Owner Dashboard" },
+      { property: "og:description", content: "Review and process a Flamio order." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
+  component: OwnerOrderDetailPage,
+});
+
+function OwnerOrderDetailPage() {
+  const { orderId } = Route.useParams();
+  const { message } = Route.useSearch();
+  const getOrder = useServerFn(ownerGetOrder);
+  const order = useQuery({
+    queryKey: ["owner-order", orderId],
+    queryFn: () => getOrder({ data: { orderId } }),
+    refetchInterval: 20_000,
+  });
+
+  if (order.isLoading) {
+    return <div className="space-y-3"><Skeleton className="h-10 w-40" /><Skeleton className="h-72 w-full" /></div>;
+  }
+
+  if (order.error) {
+    return <EmptyState title="Couldn't load this order" description="Please try again." action={<Button onClick={() => void order.refetch()}>Retry</Button>} />;
+  }
+
+  if (!order.data) {
+    return <EmptyState title="Order not found" description="This order may no longer be available." action={<Button asChild variant="outline"><Link to="/owner/orders" search={{}}>Back to orders</Link></Button>} />;
+  }
+
+  const details = order.data;
+  const { date, time } = orderDateParts(details.createdAt);
+  const fullAddress = [details.addressLine, details.area, details.landmark].filter(Boolean).join(", ");
+  const mapUrl = details.latitude != null && details.longitude != null
+    ? `https://www.google.com/maps?q=${details.latitude},${details.longitude}`
+    : null;
+
+  return (
+    <div className="min-w-0 space-y-5">
+      <Button asChild variant="ghost" size="sm" className="-ml-2">
+        <Link to="/owner/orders" search={{}}><ArrowLeft aria-hidden="true" /> Back to orders</Link>
+      </Button>
+
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase text-muted-foreground">Order details</p>
+          <h1 className="break-all font-display text-2xl font-black sm:text-3xl">{details.code}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">ID: <span className="break-all">{details.id}</span></p>
+        </div>
+        <Badge className="shrink-0">{statusLabel(details.status, details.fulfillment)}</Badge>
+      </header>
+
+      <Card>
+        <CardContent className="space-y-5 p-4 sm:p-5">
+          <section aria-labelledby="order-summary-heading">
+            <h2 id="order-summary-heading" className="text-xs font-bold uppercase text-muted-foreground">Summary</h2>
+            <dl className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+              <div className="min-w-0"><dt className="text-xs text-muted-foreground">Customer</dt><dd className="break-words font-semibold">{details.customerName}</dd></div>
+              <div className="min-w-0"><dt className="text-xs text-muted-foreground">Phone</dt><dd className="break-words font-semibold">{details.customerPhone}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Date</dt><dd className="font-semibold">{date}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Time</dt><dd className="font-semibold">{time}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Type</dt><dd className="font-semibold capitalize">{details.fulfillment}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Status</dt><dd className="font-semibold">{statusLabel(details.status, details.fulfillment)}</dd></div>
+              {details.zoneName ? <div><dt className="text-xs text-muted-foreground">Delivery zone</dt><dd className="font-semibold">{details.zoneName}</dd></div> : null}
+              {details.estimatedTime ? <div><dt className="text-xs text-muted-foreground">Estimated time</dt><dd className="font-semibold">{details.estimatedTime}</dd></div> : null}
+              <div className="col-span-2 min-w-0 sm:col-span-4">
+                <dt className="text-xs text-muted-foreground">{details.fulfillment === "delivery" ? "Delivery address" : "Pickup"}</dt>
+                <dd className="break-words font-semibold">
+                  {details.fulfillment === "delivery" ? fullAddress || "Address unavailable" : details.pickupNote || "Restaurant pickup"}
+                </dd>
+                {mapUrl ? <a href={mapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><MapPin className="size-3.5" aria-hidden="true" /> Open location</a> : null}
+              </div>
+            </dl>
+          </section>
+
+          <CustomerNote note={details.deliveryNotes} />
+          <StaffOrderItemList items={details.items} showPrices />
+
+          <section aria-labelledby="totals-heading">
+            <h2 id="totals-heading" className="text-xs font-bold uppercase text-muted-foreground">Payment & totals</h2>
+            <div className="mt-2 grid gap-4 border-t border-border/70 pt-3 sm:grid-cols-2">
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Subtotal</dt><dd className="font-semibold">{formatBDT(details.subtotal)}</dd></div>
+                {details.discount > 0 ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Discount{details.couponCode ? ` (${details.couponCode})` : ""}</dt><dd className="font-semibold">−{formatBDT(details.discount)}</dd></div> : null}
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Delivery charge</dt><dd className="font-semibold">{details.deliveryCharge === 0 && details.fulfillment === "delivery" ? "Free" : formatBDT(details.deliveryCharge)}</dd></div>
+                <div className="flex justify-between gap-4 border-t border-border/70 pt-2"><dt className="font-bold">Grand total</dt><dd className="font-display text-lg font-black">{formatBDT(details.total)}</dd></div>
+              </dl>
+              <dl className="space-y-2 text-sm">
+                <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd className="font-semibold">{details.paymentLabel}</dd></div>
+                {details.riderName ? <div><dt className="text-xs text-muted-foreground">Assigned rider</dt><dd className="flex flex-wrap items-center gap-2 font-semibold"><UserRound className="size-4" aria-hidden="true" /> {details.riderName}{details.riderPhone ? <a href={`tel:${details.riderPhone}`} className="inline-flex items-center gap-1 text-primary hover:underline"><Phone className="size-3.5" aria-hidden="true" />{details.riderPhone}</a> : null}</dd></div> : null}
+              </dl>
+            </div>
+          </section>
+
+          <OwnerOrderActions order={details} messageOpenInitially={message} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
