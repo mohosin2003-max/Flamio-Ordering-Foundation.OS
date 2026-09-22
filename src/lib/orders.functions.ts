@@ -341,6 +341,7 @@ export const getOrder = createServerFn({ method: "GET" })
       .order("created_at", { ascending: true });
 
     return {
+      requiresPhone: false as const,
       id: order.id,
       code: order.code,
       status: order.status,
