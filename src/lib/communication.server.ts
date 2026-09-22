@@ -412,6 +412,55 @@ async function deliverEmail(logId: string, request: SendRequest): Promise<SendRe
   return { ok: true, status: "sent", message: "Handed to the email provider." };
 }
 
+/**
+ * Server-side readiness gate. The browser never decides whether a channel can
+ * be used — this re-checks the provider configuration for every single send.
+ */
+export async function assertChannelReady(
+  rawPhone: string,
+  channel: CommChannel,
+): Promise<{ ok: boolean; message: string }> {
+  const phone = normalizePhone(rawPhone);
+  const validPhone = /^8801\d{9}$/.test(phone);
+
+  if (channel === "in_app" || channel === "push") {
+    if (channel === "push") {
+      const { pushConfigured } = await import("@/lib/push.server");
+      if (!pushConfigured()) return { ok: false, message: "Push isn't configured on the server." };
+    }
+    return { ok: true, message: "" };
+  }
+
+  if (channel === "sms") {
+    if (!validPhone) {
+      return { ok: false, message: "That phone number isn't a valid Bangladeshi mobile number." };
+    }
+    const { getSmsConfig } = await import("@/lib/sms.server");
+    const config = await getSmsConfig().catch(() => null);
+    if (!config?.isEnabled) return { ok: false, message: "The SMS provider is switched off." };
+    if (!config.apiKeyStored) {
+      return { ok: false, message: "No SMS credential is stored on the server." };
+    }
+    return { ok: true, message: "" };
+  }
+
+  const { getIntegration } = await import("@/lib/integrations.server");
+  const integration = await getIntegration(channel === "whatsapp" ? "whatsapp" : "email");
+  if (!integration || integration.status !== "active") {
+    return {
+      ok: false,
+      message:
+        channel === "whatsapp"
+          ? "WhatsApp isn't connected and switched on in Settings → Integrations."
+          : "Email isn't connected and switched on in Settings → Integrations.",
+    };
+  }
+  if (channel === "whatsapp" && !validPhone) {
+    return { ok: false, message: "That phone number isn't valid for WhatsApp." };
+  }
+  return { ok: true, message: "" };
+}
+
 /** Provider status names mapped onto our normalized set. Webhook use only. */
 export function normalizeProviderStatus(raw: string): CommStatus | null {
   const value = raw.toLowerCase();
