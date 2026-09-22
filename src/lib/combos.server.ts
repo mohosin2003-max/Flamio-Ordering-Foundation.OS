@@ -326,6 +326,13 @@ export async function validateComboItems(items: IncomingItem[]): Promise<Incomin
     const pricing = comboPricing(dto, selections);
     const distributed = distributeComboPrices(pricing.total, selections);
 
+    // One built combo carries a single shared quantity: every one of its lines
+    // must have the same whole quantity, so the combo price simply multiplies.
+    const quantity = Math.min(
+      Math.max(1, Math.min(...lines.map((l) => Math.floor(Number(l.quantity)) || 1))),
+      20,
+    );
+
     indexes.forEach((originalIndex, i) => {
       const selection = selections[i]!;
       priced[originalIndex] = {
@@ -334,7 +341,7 @@ export async function validateComboItems(items: IncomingItem[]): Promise<Incomin
         productName: selection.productName,
         variantName: selection.variantName,
         unitPrice: distributed[i] ?? selection.unitPrice,
-        quantity: 1,
+        quantity,
         comboName: config.name,
       };
     });
