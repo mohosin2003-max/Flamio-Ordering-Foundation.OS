@@ -117,10 +117,12 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
     // yet the save still goes through without it.
     const withImage = { ...payload, image_url: candidate.imageUrl };
     const { missingComboImageColumn } = await import("@/lib/combos.server");
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
+    const db = looseDb(supabaseAdmin);
 
     let comboId = data.id;
     if (comboId) {
-      let { error } = await supabaseAdmin.from("combos").update(withImage).eq("id", comboId);
+      let { error } = await db.from("combos").update(withImage).eq("id", comboId);
       if (error && missingComboImageColumn(error)) {
         ({ error } = await supabaseAdmin.from("combos").update(payload).eq("id", comboId));
       }
@@ -130,7 +132,7 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
       }
     } else {
       const slug = `${candidate.slug}-${Date.now().toString(36)}`;
-      let { data: row, error } = await supabaseAdmin
+      let { data: row, error } = await db
         .from("combos")
         .insert({ ...withImage, slug })
         .select("id")
