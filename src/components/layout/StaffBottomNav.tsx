@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Home, Lock, MessageCircle, ReceiptText, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { ownerListContactThreads } from "@/lib/contact-messages.functions";
 import { ownerGetDashboardSummary } from "@/lib/dashboard.functions";
