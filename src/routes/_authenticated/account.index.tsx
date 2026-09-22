@@ -406,7 +406,7 @@ function AccountPage() {
 
           <div className="border-t border-border pt-4">
             <Button asChild variant="ghost" className="px-0 text-muted-foreground hover:text-foreground">
-              <Link to="/forgot-password"><LockKeyhole aria-hidden="true" /> Change password</Link>
+              <Link to="/change-password"><LockKeyhole aria-hidden="true" /> Change password</Link>
             </Button>
           </div>
         </form>
