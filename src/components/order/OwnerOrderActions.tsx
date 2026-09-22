@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronRight, MessageCircle, Phone, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { OrderMessages } from "@/components/order/OrderMessages";
@@ -24,6 +24,7 @@ import {
 import { ownerUpdateOrderStatus, type OwnerOrderRow } from "@/lib/owner.functions";
 import { hasPermission } from "@/lib/permissions";
 import { ownerAssignRider, ownerListRiders } from "@/lib/riders.functions";
+import { cn } from "@/lib/utils";
 
 export function OwnerOrderActions({ order, messageOpenInitially = false }: { order: OwnerOrderRow; messageOpenInitially?: boolean }) {
   const updateStatus = useServerFn(ownerUpdateOrderStatus);
@@ -34,10 +35,20 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
   const [pending, setPending] = useState(false);
   const [riderPending, setRiderPending] = useState(false);
   const [threadOpen, setThreadOpen] = useState(messageOpenInitially);
+  const [scrollToThread, setScrollToThread] = useState(false);
+  const threadRef = useRef<HTMLDivElement>(null);
   const canManage = hasPermission(access.data, "order_management");
   const counterSale = !isOnlineChannel(order.channel);
   const next = counterSale || !canManage ? null : nextOrderStatus(order.status, order.fulfillment);
   const cancellable = canManage && canCancelOrder(order.status, order.channel);
+  const hasCustomerNote = Boolean(order.deliveryNotes?.trim());
+
+  useEffect(() => {
+    if (scrollToThread && threadRef.current) {
+      threadRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setScrollToThread(false);
+    }
+  }, [scrollToThread]);
 
   const riders = useQuery({
     queryKey: ["owner-riders"],
@@ -90,8 +101,30 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
             <Button asChild size="sm" variant="outline">
               <a href={`tel:${order.customerPhone}`}><Phone aria-hidden="true" /> Call Customer</a>
             </Button>
-            <Button size="sm" variant={order.unreadMessages > 0 ? "default" : "outline"} onClick={() => setThreadOpen((open) => !open)} aria-expanded={threadOpen}>
-              <MessageCircle aria-hidden="true" /> Message Customer
+            <Button
+              size="sm"
+              variant={order.unreadMessages > 0 || hasCustomerNote ? "default" : "outline"}
+              onClick={() => {
+                setThreadOpen((wasOpen) => {
+                  if (!wasOpen) setScrollToThread(true);
+                  return !wasOpen;
+                });
+              }}
+              aria-expanded={threadOpen}
+            >
+              <span className="relative">
+                <MessageCircle
+                  className={cn(
+                    "h-4 w-4",
+                    hasCustomerNote && order.unreadMessages === 0 && "text-primary animate-pulse",
+                  )}
+                  aria-hidden="true"
+                />
+                {hasCustomerNote ? (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background" aria-hidden="true" />
+                ) : null}
+              </span>
+              Message Customer
               {order.unreadMessages > 0 ? ` (${order.unreadMessages})` : ""}
             </Button>
           </>
@@ -142,7 +175,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
       ) : null}
 
       {threadOpen ? (
-        <div className="mt-4 rounded-lg border border-border/70 bg-background p-3">
+        <div ref={threadRef} className="mt-4 rounded-lg border border-border/70 bg-background p-3">
           <OrderMessages orderId={order.id} autoFocus={messageOpenInitially} />
         </div>
       ) : null}
