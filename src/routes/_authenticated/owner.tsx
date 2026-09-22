@@ -71,9 +71,11 @@ const TABS: {
     to: "/owner/my-account",
     label: "My account",
     exact: false,
-    permission: ["own_salary", "own_money_taken"],
+    permission: ["own_salary", "own_money_taken", "own_profit_share"],
   },
+  { to: "/owner/finance", label: "Owner finance", exact: false, permission: "staff_finance" },
   { to: "/owner/settings", label: "Settings", exact: false, permission: "settings" },
+
 ];
 
 /** Owners/managers pass; staff need at least one of the tab's permissions. */
