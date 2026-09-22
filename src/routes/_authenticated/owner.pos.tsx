@@ -49,6 +49,8 @@ function OwnerPos() {
   const [discountAmount, setDiscountAmount] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
 
   const catalog = useQuery({
     queryKey: ["owner-catalog"],
