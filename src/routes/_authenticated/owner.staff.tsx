@@ -21,7 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaffPermissionEditor } from "@/components/owner/StaffPermissionEditor";
 import {
-  ownerCreateInvite,
+  ownerCreateStaffAccount,
   ownerDeleteInvite,
   ownerFindAccount,
   ownerListStaff,
@@ -30,6 +30,7 @@ import {
   ownerSetStaffRole,
 } from "@/lib/staff.functions";
 import type { StaffRole } from "@/lib/staff.functions";
+import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/owner/staff")({
   component: OwnerStaff,
@@ -45,15 +46,18 @@ function OwnerStaff() {
   const listStaff = useServerFn(ownerListStaff);
   const setRole = useServerFn(ownerSetStaffRole);
   const revoke = useServerFn(ownerRevokeStaff);
-  const createInvite = useServerFn(ownerCreateInvite);
+  const createStaff = useServerFn(ownerCreateStaffAccount);
   const deleteInvite = useServerFn(ownerDeleteInvite);
   const findAccount = useServerFn(ownerFindAccount);
   const setPermissions = useServerFn(ownerSetStaffPermissions);
   const queryClient = useQueryClient();
 
+  const [staffName, setStaffName] = useState("");
   const [invitePhone, setInvitePhone] = useState("");
-  const [inviteNote, setInviteNote] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [initialPassword, setInitialPassword] = useState("");
   const [inviteRole, setInviteRole] = useState<StaffRole>("staff");
+  const [newGrants, setNewGrants] = useState<PermissionGrants>({});
   const [busy, setBusy] = useState(false);
   const [savingFor, setSavingFor] = useState<string | null>(null);
 
@@ -93,29 +97,43 @@ function OwnerStaff() {
 
   const handleAdd = async () => {
     const phone = invitePhone.trim();
+    if (staffName.trim().length < 2) {
+      toast.error("Enter the staff member's name");
+      return;
+    }
     if (phone.length < 6) {
-      toast.error("Enter a phone number or email");
+      toast.error("Enter a phone number");
+      return;
+    }
+    if (initialPassword.length < 8) {
+      toast.error("Initial password must be at least 8 characters");
       return;
     }
     setBusy(true);
     try {
-      const match = await findAccount({ data: { query: phone } });
-      if (match) {
-        const res = await setRole({ data: { userId: match.userId, role: inviteRole } });
-        if (!res.ok) {
-          toast.error(res.message ?? "Couldn't update access");
-          return;
-        }
-        toast.success(`${match.fullName ?? "Account"} now has ${ROLE_LABEL[inviteRole]} access`);
-
-      } else {
-        await createInvite({
-          data: { phone, note: inviteNote.trim() ? inviteNote.trim() : null },
-        });
-        toast.success("Invite saved — grant access once they sign up");
-      }
+      const result = await createStaff({
+        data: {
+          fullName: staffName.trim(),
+          phone,
+          email: staffEmail.trim() || null,
+          password: initialPassword,
+          role: inviteRole,
+          grants: Object.entries(newGrants).map(([permission, level]) => ({
+            permission: permission as StaffPermission,
+            level: level as StaffAccessLevel,
+          })),
+        },
+      });
+      toast.success(
+        result.existingAccount
+          ? "Existing account linked to staff access"
+          : "Staff account created — share the login and initial password privately",
+      );
+      setStaffName("");
       setInvitePhone("");
-      setInviteNote("");
+      setStaffEmail("");
+      setInitialPassword("");
+      setNewGrants({});
       await invalidate();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Couldn't add this person");
@@ -133,20 +151,54 @@ function OwnerStaff() {
             <h2 className="font-display text-lg font-bold">Add a team member</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            They sign up in the app like any customer. Enter their phone number (or email) here — if
-            the account already exists we give them access right away, otherwise we keep the invite
-            until they join.
+            Create their secure login and choose exactly which dashboard sections they can use.
+            The password is sent only to the authentication provider and is never shown again.
           </p>
 
           <div className="space-y-1.5">
-            <Label>Phone number or email</Label>
+            <Label htmlFor="staff-name">Staff name</Label>
             <Input
-              value={invitePhone}
-              placeholder="01XXXXXXXXX"
-              onChange={(event) => setInvitePhone(event.target.value)}
+              id="staff-name"
+              value={staffName}
+              autoComplete="name"
+              onChange={(event) => setStaffName(event.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+            <Label htmlFor="staff-phone">Phone number</Label>
+            <Input
+              id="staff-phone"
+              value={invitePhone}
+              placeholder="01XXXXXXXXX"
+              inputMode="tel"
+              autoComplete="tel"
+              onChange={(event) => setInvitePhone(event.target.value)}
+            />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="staff-email">Email (optional)</Label>
+              <Input
+                id="staff-email"
+                type="email"
+                value={staffEmail}
+                autoComplete="email"
+                onChange={(event) => setStaffEmail(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="staff-password">Initial password</Label>
+              <Input
+                id="staff-password"
+                type="password"
+                value={initialPassword}
+                autoComplete="new-password"
+                onChange={(event) => setInitialPassword(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
             <Label>Role</Label>
             <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as StaffRole)}>
               <SelectTrigger>
@@ -158,15 +210,16 @@ function OwnerStaff() {
                 <SelectItem value="owner">Owner</SelectItem>
               </SelectContent>
             </Select>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Note (optional)</Label>
-            <Input
-              value={inviteNote}
-              placeholder="Evening shift"
-              onChange={(event) => setInviteNote(event.target.value)}
-            />
-          </div>
+          <StaffPermissionEditor
+            grants={newGrants}
+            saving={busy}
+            title="Initial section access"
+            onSave={async (next) => {
+              setNewGrants(Object.fromEntries(next.map((grant) => [grant.permission, grant.level])));
+            }}
+          />
           <Button className="w-full" disabled={busy} onClick={handleAdd}>
             {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
             Add
@@ -260,9 +313,7 @@ function OwnerStaff() {
                 <StaffPermissionEditor
                   grants={member.grants}
                   saving={savingFor === member.userId}
-                  lockedFullAccess={
-                    member.roles.includes("owner") || member.roles.includes("admin")
-                  }
+                  lockedFullAccess={member.roles.includes("owner")}
                   onSave={async (next) => {
                     setSavingFor(member.userId);
                     try {
