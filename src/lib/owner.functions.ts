@@ -30,6 +30,16 @@ export interface OwnerOrderRow {
   paymentLabel: string;
   riderId: string | null;
   riderName: string | null;
+  landmark: string | null;
+  deliveryNotes: string | null;
+  items: {
+    name: string;
+    variantName: string | null;
+    quantity: number;
+    unitPrice: number;
+    imageUrl: string | null;
+    comboName: string | null;
+  }[];
 }
 
 export interface OwnerCategory {
@@ -162,7 +172,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, payment_label, rider_id, riders(name)",
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -203,6 +213,18 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       paymentLabel: o.payment_label,
       riderId: o.rider_id,
       riderName: o.riders?.name ?? null,
+      landmark: o.landmark,
+      deliveryNotes: o.delivery_notes,
+      items: (o.order_items ?? [])
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map((item) => ({
+          name: item.product_name,
+          variantName: item.variant_name,
+          quantity: item.quantity,
+          unitPrice: Number(item.unit_price),
+          imageUrl: item.image_url,
+          comboName: item.combo_name,
+        })),
     }));
   });
 
