@@ -41,7 +41,7 @@ export function StaffPermissionEditor({
   grants: PermissionGrants;
   saving: boolean;
   onSave: (next: { permission: StaffPermission; level: StaffAccessLevel }[]) => Promise<void>;
-  /** Owner and Manager roles have an existing full-access override. */
+  /** Owner roles have an existing full-access override. */
   lockedFullAccess?: boolean;
   title?: string;
 }) {

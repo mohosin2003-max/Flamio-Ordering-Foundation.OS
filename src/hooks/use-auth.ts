@@ -95,7 +95,7 @@ export function useAuth() {
     return () => {
       active = false;
     };
-  }, [user, profileVersion]);
+  }, [user?.id, profileVersion]);
 
   const refreshProfile = useCallback(() => setProfileVersion((v) => v + 1), []);
 

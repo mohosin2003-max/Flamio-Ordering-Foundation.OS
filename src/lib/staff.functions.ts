@@ -14,8 +14,8 @@ import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
  *  - `public.owner_invites` (already existed, previously unused: pending invites by phone)
  *  - `public.profiles`     (display info: name, phone, email)
  *
- * No new storage, no passwords handled here — people sign up through the normal
- * sign-up screen and the owner grants them a role.
+ * No new storage is introduced. New credentials are sent directly to the
+ * authentication provider and are never stored in application tables.
  */
 
 export type StaffRole = "owner" | "admin" | "staff";
@@ -412,13 +412,34 @@ export const ownerCreateStaffAccount = createServerFn({ method: "POST" })
     if (email && !isEmail(email)) throw new Error("Enter a valid email address.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.role === "owner") {
+      const { data: callerIsOwner } = await supabaseAdmin.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "owner",
+      });
+      if (!callerIsOwner) throw new Error("Only an owner can create another owner.");
+    }
     const { data: matches } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name")
       .or(email ? `phone.eq.${phone},email.eq.${email}` : `phone.eq.${phone}`)
       .limit(2);
 
-    let userId = matches?.[0]?.id ?? null;
+    let userId: string | null = null;
+    for (const match of matches ?? []) {
+      const { data: existing } = await supabaseAdmin.auth.admin.getUserById(match.id);
+      const existingPhone = existing.user?.phone;
+      const existingEmail = existing.user?.email?.toLowerCase() ?? null;
+      const syntheticPhone = existingEmail?.match(/^p(\d+)@phone\.flamio\.app$/)?.[1] ?? null;
+      const phoneMatches =
+        (existingPhone && isValidPhone(existingPhone) && normalizePhone(existingPhone) === phone) ||
+        syntheticPhone === phone;
+      const emailMatches = Boolean(email && existingEmail === email);
+      if (phoneMatches || emailMatches) {
+        userId = match.id;
+        break;
+      }
+    }
     let created = false;
     if (!userId) {
       const authEmail = email ?? phoneToAuthEmail(phone);
