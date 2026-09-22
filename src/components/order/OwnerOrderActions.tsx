@@ -168,7 +168,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
       ) : null}
 
       {threadOpen ? (
-        <div className="mt-4 rounded-lg border border-border/70 bg-background p-3">
+        <div ref={threadRef} className="mt-4 rounded-lg border border-border/70 bg-background p-3">
           <OrderMessages orderId={order.id} autoFocus={messageOpenInitially} />
         </div>
       ) : null}
