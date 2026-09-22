@@ -8,15 +8,20 @@ import { findOrder, type PlacedOrder } from "@/lib/orders";
  * Reads an order from the database (source of truth) and falls back to the
  * local copy saved at checkout so the page still works offline.
  */
-export function useOrder(orderId: string) {
+type OrderResult = { order: PlacedOrder | null; locked: boolean };
+
+export function useOrder(orderId: string, phoneLast4?: string) {
   const fetchOrder = useServerFn(getOrder);
 
   const query = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: async (): Promise<PlacedOrder | null> => {
-      const row = await fetchOrder({ data: { orderId } });
-      if (!row) return null;
-      return {
+    queryKey: ["order", orderId, phoneLast4 ?? ""],
+    queryFn: async (): Promise<OrderResult> => {
+      const row = await fetchOrder({
+        data: { orderId, ...(phoneLast4 ? { phoneLast4 } : {}) },
+      });
+      if (!row) return { order: null, locked: false };
+      if (row.requiresPhone) return { order: null, locked: true };
+      return { locked: false, order: {
         id: row.id,
         code: row.code,
         createdAt: row.createdAt,
@@ -57,23 +62,27 @@ export function useOrder(orderId: string) {
           latitude: null,
           longitude: null,
         },
-      };
+      } };
     },
     retry: 1,
     staleTime: 15 * 1000,
     // Keep the status fresh while the order is still being processed.
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
+      const status = query.state.data?.order?.status;
       return status && status !== "completed" && status !== "cancelled" ? 20 * 1000 : false;
     },
   });
 
+  // The local copy only exists on the device that placed the order, so it is
+  // never someone else's data.
   const fallback = typeof window !== "undefined" ? findOrder(orderId) : null;
-  const order = query.data ?? (query.isError ? fallback : (query.data === null ? fallback : null));
+  const order = query.data?.order ?? (query.isPending ? null : fallback);
+  const locked = Boolean(query.data?.locked) && !order;
 
   return {
     order: order ?? null,
     ready: !query.isPending,
+    requiresPhone: locked,
     error: query.isError && !fallback ? query.error : null,
     refreshing: query.isFetching,
     refresh: () => void query.refetch(),

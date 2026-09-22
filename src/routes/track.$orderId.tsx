@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
+
+import { OrderPhoneVerify } from "@/components/order/OrderPhoneVerify";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
@@ -26,7 +29,11 @@ export const Route = createFileRoute("/track/$orderId")({
 
 function TrackOrderPage() {
   const { orderId } = Route.useParams();
-  const { order, ready, error, refreshing, refresh } = useOrder(orderId);
+  const [phoneLast4, setPhoneLast4] = useState("");
+  const { order, ready, error, refreshing, refresh, requiresPhone } = useOrder(
+    orderId,
+    phoneLast4 || undefined,
+  );
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 pb-32 sm:px-6 sm:py-14">
@@ -39,6 +46,8 @@ function TrackOrderPage() {
 
       {!ready ? (
         <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border/70 bg-card" />
+      ) : requiresPhone ? (
+        <OrderPhoneVerify onSubmit={setPhoneLast4} wrong={phoneLast4.length === 4} />
       ) : error ? (
         <div className="mt-6">
           <EmptyState

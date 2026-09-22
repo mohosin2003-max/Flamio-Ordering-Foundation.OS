@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Clock, ListChecks, MapPin, MessageCircle, Receipt, Wallet } from "lucide-react";
+
+import { OrderPhoneVerify } from "@/components/order/OrderPhoneVerify";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
@@ -30,13 +33,22 @@ export const Route = createFileRoute("/order/$orderId")({
 
 function OrderSuccessPage() {
   const { orderId } = Route.useParams();
-  const { order, ready } = useOrder(orderId);
+  const [phoneLast4, setPhoneLast4] = useState("");
+  const { order, ready, requiresPhone } = useOrder(orderId, phoneLast4 || undefined);
   const { isAuthenticated } = useAuth();
 
   if (!ready) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
         <div className="h-64 animate-pulse rounded-2xl border border-border/70 bg-card" />
+      </div>
+    );
+  }
+
+  if (requiresPhone) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
+        <OrderPhoneVerify onSubmit={setPhoneLast4} wrong={phoneLast4.length === 4} />
       </div>
     );
   }

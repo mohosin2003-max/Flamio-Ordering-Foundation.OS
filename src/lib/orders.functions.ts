@@ -289,7 +289,16 @@ export const placeOrder = createServerFn({ method: "POST" })
   });
 
 export const getOrder = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ orderId: z.string().min(3) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        orderId: z.string().min(3),
+        // Guest orders additionally require the last 4 digits of the phone
+        // number on the order. Verified on the server only.
+        phoneLast4: z.string().trim().max(8).optional(),
+      })
+      .parse(input),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getOptionalUserId } = await import("@/lib/auth.server");
@@ -313,6 +322,16 @@ export const getOrder = createServerFn({ method: "GET" })
     if (order.user_id) {
       const callerId = await getOptionalUserId();
       if (callerId !== order.user_id) return null;
+    } else {
+      // Guest order: the code alone is not enough. The caller must also know
+      // the last 4 digits of the order's phone number. Nothing about the
+      // order is returned until that check passes.
+      const digits = (order.customer_phone ?? "").replace(/\D/g, "");
+      const expected = digits.slice(-4);
+      const provided = (data.phoneLast4 ?? "").replace(/\D/g, "").slice(-4);
+      if (expected.length !== 4 || provided.length !== 4 || provided !== expected) {
+        return { requiresPhone: true as const };
+      }
     }
 
     const { data: items } = await supabaseAdmin
@@ -322,6 +341,7 @@ export const getOrder = createServerFn({ method: "GET" })
       .order("created_at", { ascending: true });
 
     return {
+      requiresPhone: false as const,
       id: order.id,
       code: order.code,
       status: order.status,
