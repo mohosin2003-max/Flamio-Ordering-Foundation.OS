@@ -101,8 +101,13 @@ function OwnerStaff() {
     try {
       const match = await findAccount({ data: { query: phone } });
       if (match) {
-        await setRole({ data: { userId: match.userId, role: inviteRole } });
+        const res = await setRole({ data: { userId: match.userId, role: inviteRole } });
+        if (!res.ok) {
+          toast.error(res.message ?? "Couldn't update access");
+          return;
+        }
         toast.success(`${match.fullName ?? "Account"} now has ${ROLE_LABEL[inviteRole]} access`);
+
       } else {
         await createInvite({
           data: { phone, note: inviteNote.trim() ? inviteNote.trim() : null },
