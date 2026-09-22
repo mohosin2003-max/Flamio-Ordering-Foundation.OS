@@ -21,7 +21,7 @@ export function useOrder(orderId: string, phoneLast4?: string) {
       });
       if (!row) return { order: null, locked: false };
       if (row.requiresPhone) return { order: null, locked: true };
-      return { order: {
+      return { locked: false, order: {
         id: row.id,
         code: row.code,
         createdAt: row.createdAt,
