@@ -510,6 +510,7 @@ function OwnerCombos() {
                       id: editing.id,
                       name: editing.name,
                       description: editing.description,
+                      imageUrl: editing.imageUrl,
                       pricingMode: editing.pricingMode,
                       fixedPrice: editing.fixedPrice,
                       isActive: editing.isActive,
