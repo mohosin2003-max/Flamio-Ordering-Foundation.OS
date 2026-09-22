@@ -24,6 +24,7 @@ import {
 import { ownerUpdateOrderStatus, type OwnerOrderRow } from "@/lib/owner.functions";
 import { hasPermission } from "@/lib/permissions";
 import { ownerAssignRider, ownerListRiders } from "@/lib/riders.functions";
+import { cn } from "@/lib/utils";
 
 export function OwnerOrderActions({ order, messageOpenInitially = false }: { order: OwnerOrderRow; messageOpenInitially?: boolean }) {
   const updateStatus = useServerFn(ownerUpdateOrderStatus);
