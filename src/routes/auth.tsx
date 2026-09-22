@@ -32,7 +32,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 type Mode = "login" | "signup";
-type SignupMethod = "email" | "phone";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -42,7 +41,6 @@ function AuthPage() {
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
 
   const [mode, setMode] = useState<Mode>("login");
-  const [signupMethod, setSignupMethod] = useState<SignupMethod>("email");
   const [identity, setIdentity] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
