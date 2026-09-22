@@ -114,7 +114,10 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
             >
               <span className="relative">
                 <MessageCircle
-                  className={cn("h-4 w-4", hasCustomerNote && "text-primary animate-pulse")}
+                  className={cn(
+                    "h-4 w-4",
+                    hasCustomerNote && order.unreadMessages === 0 && "text-primary animate-pulse",
+                  )}
                   aria-hidden="true"
                 />
                 {hasCustomerNote ? (
