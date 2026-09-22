@@ -463,7 +463,7 @@ export const crmSendCustomerMessage = createServerFn({ method: "POST" })
         requestId: data.requestId,
       });
 
-      return { ok: result.ok, message: result.message, duplicate: result.duplicate };
+      return { ok: result.ok, message: result.message, duplicate: Boolean(result.duplicate) };
     },
   );
 
