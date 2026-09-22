@@ -17,13 +17,7 @@ export interface IntegrationView {
   isEnabled: boolean;
   config: Record<string, string>;
   note: string | null;
-  status:
-    | "not_configured"
-    | "configuration_required"
-    | "connected"
-    | "active"
-    | "disabled"
-    | "error";
+  status: "not_configured" | "configuration_required" | "active" | "disabled" | "error";
   secretNames: string[];
   missingSecretNames: string[];
   missingFields: string[];
