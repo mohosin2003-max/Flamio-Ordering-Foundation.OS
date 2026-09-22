@@ -12,3 +12,9 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /owner
+Disallow: /kitchen
+Disallow: /account
+Disallow: /checkout
+Disallow: /cart
+Disallow: /api/
