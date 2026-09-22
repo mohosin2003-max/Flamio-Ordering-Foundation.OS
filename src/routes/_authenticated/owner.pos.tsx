@@ -312,12 +312,51 @@ function OwnerPos() {
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{itemCount} items</Badge>
-              <span className="text-sm text-muted-foreground">Cash sale</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="pos-discount-amount">Discount Amount (৳)</Label>
+              <Input
+                id="pos-discount-amount"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0"
+                value={discountAmount}
+                onChange={(e) => updateDiscountAmount(e.target.value)}
+              />
             </div>
-            <span className="font-display text-lg font-bold">{formatBDT(total)}</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="pos-discount-percent">Discount (%)</Label>
+              <Input
+                id="pos-discount-percent"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                placeholder="0"
+                value={discountPercent}
+                onChange={(e) => updateDiscountPercent(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatBDT(subtotal)}</span>
+            </div>
+            {discountAmountNum > 0 ? (
+              <div className="flex items-center justify-between text-sm text-destructive">
+                <span>Discount</span>
+                <span>-{formatBDT(discountAmountNum)} ({discountPercentNum}%)</span>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{itemCount} items</Badge>
+                <span className="text-sm text-muted-foreground">Cash sale</span>
+              </div>
+              <span className="font-display text-lg font-bold">{formatBDT(finalTotal)}</span>
+            </div>
           </div>
           <Button disabled={saving} onClick={() => void charge()}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
