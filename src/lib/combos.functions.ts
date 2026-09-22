@@ -31,6 +31,8 @@ const comboSchema = z.object({
   id: z.string().uuid().nullable(),
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(400).nullable(),
+  /** Optional combo picture, same image-link approach as the menu items. */
+  imageUrl: z.string().trim().max(600).nullable().default(null),
   pricingMode: z.enum(["calculated", "fixed"]),
   fixedPrice: z.number().min(0).max(1000000).nullable(),
   isActive: z.boolean(),
