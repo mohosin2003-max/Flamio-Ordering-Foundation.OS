@@ -219,7 +219,7 @@ export async function approveCategory(userId: string, category: CleanupCategory)
 }
 
 export async function setGlobalState(
-  userId: string,
+  userId: string | null,
   patch: { autoPaused?: boolean; pausedReason?: string | null; largeDeletionThreshold?: number },
 ): Promise<void> {
   const client = await db();
@@ -1155,7 +1155,11 @@ export async function runScheduledCleanup(): Promise<ScheduledOutcome> {
     }
 
     if (preview.eligible > config.state.largeDeletionThreshold) {
-      await setGlobalState(setting.category as unknown as string ? "" : "", {});
+      // Unusually large deletion: pause everything and wait for the owner.
+      await setGlobalState(null, {
+        autoPaused: true,
+        pausedReason: `Paused automatically: ${CLEANUP_CATEGORY_INFO[setting.category].label} matched ${preview.eligible} records, above the ${config.state.largeDeletionThreshold} record safety limit.`,
+      });
       await logRun({
         runType: "auto",
         category: setting.category,
