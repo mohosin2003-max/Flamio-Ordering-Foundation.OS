@@ -159,10 +159,10 @@ function OwnerPos() {
           zoneName: null,
           estimatedTime: null,
           pickupNote: "Counter sale",
-          subtotal: total,
-          discount: 0,
+          subtotal,
+          discount: discountAmountNum,
           deliveryCharge: 0,
-          total,
+          total: finalTotal,
           items: selected.map((p) => ({
             productId: p.id,
             productSlug: p.slug,
