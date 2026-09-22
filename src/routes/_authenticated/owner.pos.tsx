@@ -447,6 +447,26 @@ function OwnerPos() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Optional receipt for the last saved sale. Printing is never required. */}
+      {lastSale ? (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Sale saved — {lastSale.orderCode}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatBDT(lastSale.total)} · printing is optional
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <PrintReceiptButton order={lastSale} />
+              <Button variant="ghost" size="sm" onClick={() => setLastSale(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
