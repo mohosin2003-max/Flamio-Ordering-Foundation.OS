@@ -64,6 +64,7 @@ import { Route as AuthenticatedOwnerCustomersCustomerIdRouteImport } from './rou
 import { Route as AuthenticatedOwnerOrdersIndexRouteImport } from './routes/_authenticated/owner.orders.index'
 import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
+import { Route as ApiPublicCleanupRunRouteImport } from './routes/api/public/cleanup/run'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
 import { Route as ApiPublicCommunicationWebhookProviderRouteImport } from './routes/api/public/communication/webhook.$provider'
 
@@ -375,6 +376,11 @@ const ApiPublicAuthSmsHookRoute = ApiPublicAuthSmsHookRouteImport.update({
   path: '/api/public/auth/sms-hook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCleanupRunRoute = ApiPublicCleanupRunRouteImport.update({
+  id: '/api/public/cleanup/run',
+  path: '/api/public/cleanup/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotificationsDispatchRoute =
   ApiPublicNotificationsDispatchRouteImport.update({
     id: '/api/public/notifications/dispatch',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -498,6 +505,7 @@ export interface FileRoutesByTo {
   '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -558,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/_authenticated/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/_authenticated/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -618,6 +627,7 @@ export interface FileRouteTypes {
     | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/owner/orders/'
     | '/api/public/communication/webhook/$provider'
@@ -674,6 +684,7 @@ export interface FileRouteTypes {
     | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/owner/orders'
     | '/api/public/communication/webhook/$provider'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/customers/$customerId'
     | '/_authenticated/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/_authenticated/owner/orders/'
     | '/api/public/communication/webhook/$provider'
@@ -753,6 +765,7 @@ export interface RootRouteChildren {
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   MenuIndexRoute: typeof MenuIndexRoute
   ApiPublicAuthSmsHookRoute: typeof ApiPublicAuthSmsHookRoute
+  ApiPublicCleanupRunRoute: typeof ApiPublicCleanupRunRoute
   ApiPublicNotificationsDispatchRoute: typeof ApiPublicNotificationsDispatchRoute
   ApiPublicCommunicationWebhookProviderRoute: typeof ApiPublicCommunicationWebhookProviderRoute
 }
@@ -1144,6 +1157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthSmsHookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cleanup/run': {
+      id: '/api/public/cleanup/run'
+      path: '/api/public/cleanup/run'
+      fullPath: '/api/public/cleanup/run'
+      preLoaderRoute: typeof ApiPublicCleanupRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notifications/dispatch': {
       id: '/api/public/notifications/dispatch'
       path: '/api/public/notifications/dispatch'
@@ -1304,6 +1324,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrackOrderIdRoute: TrackOrderIdRoute,
   MenuIndexRoute: MenuIndexRoute,
   ApiPublicAuthSmsHookRoute: ApiPublicAuthSmsHookRoute,
+  ApiPublicCleanupRunRoute: ApiPublicCleanupRunRoute,
   ApiPublicNotificationsDispatchRoute: ApiPublicNotificationsDispatchRoute,
   ApiPublicCommunicationWebhookProviderRoute:
     ApiPublicCommunicationWebhookProviderRoute,
