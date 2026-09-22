@@ -22,7 +22,7 @@ import {
   nextOrderStatus,
 } from "@/lib/order-flow";
 import { ownerUpdateOrderStatus, type OwnerOrderRow } from "@/lib/owner.functions";
-import { hasPermission } from "@/lib/permissions";
+import { canManage as canManagePermission } from "@/lib/permissions";
 import { ownerAssignRider, ownerListRiders } from "@/lib/riders.functions";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
   const [threadOpen, setThreadOpen] = useState(messageOpenInitially);
   const [scrollToThread, setScrollToThread] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
-  const canManage = hasPermission(access.data, "order_management");
+  const canManage = canManagePermission(access.data, "order_management");
   const counterSale = !isOnlineChannel(order.channel);
   const next = counterSale || !canManage ? null : nextOrderStatus(order.status, order.fulfillment);
   const cancellable = canManage && canCancelOrder(order.status, order.channel);
@@ -54,7 +54,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
   const riders = useQuery({
     queryKey: ["owner-riders"],
     queryFn: () => listRiders(),
-    enabled: canManage,
+    enabled: canManage && canManagePermission(access.data, "riders"),
   });
   const activeRiders = (riders.data ?? []).filter((rider) => rider.isActive);
 
@@ -150,7 +150,7 @@ export function OwnerOrderActions({ order, messageOpenInitially = false }: { ord
         ) : null}
       </div>
 
-      {canManage && order.fulfillment === "delivery" && isOnlineChannel(order.channel) ? (
+      {canManage && canManagePermission(access.data, "riders") && order.fulfillment === "delivery" && isOnlineChannel(order.channel) ? (
         <div className="mt-4 grid gap-2 sm:grid-cols-[auto_minmax(0,15rem)_1fr] sm:items-center">
           <span className="text-xs font-semibold text-muted-foreground">Assign Rider</span>
           <Select

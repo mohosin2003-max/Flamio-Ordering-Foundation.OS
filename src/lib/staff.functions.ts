@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { STAFF_PERMISSIONS } from "@/lib/permissions";
-import type { StaffPermission } from "@/lib/permissions";
+import { ACCESS_LEVELS, STAFF_PERMISSIONS, isAccessLevel, isStaffPermission } from "@/lib/permissions";
+import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
 
 /**
  * Staff / role management for the owner area.
@@ -27,6 +27,8 @@ export type StaffMember = {
   roles: StaffRole[];
   /** Sections this person can open. Owners/managers always have all of them. */
   permissions: StaffPermission[];
+  /** Access level per granted section. */
+  grants: PermissionGrants;
   joinedAt: string | null;
 };
 
@@ -51,7 +53,7 @@ export const ownerListStaff = createServerFn({ method: "GET" })
       context,
     }): Promise<{ members: StaffMember[]; invites: StaffInvite[]; me: string }> => {
       const { assertPermission } = await import("@/lib/owner.server");
-      await assertPermission(context.userId, "staff");
+      await assertPermission(context.userId, "staff", "view");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const [{ data: roleRows }, { data: inviteRows }] = await Promise.all([
@@ -109,27 +111,50 @@ export const ownerListStaff = createServerFn({ method: "GET" })
           email: profile?.email ?? null,
           roles: [row.role as StaffRole],
           permissions: [],
+          grants: {},
           joinedAt: row.created_at,
         });
       }
 
-      // Effective permissions: managers are unrestricted, staff get their rows.
-      const { data: permRows } = userIds.length
-        ? await supabaseAdmin
+      // Effective access: managers are unrestricted, staff get their own rows.
+      let permRows: { user_id: string; permission: string; access_level?: string | null }[] = [];
+      if (userIds.length) {
+        const { untypedAdmin } = await import("@/lib/untyped-db.server");
+        const withLevel = await (await untypedAdmin())
+          .from("staff_permissions")
+          .select("user_id, permission, access_level")
+          .in("user_id", userIds);
+        if (withLevel.error) {
+          const plain = await supabaseAdmin
             .from("staff_permissions")
             .select("user_id, permission")
-            .in("user_id", userIds)
-        : { data: [] as { user_id: string; permission: string }[] };
+            .in("user_id", userIds);
+          permRows = (plain.data ?? []) as typeof permRows;
+        } else {
+          permRows = (withLevel.data ?? []) as unknown as typeof permRows;
+        }
+      }
 
       for (const member of byUser.values()) {
         const isManager = member.roles.includes("owner") || member.roles.includes("admin");
-        member.permissions = isManager
-          ? [...STAFF_PERMISSIONS]
-          : (permRows ?? [])
-              .filter((r) => r.user_id === member.userId)
-              .map((r) => r.permission as StaffPermission)
-              .filter((p) => (STAFF_PERMISSIONS as readonly string[]).includes(p));
+        if (isManager) {
+          member.permissions = [...STAFF_PERMISSIONS];
+          member.grants = Object.fromEntries(
+            STAFF_PERMISSIONS.map((p) => [p, "manage" as StaffAccessLevel]),
+          );
+          continue;
+        }
+        const grants: PermissionGrants = {};
+        for (const row of permRows) {
+          if (row.user_id !== member.userId) continue;
+          if (!isStaffPermission(row.permission)) continue;
+          grants[row.permission] =
+            row.access_level && isAccessLevel(row.access_level) ? row.access_level : "manage";
+        }
+        member.grants = grants;
+        member.permissions = Object.keys(grants) as StaffPermission[];
       }
+
 
       const invites: StaffInvite[] = (inviteRows ?? []).map((invite) => {
         const match = profileByPhone.get(normalizePhone(invite.phone)) ?? null;
@@ -340,7 +365,16 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
     z
       .object({
         userId: z.string().uuid(),
-        permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(STAFF_PERMISSIONS.length),
+        permissions: z.array(z.enum(STAFF_PERMISSIONS)).max(STAFF_PERMISSIONS.length).optional(),
+        grants: z
+          .array(
+            z.object({
+              permission: z.enum(STAFF_PERMISSIONS),
+              level: z.enum(ACCESS_LEVELS),
+            }),
+          )
+          .max(STAFF_PERMISSIONS.length)
+          .optional(),
       })
       .parse(input),
   )
@@ -349,7 +383,11 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
     await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const wanted = Array.from(new Set(data.permissions));
+    // Accepts either the newer {permission, level} list or the older flat list
+    // (which keeps its existing meaning: full access).
+    const wanted = new Map<StaffPermission, StaffAccessLevel>();
+    for (const permission of data.permissions ?? []) wanted.set(permission, "manage");
+    for (const grant of data.grants ?? []) wanted.set(grant.permission, grant.level);
 
     const { error: delError } = await supabaseAdmin
       .from("staff_permissions")
@@ -360,13 +398,23 @@ export const ownerSetStaffPermissions = createServerFn({ method: "POST" })
       throw new Error("We couldn't update this person's access. Please try again.");
     }
 
-    if (wanted.length) {
-      const { error } = await supabaseAdmin
-        .from("staff_permissions")
-        .insert(wanted.map((permission) => ({ user_id: data.userId, permission })));
+    if (wanted.size) {
+      const rows = [...wanted.entries()].map(([permission, level]) => ({
+        user_id: data.userId,
+        permission,
+        access_level: level,
+      }));
+      const { untypedAdmin } = await import("@/lib/untyped-db.server");
+      const { error } = await (await untypedAdmin()).from("staff_permissions").insert(rows);
       if (error) {
-        console.error("Grant permissions failed", error);
-        throw new Error("We couldn't update this person's access. Please try again.");
+        // Database without the access_level column yet: keep existing behaviour.
+        const { error: plainError } = await supabaseAdmin
+          .from("staff_permissions")
+          .insert(rows.map(({ user_id, permission }) => ({ user_id, permission })));
+        if (plainError) {
+          console.error("Grant permissions failed", error, plainError);
+          throw new Error("We couldn't update this person's access. Please try again.");
+        }
       }
     }
 

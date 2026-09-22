@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/states";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,11 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  PERMISSION_HINTS,
-  PERMISSION_LABELS,
-  STAFF_PERMISSIONS,
-} from "@/lib/permissions";
+import { StaffPermissionEditor } from "@/components/owner/StaffPermissionEditor";
 import {
   ownerCreateInvite,
   ownerDeleteInvite,
@@ -200,57 +195,21 @@ function OwnerStaff() {
                     Full access to every section of the dashboard.
                   </p>
                 ) : (
-                  <div className="space-y-2 rounded-lg border border-border p-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Can open
-                    </p>
-                    <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                      {STAFF_PERMISSIONS.map((permission) => {
-                        const checked = member.permissions.includes(permission);
-                        return (
-                          <label
-                            key={permission}
-                            className="flex items-start gap-2 rounded-md px-1 py-1 text-sm"
-                          >
-                            <Checkbox
-                              className="mt-0.5"
-                              checked={checked}
-                              disabled={savingFor === member.userId}
-                              onCheckedChange={async (value) => {
-                                const next = value
-                                  ? [...member.permissions, permission]
-                                  : member.permissions.filter((p) => p !== permission);
-                                setSavingFor(member.userId);
-                                try {
-                                  await setPermissions({
-                                    data: { userId: member.userId, permissions: next },
-                                  });
-                                  await invalidate();
-                                } catch (error) {
-                                  toast.error(
-                                    error instanceof Error
-                                      ? error.message
-                                      : "Couldn't update access",
-                                  );
-                                } finally {
-                                  setSavingFor(null);
-                                }
-                              }}
-                            />
-                            <span className="leading-tight">
-                              {PERMISSION_LABELS[permission]}
-                              {PERMISSION_HINTS[permission] ? (
-                                <span className="block text-xs text-muted-foreground">
-                                  {PERMISSION_HINTS[permission]}
-                                </span>
-                              ) : null}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <StaffPermissionEditor
+                    grants={member.grants}
+                    saving={savingFor === member.userId}
+                    onSave={async (next) => {
+                      setSavingFor(member.userId);
+                      try {
+                        await setPermissions({ data: { userId: member.userId, grants: next } });
+                        await invalidate();
+                      } finally {
+                        setSavingFor(null);
+                      }
+                    }}
+                  />
                 )}
+
 
                 <div className="flex items-center gap-2">
                   <Select

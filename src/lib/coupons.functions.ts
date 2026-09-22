@@ -130,7 +130,7 @@ export const ownerListCoupons = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<CouponRecord[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "coupons");
+    await assertPermission(context.userId, "coupons", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

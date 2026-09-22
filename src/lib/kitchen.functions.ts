@@ -53,7 +53,7 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<KitchenOrder[]> => {
     const { assertKitchen } = await import("@/lib/kitchen.server");
-    await assertKitchen(context.userId);
+    await assertKitchen(context.userId, "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

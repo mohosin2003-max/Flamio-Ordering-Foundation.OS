@@ -8,8 +8,8 @@
  * while a `staff` member only gets the sections switched on for them.
  */
 
-import { STAFF_PERMISSIONS } from "@/lib/permissions";
-import type { StaffPermission } from "@/lib/permissions";
+import { STAFF_PERMISSIONS, isAccessLevel, isStaffPermission, permissionLevel } from "@/lib/permissions";
+import type { PermissionGrants, StaffAccessLevel, StaffPermission } from "@/lib/permissions";
 
 export type OwnerContext = { userId: string };
 
@@ -17,8 +17,14 @@ export type AccessProfile = {
   isOwner: boolean;
   isManager: boolean;
   isStaff: boolean;
+  /** Sections this person can open (view or manage). */
   permissions: StaffPermission[];
+  /** Level per section. Managers get "manage" everywhere. */
+  grants: PermissionGrants;
 };
+
+const MANAGER_GRANTS = (): PermissionGrants =>
+  Object.fromEntries(STAFF_PERMISSIONS.map((p) => [p, "manage" as StaffAccessLevel]));
 
 /** Roles + effective permissions for a user. Owner/manager => everything. */
 export async function getAccessProfile(userId: string): Promise<AccessProfile> {
@@ -40,23 +46,65 @@ export async function getAccessProfile(userId: string): Promise<AccessProfile> {
   const isStaff = roles.includes("staff");
 
   if (isManager) {
-    return { isOwner, isManager: true, isStaff, permissions: [...STAFF_PERMISSIONS] };
+    return {
+      isOwner,
+      isManager: true,
+      isStaff,
+      permissions: [...STAFF_PERMISSIONS],
+      grants: MANAGER_GRANTS(),
+    };
   }
 
   if (!isStaff) {
-    return { isOwner: false, isManager: false, isStaff: false, permissions: [] };
+    return { isOwner: false, isManager: false, isStaff: false, permissions: [], grants: {} };
   }
 
-  const { data: permRows } = await supabaseAdmin
+  const grants = await readStaffGrants(userId);
+
+  return {
+    isOwner: false,
+    isManager: false,
+    isStaff: true,
+    permissions: Object.keys(grants) as StaffPermission[],
+    grants,
+  };
+}
+
+/**
+ * Reads a staff member's granted sections and their level. `access_level` is an
+ * added column; if the database hasn't got it yet every existing grant keeps
+ * behaving as full access.
+ */
+export async function readStaffGrants(userId: string): Promise<PermissionGrants> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  let rows: { permission: string; access_level?: string | null }[] = [];
+  const { untypedAdmin } = await import("@/lib/untyped-db.server");
+  const withLevel = await (await untypedAdmin())
     .from("staff_permissions")
-    .select("permission")
+    .select("permission, access_level")
     .eq("user_id", userId);
 
-  const permissions = (permRows ?? [])
-    .map((r) => r.permission as StaffPermission)
-    .filter((p) => (STAFF_PERMISSIONS as readonly string[]).includes(p));
+  if (withLevel.error) {
+    const fallback = await supabaseAdmin
+      .from("staff_permissions")
+      .select("permission")
+      .eq("user_id", userId);
+    rows = (fallback.data ?? []) as { permission: string }[];
+  } else {
+    rows = (withLevel.data ?? []) as unknown as {
+      permission: string;
+      access_level?: string | null;
+    }[];
+  }
 
-  return { isOwner: false, isManager: false, isStaff: true, permissions };
+  const grants: PermissionGrants = {};
+  for (const row of rows) {
+    if (!isStaffPermission(row.permission)) continue;
+    const level = row.access_level && isAccessLevel(row.access_level) ? row.access_level : "manage";
+    grants[row.permission] = level;
+  }
+  return grants;
 }
 
 /** Owner or manager only (unchanged behaviour for owner-level endpoints). */
@@ -65,21 +113,40 @@ export async function assertOwner(userId: string): Promise<void> {
   if (!access.isManager) throw new Error("Forbidden");
 }
 
-/** Owner/manager, or a staff member with this permission switched on. */
+/**
+ * Owner/manager, or a staff member with this permission at the required level.
+ * Defaults to "manage" so an unmarked action fails closed for view-only staff.
+ */
 export async function assertPermission(
   userId: string,
   permission: StaffPermission,
+  level: StaffAccessLevel = "manage",
 ): Promise<AccessProfile> {
-  return assertAnyPermission(userId, [permission]);
+  return assertAnyPermission(userId, [permission], level);
 }
 
-/** Owner/manager, or a staff member holding at least one of these. */
+/** Owner/manager, or a staff member holding at least one of these at `level`. */
 export async function assertAnyPermission(
   userId: string,
   permissions: StaffPermission[],
+  level: StaffAccessLevel = "manage",
 ): Promise<AccessProfile> {
   const access = await getAccessProfile(userId);
   if (access.isManager) return access;
-  if (access.isStaff && permissions.some((p) => access.permissions.includes(p))) return access;
+  if (access.isStaff && permissions.some((p) => satisfies(access, p, level))) return access;
   throw new Error("Forbidden");
 }
+
+function satisfies(
+  access: AccessProfile,
+  permission: StaffPermission,
+  level: StaffAccessLevel,
+): boolean {
+  const current = permissionLevel(
+    { isManager: access.isManager, grants: access.grants as Record<string, string> },
+    permission,
+  );
+  if (!current) return false;
+  return level === "view" ? true : current === "manage";
+}
+

@@ -204,15 +204,15 @@ export const listWinnerTicker = createServerFn({ method: "GET" })
 
 /* --------------------------------- owner -------------------------------- */
 
-async function assertChallengeAccess(userId: string) {
+async function assertChallengeAccess(userId: string, level: "view" | "manage" = "manage") {
   const { assertPermission } = await import("@/lib/owner.server");
-  await assertPermission(userId, "coupons");
+  await assertPermission(userId, "challenges", level);
 }
 
 export const ownerListChallenges = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertChallengeAccess(context.userId);
+    await assertChallengeAccess(context.userId, "view");
     const { CHALLENGE_COLUMNS, getChallengeSettings } = await import("@/lib/challenges.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const since = new Date();

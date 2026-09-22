@@ -2,14 +2,14 @@ import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-r
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Loader2, Lock, ShieldCheck } from "lucide-react";
+import { Eye, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
 import { claimOwnership, getOwnerAccess } from "@/lib/owner.functions";
-import { hasPermission } from "@/lib/permissions";
+import { canManage, hasPermission } from "@/lib/permissions";
 import type { StaffPermission } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
@@ -45,20 +45,20 @@ const TABS: {
   { to: "/owner/platforms", label: "Platforms", exact: false, permission: "platform_sales" },
   { to: "/owner/platform-sale", label: "Platform sale", exact: false, permission: "platform_sales" },
   { to: "/owner/menu", label: "Menu", exact: false, permission: "menu" },
-  { to: "/owner/combos", label: "Combos", exact: false, permission: "menu" },
+  { to: "/owner/combos", label: "Combos", exact: false, permission: "combos" },
   { to: "/owner/inventory", label: "Inventory", exact: false, permission: "inventory" },
   { to: "/owner/purchases", label: "Purchases", exact: false, permission: "purchases" },
   { to: "/owner/suppliers", label: "Suppliers", exact: false, permission: "suppliers" },
-  { to: "/owner/delivery", label: "Delivery", exact: false, permission: "settings" },
-  { to: "/owner/riders", label: "Riders", exact: false, permission: "order_management" },
+  { to: "/owner/delivery", label: "Delivery", exact: false, permission: "delivery" },
+  { to: "/owner/riders", label: "Riders", exact: false, permission: "riders" },
   { to: "/owner/coupons", label: "Coupons", exact: false, permission: "coupons" },
-  { to: "/owner/rewards", label: "Rewards", exact: false, permission: "coupons" },
-  { to: "/owner/challenges", label: "Challenges", exact: false, permission: "coupons" },
-  { to: "/owner/banners", label: "Banners", exact: false, permission: "menu" },
+  { to: "/owner/rewards", label: "Rewards", exact: false, permission: "rewards" },
+  { to: "/owner/challenges", label: "Challenges", exact: false, permission: "challenges" },
+  { to: "/owner/banners", label: "Banners", exact: false, permission: "banners" },
   { to: "/owner/reports", label: "Reports", exact: false, permission: "reports" },
   { to: "/owner/customers", label: "Customers", exact: false, permission: "customers" },
   { to: "/owner/inbox", label: "Inbox", exact: false, permission: "customers" },
-  { to: "/owner/reviews", label: "Reviews", exact: false, permission: "customers" },
+  { to: "/owner/reviews", label: "Reviews", exact: false, permission: "reviews" },
 
   { to: "/owner/staff", label: "Staff", exact: false, permission: "staff" },
   {
@@ -78,7 +78,7 @@ const TABS: {
 
 /** Owners/managers pass; staff need at least one of the tab's permissions. */
 function allows(
-  access: { isManager?: boolean; permissions?: string[] } | null | undefined,
+  access: { isManager?: boolean; permissions?: string[]; grants?: Record<string, string> | null } | null | undefined,
   permission: StaffPermission | StaffPermission[] | null,
 ): boolean {
   if (permission === null) return true;
@@ -184,6 +184,19 @@ function OwnerLayout() {
     .filter((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`))
     .sort((a, b) => b.to.length - a.to.length)[0];
   const sectionAllowed = !match || allows(access.data, match.permission);
+  const sectionKeys = match
+    ? Array.isArray(match.permission)
+      ? match.permission
+      : match.permission
+        ? [match.permission]
+        : []
+    : [];
+  const viewOnlySection =
+    sectionAllowed &&
+    sectionKeys.length > 0 &&
+    !access.data.isManager &&
+    !sectionKeys.some((key) => canManage(access.data, key));
+
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6">
@@ -210,6 +223,16 @@ function OwnerLayout() {
           </Link>
         ))}
       </nav>
+
+      {viewOnlySection ? (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            You have view-only access to this section. You can read everything here, but changes
+            aren't allowed.
+          </span>
+        </div>
+      ) : null}
 
       {sectionAllowed ? (
         <Outlet />

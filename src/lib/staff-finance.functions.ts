@@ -674,7 +674,7 @@ export const staffGetMyFinance = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ month: monthSchema }).parse(input))
   .handler(async ({ data, context }): Promise<MyFinance> => {
     const { assertAnyPermission } = await import("@/lib/owner.server");
-    const access = await assertAnyPermission(context.userId, ["own_salary", "own_money_taken"]);
+    const access = await assertAnyPermission(context.userId, ["own_salary", "own_money_taken"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const canSeeSalary = access.isManager || access.permissions.includes("own_salary");

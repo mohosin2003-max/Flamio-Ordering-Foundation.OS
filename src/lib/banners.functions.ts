@@ -98,7 +98,7 @@ export const ownerListPromoBanners = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PromoBanner[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "banners", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -141,7 +141,7 @@ export const ownerSavePromoBanner = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "banners");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const payload = {
@@ -189,7 +189,7 @@ export const ownerDeletePromoBanner = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "banners");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: existing } = await supabaseAdmin

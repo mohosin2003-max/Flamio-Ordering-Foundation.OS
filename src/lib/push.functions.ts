@@ -71,7 +71,7 @@ export const ownerListNotifiableCustomers = createServerFn({ method: "GET" })
       { userId: string; name: string; lastOrderAt: string | null; hasDevice: boolean }[]
     > => {
       const { assertPermission } = await import("@/lib/owner.server");
-      await assertPermission(context.userId, "customers");
+      await assertPermission(context.userId, "customers", "view");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { data: orders } = await supabaseAdmin

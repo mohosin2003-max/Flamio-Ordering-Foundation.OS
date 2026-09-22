@@ -130,7 +130,7 @@ export const ownerListPlatforms = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PlatformRow[]> => {
     const { assertAnyPermission } = await import("@/lib/owner.server");
-    await assertAnyPermission(context.userId, ["platform_sales", "menu", "pos"]);
+    await assertAnyPermission(context.userId, ["platform_sales", "menu", "pos"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [{ data: platforms, error }, { data: prices }] = await Promise.all([
@@ -171,7 +171,7 @@ export const ownerGetPlatformPricing = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<PlatformCatalog> => {
     const { assertAnyPermission } = await import("@/lib/owner.server");
-    await assertAnyPermission(context.userId, ["platform_sales", "menu", "pos"]);
+    await assertAnyPermission(context.userId, ["platform_sales", "menu", "pos"], "view");
     return loadCatalogWithPrices(data.platformId);
   });
 

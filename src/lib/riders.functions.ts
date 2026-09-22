@@ -35,7 +35,7 @@ export const ownerListRiders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RiderRecord[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "order_management");
+    await assertPermission(context.userId, "riders", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -67,7 +67,7 @@ export const ownerSaveRider = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<RiderRecord> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "order_management");
+    await assertPermission(context.userId, "riders");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const payload = {
@@ -96,7 +96,7 @@ export const ownerDeleteRider = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "order_management");
+    await assertPermission(context.userId, "riders");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Only the rider record is removed. Orders keep every other field; their
@@ -124,7 +124,7 @@ export const ownerAssignRider = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "order_management");
+    await assertPermission(context.userId, "riders");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error } = await supabaseAdmin

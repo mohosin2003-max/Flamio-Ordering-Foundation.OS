@@ -49,7 +49,7 @@ export const ownerListPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PurchaseRecord[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "purchases");
+    await assertPermission(context.userId, "purchases", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin

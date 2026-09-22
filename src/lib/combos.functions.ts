@@ -53,7 +53,7 @@ export const ownerListCombos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "combos", "view");
     const { loadComboConfigs, comboConfigProblems } = await import("@/lib/combos.server");
     const configs = await loadComboConfigs();
     return Promise.all(
@@ -69,7 +69,7 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => comboSchema.parse(input))
   .handler(async ({ context, data }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "combos");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { comboConfigProblems } = await import("@/lib/combos.server");
 
@@ -163,7 +163,7 @@ export const ownerSetComboActive = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "combos");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadComboConfigs, comboConfigProblems } = await import("@/lib/combos.server");
 
@@ -192,7 +192,7 @@ export const ownerDeleteCombo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "combos");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("combos").delete().eq("id", data.id);
     if (error) {
