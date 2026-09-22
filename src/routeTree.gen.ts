@@ -41,6 +41,7 @@ import { Route as AuthenticatedOwnerCombosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
+import { Route as AuthenticatedOwnerFinanceRouteImport } from './routes/_authenticated/owner.finance'
 import { Route as AuthenticatedOwnerInboxRouteImport } from './routes/_authenticated/owner.inbox'
 import { Route as AuthenticatedOwnerInventoryRouteImport } from './routes/_authenticated/owner.inventory'
 import { Route as AuthenticatedOwnerMenuRouteImport } from './routes/_authenticated/owner.menu'
@@ -239,6 +240,12 @@ const AuthenticatedOwnerDeliveryRoute =
     path: '/delivery',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerFinanceRoute =
+  AuthenticatedOwnerFinanceRouteImport.update({
+    id: '/finance',
+    path: '/finance',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerInboxRoute = AuthenticatedOwnerInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -397,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
@@ -451,6 +459,7 @@ export interface FileRoutesByTo {
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
@@ -507,6 +516,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
+  '/_authenticated/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/_authenticated/owner/inbox': typeof AuthenticatedOwnerInboxRoute
   '/_authenticated/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/_authenticated/owner/menu': typeof AuthenticatedOwnerMenuRoute
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
+    | '/owner/finance'
     | '/owner/inbox'
     | '/owner/inventory'
     | '/owner/menu'
@@ -618,6 +629,7 @@ export interface FileRouteTypes {
     | '/owner/coupons'
     | '/owner/customers'
     | '/owner/delivery'
+    | '/owner/finance'
     | '/owner/inbox'
     | '/owner/inventory'
     | '/owner/menu'
@@ -673,6 +685,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
     | '/_authenticated/owner/delivery'
+    | '/_authenticated/owner/finance'
     | '/_authenticated/owner/inbox'
     | '/_authenticated/owner/inventory'
     | '/_authenticated/owner/menu'
@@ -943,6 +956,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerDeliveryRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/finance': {
+      id: '/_authenticated/owner/finance'
+      path: '/finance'
+      fullPath: '/owner/finance'
+      preLoaderRoute: typeof AuthenticatedOwnerFinanceRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/inbox': {
       id: '/_authenticated/owner/inbox'
       path: '/inbox'
@@ -1124,6 +1144,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
+  AuthenticatedOwnerFinanceRoute: typeof AuthenticatedOwnerFinanceRoute
   AuthenticatedOwnerInboxRoute: typeof AuthenticatedOwnerInboxRoute
   AuthenticatedOwnerInventoryRoute: typeof AuthenticatedOwnerInventoryRoute
   AuthenticatedOwnerMenuRoute: typeof AuthenticatedOwnerMenuRoute
@@ -1152,6 +1173,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute: AuthenticatedOwnerCustomersRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
+  AuthenticatedOwnerFinanceRoute: AuthenticatedOwnerFinanceRoute,
   AuthenticatedOwnerInboxRoute: AuthenticatedOwnerInboxRoute,
   AuthenticatedOwnerInventoryRoute: AuthenticatedOwnerInventoryRoute,
   AuthenticatedOwnerMenuRoute: AuthenticatedOwnerMenuRoute,
