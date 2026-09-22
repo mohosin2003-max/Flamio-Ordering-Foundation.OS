@@ -36,8 +36,8 @@ export type ChallengeResultRewardRule = {
 export type AwardedChallengeReward = { ruleName: string; points: number };
 
 async function admin() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
+  const { untypedAdmin } = await import("@/lib/untyped-db.server");
+  return untypedAdmin();
 }
 
 /** True when the rules feature has not been installed in this database yet. */
