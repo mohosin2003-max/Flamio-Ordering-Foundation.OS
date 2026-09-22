@@ -910,7 +910,7 @@ export const ownerListVariants = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ productId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<OwnerVariant[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "menu");
+    await assertPermission(context.userId, "menu", "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: rows, error } = await supabaseAdmin
