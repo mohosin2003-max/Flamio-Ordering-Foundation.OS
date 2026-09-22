@@ -8,15 +8,20 @@ import { findOrder, type PlacedOrder } from "@/lib/orders";
  * Reads an order from the database (source of truth) and falls back to the
  * local copy saved at checkout so the page still works offline.
  */
-export function useOrder(orderId: string) {
+type OrderResult = { order: PlacedOrder | null; locked: boolean };
+
+export function useOrder(orderId: string, phoneLast4?: string) {
   const fetchOrder = useServerFn(getOrder);
 
   const query = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: async (): Promise<PlacedOrder | null> => {
-      const row = await fetchOrder({ data: { orderId } });
-      if (!row) return null;
-      return {
+    queryKey: ["order", orderId, phoneLast4 ?? ""],
+    queryFn: async (): Promise<OrderResult> => {
+      const row = await fetchOrder({
+        data: { orderId, ...(phoneLast4 ? { phoneLast4 } : {}) },
+      });
+      if (!row) return { order: null, locked: false };
+      if (row.requiresPhone) return { order: null, locked: true };
+      return { order: {
         id: row.id,
         code: row.code,
         createdAt: row.createdAt,
