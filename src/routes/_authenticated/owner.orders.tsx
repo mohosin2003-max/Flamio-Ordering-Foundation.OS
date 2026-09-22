@@ -160,9 +160,9 @@ function OwnerOrders() {
                       </Badge>
                     </div>
                     <p className="mt-2 truncate text-sm font-bold">{order.customerName}</p>
-                    <a className="mt-0.5 inline-block text-sm text-muted-foreground hover:text-foreground" href={`tel:${order.customerPhone}`}>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {order.customerPhone}
-                    </a>
+                    </p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-display text-lg font-black">{formatBDT(order.total)}</p>

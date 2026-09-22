@@ -1,4 +1,5 @@
 import { ImageIcon, StickyNote } from "lucide-react";
+import { useId } from "react";
 
 import { formatBDT } from "@/lib/format";
 
@@ -33,9 +34,11 @@ export function StaffOrderItemList({
   items: StaffOrderItem[];
   showPrices?: boolean;
 }) {
+  const headingId = useId();
+
   return (
-    <section aria-labelledby="order-items-heading">
-      <h3 id="order-items-heading" className="text-xs font-bold uppercase text-muted-foreground">
+    <section aria-labelledby={headingId}>
+      <h3 id={headingId} className="text-xs font-bold uppercase text-muted-foreground">
         Order items
       </h3>
       <ul className="mt-2 divide-y divide-border/70 rounded-lg border border-border/70 bg-background/40">
