@@ -3,11 +3,26 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
-import { normalizePhone } from "@/lib/phone";
+import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
 
 type LoginResult =
   | { ok: true; accessToken: string; refreshToken: string }
   | { ok: false; message: string };
+
+type SignUpResult =
+  | { ok: true; accessToken: string; refreshToken: string }
+  | { ok: false; requiresOtp?: boolean; message: string };
+
+/** Server-side authentication mode. Never trusted from the browser. */
+async function smsVerificationRequired(): Promise<boolean> {
+  try {
+    const { getSmsConfig } = await import("@/lib/sms.server");
+    const config = await getSmsConfig();
+    return Boolean(config?.isEnabled && config.apiKeyStored);
+  } catch {
+    return false;
+  }
+}
 
 function publicAuthClient() {
   const url = process.env["SUPABASE_URL"]!;
