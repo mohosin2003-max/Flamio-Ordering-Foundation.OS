@@ -62,6 +62,9 @@ function OwnerPos() {
   const [saving, setSaving] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
+  // Snapshot of the last SAVED sale, kept only so the cashier can optionally
+  // print its receipt. It never re-submits anything.
+  const [lastSale, setLastSale] = useState<PrintReceiptOrder | null>(null);
 
   const catalog = useQuery({
     queryKey: ["owner-catalog"],
