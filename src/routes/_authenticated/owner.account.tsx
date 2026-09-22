@@ -76,12 +76,21 @@ function StaffAccountPage() {
           <h2 className="font-display text-lg font-black">Profile</h2>
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
             event.preventDefault();
-            if (!profile || name.trim().length < 2) return toast.error("Enter your full name.");
-            if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return toast.error("Enter a valid email address.");
+            if (!profile || name.trim().length < 2) {
+              toast.error("Enter your full name.");
+              return;
+            }
+            if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
+              toast.error("Enter a valid email address.");
+              return;
+            }
             setSavingProfile(true);
             const { error } = await supabase.from("profiles").update({ full_name: name.trim(), email: email.trim() || null }).eq("id", profile.id);
             setSavingProfile(false);
-            if (error) return toast.error("We couldn't save your profile.");
+            if (error) {
+              toast.error("We couldn't save your profile.");
+              return;
+            }
             refreshProfile();
             toast.success("Profile saved");
           }}>
@@ -98,12 +107,21 @@ function StaffAccountPage() {
           <h2 className="flex items-center gap-2 font-display text-lg font-black"><KeyRound className="size-5 text-primary" /> Change password</h2>
           <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
             event.preventDefault();
-            if (!currentPassword) return toast.error("Enter your current password.");
-            if (newPassword.length < 8) return toast.error("New password must be at least 8 characters.");
+            if (!currentPassword) {
+              toast.error("Enter your current password.");
+              return;
+            }
+            if (newPassword.length < 8) {
+              toast.error("New password must be at least 8 characters.");
+              return;
+            }
             setSavingPassword(true);
             const { error } = await supabase.auth.updateUser({ password: newPassword, current_password: currentPassword });
             setSavingPassword(false);
-            if (error) return toast.error(error.message);
+            if (error) {
+              toast.error(error.message);
+              return;
+            }
             setCurrentPassword("");
             setNewPassword("");
             toast.success("Password changed");
