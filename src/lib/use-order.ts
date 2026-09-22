@@ -62,23 +62,27 @@ export function useOrder(orderId: string, phoneLast4?: string) {
           latitude: null,
           longitude: null,
         },
-      };
+      } };
     },
     retry: 1,
     staleTime: 15 * 1000,
     // Keep the status fresh while the order is still being processed.
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
+      const status = query.state.data?.order?.status;
       return status && status !== "completed" && status !== "cancelled" ? 20 * 1000 : false;
     },
   });
 
+  // The local copy only exists on the device that placed the order, so it is
+  // never someone else's data.
   const fallback = typeof window !== "undefined" ? findOrder(orderId) : null;
-  const order = query.data ?? (query.isError ? fallback : (query.data === null ? fallback : null));
+  const order = query.data?.order ?? (query.isPending ? null : fallback);
+  const locked = Boolean(query.data?.locked) && !order;
 
   return {
     order: order ?? null,
     ready: !query.isPending,
+    requiresPhone: locked,
     error: query.isError && !fallback ? query.error : null,
     refreshing: query.isFetching,
     refresh: () => void query.refetch(),
