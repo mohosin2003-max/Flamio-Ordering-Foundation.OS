@@ -88,8 +88,8 @@ export const placeOrder = createServerFn({ method: "POST" })
       // Staff accounts use the counter till, not the customer cart.
       const { getAccessProfile } = await import("@/lib/owner.server");
       const access = await getAccessProfile(userId);
-      if (access.isStaff && !access.isManager) {
-        throw new Error("Staff accounts can't place customer orders. Use Counter sale instead.");
+      if (access.isStaff || access.isManager) {
+        throw new Error("Owner and staff accounts can't place customer orders. Use Counter sale instead.");
       }
     }
 

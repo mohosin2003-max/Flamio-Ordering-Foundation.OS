@@ -185,7 +185,8 @@ export const ownerListOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<OwnerOrderRow[]> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders", "view");
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["online_orders", "order_management"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data, error } = await supabaseAdmin
@@ -270,7 +271,8 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data: input, context }): Promise<OwnerOrderDetail | null> => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "online_orders", "view");
+    const { assertAnyPermission } = await import("@/lib/owner.server");
+    await assertAnyPermission(context.userId, ["online_orders", "order_management"], "view");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: order, error } = await supabaseAdmin
