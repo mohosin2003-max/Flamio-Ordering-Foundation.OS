@@ -346,11 +346,6 @@ function AuthPage() {
                 <Label htmlFor="address">Delivery location (optional)</Label>
                 <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Delivery location (optional)</Label>
-                <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
-              </div>
             </>
           )}
 
