@@ -28,3 +28,5 @@
 ## Done
 - [x] Reorganize Owner/Staff into the shared Home, Messages, Orders, Account workspace while preserving customer navigation and existing permissions
 
+- [x] Customer CRM Phase 1: customer profile page, search/sort, internal notes and tags, CRM identity records, phone-reveal audit (run docs/sql/customer_crm_phase1.sql once)
+- [ ] Customer CRM Phase 1: run `docs/sql/customer_crm_phase1.sql` once in Supabase
