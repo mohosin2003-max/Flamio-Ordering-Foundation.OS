@@ -1,8 +1,20 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /owner
+Disallow: /kitchen
+Disallow: /account
+Disallow: /checkout
+Disallow: /cart
+Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /owner
+Disallow: /kitchen
+Disallow: /account
+Disallow: /checkout
+Disallow: /cart
+Disallow: /api/
 
 User-agent: Twitterbot
 Allow: /
