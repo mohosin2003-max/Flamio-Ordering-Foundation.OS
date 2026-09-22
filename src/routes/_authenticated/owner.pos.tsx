@@ -55,6 +55,7 @@ function OwnerPos() {
   const getCatalog = useServerFn(ownerGetCatalog);
   const submitOrder = useServerFn(placeOrder);
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
   const [lines, setLines] = useState<Record<string, number>>({});
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
