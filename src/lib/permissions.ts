@@ -92,6 +92,9 @@ export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
   own_salary: "Lets this person see only their own salary and money records",
   own_money_taken: "Lets this person submit money-taken requests for owner approval",
   own_profit_share: "Lets a profit partner see only their own profit share",
+  customer_profiles: "Open a customer's profile and reveal their phone number",
+  customer_notes: "Add internal notes and tags on a customer",
+  communication_logs: "See what was sent to a customer",
 };
 
 
@@ -125,7 +128,13 @@ export const PERMISSION_GROUPS: { title: string; permissions: StaffPermission[] 
   },
   {
     title: "Customers",
-    permissions: ["customers", "reviews"],
+    permissions: [
+      "customers",
+      "customer_profiles",
+      "customer_notes",
+      "communication_logs",
+      "reviews",
+    ],
   },
   {
     title: "People & money",
