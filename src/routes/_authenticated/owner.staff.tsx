@@ -57,7 +57,13 @@ function OwnerStaff() {
   const [busy, setBusy] = useState(false);
   const [savingFor, setSavingFor] = useState<string | null>(null);
 
-  const staff = useQuery({ queryKey: ["owner-staff"], queryFn: () => listStaff() });
+  const staff = useQuery({
+    queryKey: ["owner-staff"],
+    queryFn: () => listStaff(),
+    // Always show the levels saved in the database, never a cached copy.
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["owner-staff"] });
@@ -211,6 +217,9 @@ function OwnerStaff() {
                 )}
 
 
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Role
+                </p>
                 <div className="flex items-center gap-2">
                   <Select
                     value={member.roles[0] ?? "staff"}
