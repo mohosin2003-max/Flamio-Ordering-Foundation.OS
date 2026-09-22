@@ -330,7 +330,7 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       const [{ data: notifications }, { data: messages }] = await Promise.all([
         db
           .from("notifications")
-          .select("id, kind, title, body, created_at")
+          .select("id, kind, status, title, body, created_at")
           .eq("user_id", authUserId)
           .order("created_at", { ascending: false })
           .limit(30),
@@ -347,13 +347,18 @@ export const crmGetCommunication = createServerFn({ method: "GET" })
       for (const row of (notifications ?? []) as {
         id: string;
         kind: string | null;
+        status: string | null;
         title: string;
         body: string | null;
         created_at: string;
       }[]) {
+        // An inbox message also raises a notification for the same action; the
+        // conversation message below is the single event for it. The
+        // notification row itself is left untouched for the existing bell.
+        if (row.status === "contact_message" && conversationId) continue;
         history.push({
           id: `n-${row.id}`,
-          channel: "in_app",
+          channel: row.status === "owner_message" ? "push" : "in_app",
           category: row.kind === "broadcast" ? "marketing" : "transactional",
           title: row.title,
           preview: (row.body ?? "").slice(0, 140),
