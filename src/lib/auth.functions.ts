@@ -96,3 +96,78 @@ export const signInWithPhonePassword = createServerFn({ method: "POST" })
       refreshToken: signedIn.session.refresh_token,
     };
   });
+
+/**
+ * Mode 1 signup: phone + password only, used when the project has no usable SMS
+ * OTP provider. The phone number stays the primary login identifier; the auth
+ * record uses the existing deterministic phone-derived address so one phone maps
+ * to exactly one account. When a real SMS provider IS active this refuses and
+ * tells the caller to use the provider's own OTP flow instead.
+ */
+export const signUpWithPhonePassword = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2).max(120),
+        phone: z.string().trim().min(6).max(30),
+        password: z.string().min(8).max(200),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<SignUpResult> => {
+    if (!isValidPhone(data.phone)) {
+      return { ok: false, message: "Please enter a valid phone number." };
+    }
+    if (await smsVerificationRequired()) {
+      return {
+        ok: false,
+        requiresOtp: true,
+        message: "Phone verification is required. Please use the code sent to your phone.",
+      };
+    }
+
+    const phone = normalizePhone(data.phone);
+    const authEmail = phoneToAuthEmail(phone);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("phone", phone)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return { ok: false, message: "An account with this phone number already exists. Please sign in." };
+    }
+
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: authEmail,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName, phone },
+    });
+    if (createError || !created.user) {
+      if (createError && /already|registered|exists/i.test(createError.message)) {
+        return { ok: false, message: "An account with this phone number already exists. Please sign in." };
+      }
+      console.error("Phone signup failed", createError?.message);
+      return { ok: false, message: "We couldn't create your account. Please try again." };
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .upsert({ id: created.user.id, full_name: data.fullName, phone }, { onConflict: "id" });
+
+    const { data: signedIn, error: signInError } = await publicAuthClient().auth.signInWithPassword({
+      email: authEmail,
+      password: data.password,
+    });
+    if (signInError || !signedIn.session) {
+      return { ok: false, message: "Account created. Please sign in with your phone number and password." };
+    }
+
+    return {
+      ok: true,
+      accessToken: signedIn.session.access_token,
+      refreshToken: signedIn.session.refresh_token,
+    };
+  });
