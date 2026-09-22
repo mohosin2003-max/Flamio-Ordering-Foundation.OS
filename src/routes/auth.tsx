@@ -32,7 +32,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 type Mode = "login" | "signup";
-type SignupMethod = "email" | "phone";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -42,7 +41,6 @@ function AuthPage() {
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
 
   const [mode, setMode] = useState<Mode>("login");
-  const [signupMethod, setSignupMethod] = useState<SignupMethod>("email");
   const [identity, setIdentity] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -123,50 +121,45 @@ function AuthPage() {
 
   async function signup() {
     if (fullName.trim().length < 2) throw new Error("Please enter your full name.");
+    // Phone is always required: it stays the primary login identifier.
+    if (!phone.trim()) throw new Error("Phone number is required.");
     if (!isValidPhone(phone)) throw new Error("Please enter a valid phone number.");
+    if (!password) throw new Error("Password is required.");
     if (password.length < 8) throw new Error("Password must be at least 8 characters.");
     const normalizedPhone = normalizePhone(phone);
     const normalizedEmail = email.trim().toLowerCase();
+    // Email is optional; when given it must be valid.
+    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      throw new Error("Enter a valid email address or leave it empty.");
+    }
 
-    if (signupMethod === "email") {
-      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+    const metadata = {
+      full_name: fullName.trim(),
+      phone: normalizedPhone,
+      contact_email: normalizedEmail,
+      address_line: address.trim(),
+    };
+
+    if (normalizedEmail) {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth",
-          data: {
-            full_name: fullName.trim(),
-            phone: normalizedPhone,
-            contact_email: normalizedEmail,
-            address_line: address.trim(),
-          },
-        },
+        options: { emailRedirectTo: window.location.origin + "/auth", data: metadata },
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
         setAwaitingEmail(true);
-        toast.success("Check your email to verify your account");
+        toast.success("We sent a verification code to your email");
         return;
       }
       await goToLanding();
       return;
     }
 
-    if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-      throw new Error("Enter a valid email address or leave it empty.");
-    }
     const { data, error: signUpError } = await supabase.auth.signUp({
       phone: `+${normalizedPhone}`,
       password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          phone: normalizedPhone,
-          contact_email: normalizedEmail,
-          address_line: address.trim(),
-        },
-      },
+      options: { data: metadata },
     });
     if (signUpError) throw signUpError;
     if (!data.session) {
@@ -176,6 +169,7 @@ function AuthPage() {
     }
     await goToLanding();
   }
+
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -216,6 +210,37 @@ function AuthPage() {
     }
   }
 
+  /**
+   * Verifies the signup code emailed by the existing authentication provider.
+   * The code is only ever typed in by the customer — it is never generated,
+   * stored or logged here.
+   */
+  async function verifyEmail() {
+    if (otp.trim().length < 4) {
+      fail("Enter the code sent to your email.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp.trim(),
+        type: "signup",
+      });
+      if (verifyError) throw verifyError;
+      setAwaitingEmail(false);
+      toast.success("Email verified");
+      await goToLanding();
+    } catch (err) {
+      fail(err instanceof Error ? err.message : "We couldn't verify that code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+
+
   return (
     <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6">
       <div className="mb-6 flex justify-center">
@@ -246,33 +271,29 @@ function AuthPage() {
         ))}
       </div>
 
-      {mode === "signup" ? (
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-lg border border-border p-1">
-          {(["email", "phone"] as const).map((value) => (
-            <Button
-              key={value}
-              type="button"
-              size="sm"
-              variant={signupMethod === value ? "secondary" : "ghost"}
-              onClick={() => {
-                setSignupMethod(value);
-                setAwaitingEmail(false);
-                setAwaitingPhoneOtp(false);
-              }}
-            >
-              {value === "email" ? "Verify by email" : "Verify by phone"}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-
       {awaitingEmail ? (
-        <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4">
-          <p className="font-semibold">Check your email</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Open the verification link sent to {email.trim()}. Your account will finish setup when
-            you return.
-          </p>
+        <div className="mt-6 space-y-4">
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
+            <p className="font-semibold">Verify your email</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We sent a verification code to {email.trim()}. Enter it below to finish creating your
+              account. The link in the same email also works.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email-otp">Email verification code</Label>
+            <Input
+              id="email-otp"
+              value={otp}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              onChange={(event) => setOtp(event.target.value)}
+            />
+          </div>
+          <Button className="w-full" disabled={busy} onClick={() => void verifyEmail()}>
+            {busy ? <Loader2 className="animate-spin" /> : null}
+            Verify email
+          </Button>
         </div>
       ) : awaitingPhoneOtp ? (
         <div className="mt-6 space-y-4">
@@ -309,24 +330,18 @@ function AuthPage() {
                 <Label htmlFor="full-name">Full name</Label>
                 <Input id="full-name" value={fullName} autoComplete="name" onChange={(e) => setFullName(e.target.value)} />
               </div>
-              {signupMethod === "email" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
-                  <p className="text-xs text-muted-foreground">Verification will be sent to this email.</p>
-                </div>
-              ) : null}
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone number</Label>
-                <Input id="phone" value={phone} inputMode="tel" autoComplete="tel" placeholder="01712345678" onChange={(e) => setPhone(e.target.value)} />
-                {signupMethod === "phone" ? <p className="text-xs text-muted-foreground">A verification code will be sent to this phone.</p> : null}
+                <Label htmlFor="phone">Phone number (required)</Label>
+                <Input id="phone" value={phone} inputMode="tel" autoComplete="tel" required placeholder="01712345678" onChange={(e) => setPhone(e.target.value)} />
+                <p className="text-xs text-muted-foreground">You will sign in with this number.</p>
               </div>
-              {signupMethod === "phone" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="optional-email">Email (optional)</Label>
-                  <Input id="optional-email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
-                </div>
-              ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
+                <p className="text-xs text-muted-foreground">
+                  If you add an email, we will send a verification code to it.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Delivery location (optional)</Label>
                 <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
@@ -336,7 +351,7 @@ function AuthPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{mode === "login" ? "Password" : "Password (required)"}</Label>
               {mode === "login" ? <Link to="/forgot-password" className="text-sm font-semibold text-muted-foreground hover:text-foreground">Forgot password?</Link> : null}
             </div>
             <Input id="password" type="password" value={password} autoComplete={mode === "login" ? "current-password" : "new-password"} onChange={(e) => setPassword(e.target.value)} />
