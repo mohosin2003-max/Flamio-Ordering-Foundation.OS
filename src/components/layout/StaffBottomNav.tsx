@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Home, Lock, MessageCircle, ReceiptText, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { ownerListContactThreads } from "@/lib/contact-messages.functions";
 import { ownerGetDashboardSummary } from "@/lib/dashboard.functions";
@@ -19,23 +20,27 @@ const NAV_ITEMS = [
 
 export function StaffBottomNav() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const access = useDashboardAccess();
+  const { isAuthenticated, loading } = useAuth();
+  const signedIn = isAuthenticated && !loading;
+  const access = useDashboardAccess(signedIn);
   const listThreads = useServerFn(ownerListContactThreads);
   const getSummary = useServerFn(ownerGetDashboardSummary);
-  const canMessage = hasPermission(access.data, "customers");
-  const canOrder = hasPermission(access.data, "online_orders") || hasPermission(access.data, "order_management");
+  const canMessage = signedIn && hasPermission(access.data, "customers");
+  const canOrder = signedIn && (hasPermission(access.data, "online_orders") || hasPermission(access.data, "order_management"));
 
   const threads = useQuery({
     queryKey: ["contact-inbox", "owner"],
     queryFn: () => listThreads(),
     enabled: canMessage,
     refetchInterval: 20_000,
+    retry: false,
   });
   const summary = useQuery({
     queryKey: ["owner-dashboard-summary"],
     queryFn: () => getSummary(),
     enabled: canOrder,
     refetchInterval: 30_000,
+    retry: false,
   });
 
   const unread = (threads.data ?? []).reduce((total, thread) => total + thread.unreadCount, 0);
