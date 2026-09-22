@@ -25,6 +25,8 @@ export interface ComboDto {
   slug: string;
   name: string;
   description: string | null;
+  /** Optional combo picture, shown on the customer combo card. */
+  imageUrl: string | null;
   pricingMode: ComboPricingMode;
   fixedPrice: number | null;
   isActive: boolean;

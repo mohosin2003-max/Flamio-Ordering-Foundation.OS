@@ -64,6 +64,7 @@ type ComboForm = {
   id: string | null;
   name: string;
   description: string | null;
+  imageUrl: string | null;
   pricingMode: "calculated" | "fixed";
   fixedPrice: number | null;
   isActive: boolean;
@@ -77,6 +78,7 @@ const emptyCombo: ComboForm = {
   id: null,
   name: "",
   description: null,
+  imageUrl: null,
   pricingMode: "calculated",
   fixedPrice: null,
   isActive: false,
@@ -253,6 +255,29 @@ function OwnerCombos() {
                   }
                 />
               </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="combo-image">Combo picture link (optional)</Label>
+                <Input
+                  id="combo-image"
+                  placeholder="https://…"
+                  value={editing.imageUrl ?? ""}
+                  maxLength={600}
+                  onChange={(e) => setEditing({ ...editing, imageUrl: e.target.value || null })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to show no picture. Same kind of image link as the menu items.
+                </p>
+                {editing.imageUrl ? (
+                  <img
+                    src={editing.imageUrl}
+                    alt="Combo picture preview"
+                    className="mt-2 h-28 w-full rounded-lg object-cover"
+                  />
+                ) : null}
+              </div>
+
+
 
               <div className="rounded-xl border border-border p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -488,6 +513,7 @@ function OwnerCombos() {
                       id: editing.id,
                       name: editing.name,
                       description: editing.description,
+                      imageUrl: editing.imageUrl,
                       pricingMode: editing.pricingMode,
                       fixedPrice: editing.fixedPrice,
                       isActive: editing.isActive,

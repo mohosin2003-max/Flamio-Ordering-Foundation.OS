@@ -100,7 +100,9 @@ export function ComboBuilder({ combo, products }: { combo: ComboDto; products: P
     const comboKey = `${combo.id}-${Date.now().toString(36)}`;
     const prices = distributeComboPrices(pricing.total, selections);
     const lines: CartLine[] = selections.map((s, index) => ({
-      lineId: `${comboKey}::${s.productId}::${s.variantId ?? "base"}`,
+      // The step id keeps every line unique when the same item is eligible in
+      // (and chosen from) more than one step.
+      lineId: `${comboKey}::${s.groupId}::${s.productId}::${s.variantId ?? "base"}`,
       productId: s.productId,
       productName: s.productName,
       productSlug: s.productSlug,
@@ -121,6 +123,14 @@ export function ComboBuilder({ combo, products }: { combo: ComboDto; products: P
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
+      {combo.imageUrl ? (
+        <img
+          src={combo.imageUrl}
+          alt={combo.name}
+          loading="lazy"
+          className="h-40 w-full object-cover sm:h-52"
+        />
+      ) : null}
       <header className="border-b border-border/70 p-4 sm:p-5">
         <h2 className="font-display text-xl font-extrabold">{combo.name}</h2>
         {combo.description ? (
@@ -132,6 +142,7 @@ export function ComboBuilder({ combo, products }: { combo: ComboDto; products: P
           </p>
         ) : null}
       </header>
+
 
       <div className="divide-y divide-border/70">
         {combo.groups.map((group) => {

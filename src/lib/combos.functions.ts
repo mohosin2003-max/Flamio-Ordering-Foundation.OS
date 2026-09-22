@@ -31,6 +31,8 @@ const comboSchema = z.object({
   id: z.string().uuid().nullable(),
   name: z.string().trim().min(2).max(80),
   description: z.string().trim().max(400).nullable(),
+  /** Optional combo picture, same image-link approach as the menu items. */
+  imageUrl: z.string().trim().max(600).nullable().default(null),
   pricingMode: z.enum(["calculated", "fixed"]),
   fixedPrice: z.number().min(0).max(1000000).nullable(),
   isActive: z.boolean(),
@@ -78,6 +80,7 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
       slug: slugify(data.name),
       name: data.name,
       description: data.description,
+      imageUrl: data.imageUrl?.trim() ? data.imageUrl.trim() : null,
       pricingMode: data.pricingMode,
       fixedPrice: data.pricingMode === "fixed" ? data.fixedPrice : null,
       isActive: data.isActive,
@@ -110,33 +113,51 @@ export const ownerSaveCombo = createServerFn({ method: "POST" })
       is_active: candidate.isActive,
       sort_order: candidate.sortOrder,
     };
+    // The combo picture is an optional extra column; where it isn't installed
+    // yet the save still goes through without it.
+    const withImage = { ...payload, image_url: candidate.imageUrl };
+    const { missingComboImageColumn } = await import("@/lib/combos.server");
+    const { looseDb } = await import("@/integrations/supabase/loose.server");
+    const db = looseDb(supabaseAdmin);
 
     let comboId = data.id;
     if (comboId) {
-      const { error } = await supabaseAdmin.from("combos").update(payload).eq("id", comboId);
+      let { error } = await db.from("combos").update(withImage).eq("id", comboId);
+      if (error && missingComboImageColumn(error)) {
+        ({ error } = await supabaseAdmin.from("combos").update(payload).eq("id", comboId));
+      }
       if (error) {
         console.error("Combo update failed", error);
         throw new Error("We couldn't save this combo. Please try again.");
       }
     } else {
-      const { data: row, error } = await supabaseAdmin
+      const slug = `${candidate.slug}-${Date.now().toString(36)}`;
+      let { data: row, error } = await db
         .from("combos")
-        .insert({ ...payload, slug: `${candidate.slug}-${Date.now().toString(36)}` })
+        .insert({ ...withImage, slug })
         .select("id")
         .single();
+      if (error && missingComboImageColumn(error)) {
+        ({ data: row, error } = await supabaseAdmin
+          .from("combos")
+          .insert({ ...payload, slug })
+          .select("id")
+          .single());
+      }
       if (error || !row) {
         console.error("Combo insert failed", error);
         throw new Error("We couldn't create this combo. Please try again.");
       }
-      comboId = row.id;
+      comboId = row.id as string;
     }
+    const savedComboId = comboId as string;
 
     // Steps are replaced wholesale — they only ever belong to this combo.
-    await supabaseAdmin.from("combo_groups").delete().eq("combo_id", comboId);
+    await supabaseAdmin.from("combo_groups").delete().eq("combo_id", savedComboId);
     if (candidate.groups.length > 0) {
       const { error } = await supabaseAdmin.from("combo_groups").insert(
         candidate.groups.map((g) => ({
-          combo_id: comboId,
+          combo_id: savedComboId,
           name: g.name,
           is_required: g.isRequired,
           min_select: g.minSelect,

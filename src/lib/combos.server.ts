@@ -22,11 +22,22 @@ type ComboRow = {
   slug: string;
   name: string;
   description: string | null;
+  image_url?: string | null;
   pricing_mode: string;
   fixed_price: number | string | null;
   is_active: boolean;
   sort_order: number;
 };
+
+const COMBO_BASE_COLUMNS =
+  "id, slug, name, description, pricing_mode, fixed_price, is_active, sort_order";
+const COMBO_COLUMNS = `${COMBO_BASE_COLUMNS}, image_url`;
+
+/** True when the database doesn't have the optional combo image column yet. */
+export function missingComboImageColumn(error: { message?: string } | null): boolean {
+  return Boolean(error?.message && /image_url/i.test(error.message));
+}
+
 
 type GroupRow = {
   id: string;
@@ -47,6 +58,7 @@ function mapCombo(row: ComboRow, groups: GroupRow[]): ComboConfig {
     slug: row.slug,
     name: row.name,
     description: row.description,
+    imageUrl: row.image_url ?? null,
     pricingMode: row.pricing_mode as ComboPricingMode,
     fixedPrice: row.fixed_price === null ? null : Number(row.fixed_price),
     isActive: row.is_active,
@@ -72,18 +84,25 @@ function mapCombo(row: ComboRow, groups: GroupRow[]): ComboConfig {
 export async function loadComboConfigs(comboId?: string): Promise<ComboConfig[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  let comboQuery = supabaseAdmin
-    .from("combos")
-    .select("id, slug, name, description, pricing_mode, fixed_price, is_active, sort_order")
-    .order("sort_order", { ascending: true });
-  if (comboId) comboQuery = comboQuery.eq("id", comboId);
+  const run = async (columns: string) => {
+    let query = supabaseAdmin
+      .from("combos")
+      .select(columns)
+      .order("sort_order", { ascending: true });
+    if (comboId) query = query.eq("id", comboId);
+    return query;
+  };
 
-  const { data: combos, error } = await comboQuery;
+  let { data: combos, error } = await run(COMBO_COLUMNS);
+  if (error && missingComboImageColumn(error)) {
+    // The optional combo image column isn't installed yet — combos still work.
+    ({ data: combos, error } = await run(COMBO_BASE_COLUMNS));
+  }
   if (error) {
     console.error("Combo load failed", error);
     throw new Error("We couldn't load the combos. Please try again.");
   }
-  const rows = (combos ?? []) as ComboRow[];
+  const rows = (combos ?? []) as unknown as ComboRow[];
   if (rows.length === 0) return [];
 
   const { data: groups } = await supabaseAdmin
@@ -147,6 +166,7 @@ export async function loadCustomerCombos(): Promise<ComboDto[]> {
       slug: config.slug,
       name: config.name,
       description: config.description,
+      imageUrl: config.imageUrl,
       pricingMode: config.pricingMode,
       fixedPrice: config.fixedPrice,
       isActive: config.isActive,
@@ -306,6 +326,13 @@ export async function validateComboItems(items: IncomingItem[]): Promise<Incomin
     const pricing = comboPricing(dto, selections);
     const distributed = distributeComboPrices(pricing.total, selections);
 
+    // One built combo carries a single shared quantity: every one of its lines
+    // must have the same whole quantity, so the combo price simply multiplies.
+    const quantity = Math.min(
+      Math.max(1, Math.min(...lines.map((l) => Math.floor(Number(l.quantity)) || 1))),
+      20,
+    );
+
     indexes.forEach((originalIndex, i) => {
       const selection = selections[i]!;
       priced[originalIndex] = {
@@ -314,7 +341,7 @@ export async function validateComboItems(items: IncomingItem[]): Promise<Incomin
         productName: selection.productName,
         variantName: selection.variantName,
         unitPrice: distributed[i] ?? selection.unitPrice,
-        quantity: 1,
+        quantity,
         comboName: config.name,
       };
     });
