@@ -58,6 +58,7 @@ import { Route as AuthenticatedOwnerStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOwnerStaffAccountsRouteImport } from './routes/_authenticated/owner.staff-accounts'
 import { Route as AuthenticatedOwnerSuppliersRouteImport } from './routes/_authenticated/owner.suppliers'
 import { Route as AuthenticatedAccountReviewOrderIdRouteImport } from './routes/_authenticated/account.review.$orderId'
+import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
 
@@ -334,6 +335,12 @@ const AuthenticatedAccountReviewOrderIdRoute =
     path: '/account/review/$orderId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOwnerOrdersOrderIdRoute =
+  AuthenticatedOwnerOrdersOrderIdRouteImport.update({
+    id: '/$orderId',
+    path: '/$orderId',
+    getParentRoute: () => AuthenticatedOwnerOrdersRoute,
+  } as any)
 const ApiPublicAuthSmsHookRoute = ApiPublicAuthSmsHookRouteImport.update({
   id: '/api/public/auth/sms-hook',
   path: '/api/public/auth/sms-hook',
@@ -379,7 +386,7 @@ export interface FileRoutesByFullPath {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
-  '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/orders': typeof AuthenticatedOwnerOrdersRouteWithChildren
   '/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
@@ -395,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/account/': typeof AuthenticatedAccountIndexRoute
   '/owner/': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
@@ -430,7 +438,7 @@ export interface FileRoutesByTo {
   '/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
-  '/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/owner/orders': typeof AuthenticatedOwnerOrdersRouteWithChildren
   '/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
@@ -446,6 +454,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountIndexRoute
   '/owner': typeof AuthenticatedOwnerIndexRoute
   '/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
@@ -484,7 +493,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/inventory': typeof AuthenticatedOwnerInventoryRoute
   '/_authenticated/owner/menu': typeof AuthenticatedOwnerMenuRoute
   '/_authenticated/owner/my-account': typeof AuthenticatedOwnerMyAccountRoute
-  '/_authenticated/owner/orders': typeof AuthenticatedOwnerOrdersRoute
+  '/_authenticated/owner/orders': typeof AuthenticatedOwnerOrdersRouteWithChildren
   '/_authenticated/owner/platform-sale': typeof AuthenticatedOwnerPlatformSaleRoute
   '/_authenticated/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/_authenticated/owner/pos': typeof AuthenticatedOwnerPosRoute
@@ -500,6 +509,7 @@ export interface FileRoutesById {
   '/_authenticated/account/': typeof AuthenticatedAccountIndexRoute
   '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
   '/_authenticated/account/review/$orderId': typeof AuthenticatedAccountReviewOrderIdRoute
+  '/_authenticated/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
 }
@@ -554,6 +564,7 @@ export interface FileRouteTypes {
     | '/account/'
     | '/owner/'
     | '/account/review/$orderId'
+    | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   fileRoutesByTo: FileRoutesByTo
@@ -605,6 +616,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/owner'
     | '/account/review/$orderId'
+    | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   id:
@@ -658,6 +670,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/'
     | '/_authenticated/owner/'
     | '/_authenticated/account/review/$orderId'
+    | '/_authenticated/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
     | '/api/public/notifications/dispatch'
   fileRoutesById: FileRoutesById
@@ -1025,6 +1038,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountReviewOrderIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/owner/orders/$orderId': {
+      id: '/_authenticated/owner/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/owner/orders/$orderId'
+      preLoaderRoute: typeof AuthenticatedOwnerOrdersOrderIdRouteImport
+      parentRoute: typeof AuthenticatedOwnerOrdersRoute
+    }
     '/api/public/auth/sms-hook': {
       id: '/api/public/auth/sms-hook'
       path: '/api/public/auth/sms-hook'
@@ -1042,6 +1062,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedOwnerOrdersRouteChildren {
+  AuthenticatedOwnerOrdersOrderIdRoute: typeof AuthenticatedOwnerOrdersOrderIdRoute
+}
+
+const AuthenticatedOwnerOrdersRouteChildren: AuthenticatedOwnerOrdersRouteChildren =
+  {
+    AuthenticatedOwnerOrdersOrderIdRoute: AuthenticatedOwnerOrdersOrderIdRoute,
+  }
+
+const AuthenticatedOwnerOrdersRouteWithChildren =
+  AuthenticatedOwnerOrdersRoute._addFileChildren(
+    AuthenticatedOwnerOrdersRouteChildren,
+  )
+
 interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerBannersRoute: typeof AuthenticatedOwnerBannersRoute
   AuthenticatedOwnerChallengesRoute: typeof AuthenticatedOwnerChallengesRoute
@@ -1053,7 +1087,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerInventoryRoute: typeof AuthenticatedOwnerInventoryRoute
   AuthenticatedOwnerMenuRoute: typeof AuthenticatedOwnerMenuRoute
   AuthenticatedOwnerMyAccountRoute: typeof AuthenticatedOwnerMyAccountRoute
-  AuthenticatedOwnerOrdersRoute: typeof AuthenticatedOwnerOrdersRoute
+  AuthenticatedOwnerOrdersRoute: typeof AuthenticatedOwnerOrdersRouteWithChildren
   AuthenticatedOwnerPlatformSaleRoute: typeof AuthenticatedOwnerPlatformSaleRoute
   AuthenticatedOwnerPlatformsRoute: typeof AuthenticatedOwnerPlatformsRoute
   AuthenticatedOwnerPosRoute: typeof AuthenticatedOwnerPosRoute
@@ -1080,7 +1114,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerInventoryRoute: AuthenticatedOwnerInventoryRoute,
   AuthenticatedOwnerMenuRoute: AuthenticatedOwnerMenuRoute,
   AuthenticatedOwnerMyAccountRoute: AuthenticatedOwnerMyAccountRoute,
-  AuthenticatedOwnerOrdersRoute: AuthenticatedOwnerOrdersRoute,
+  AuthenticatedOwnerOrdersRoute: AuthenticatedOwnerOrdersRouteWithChildren,
   AuthenticatedOwnerPlatformSaleRoute: AuthenticatedOwnerPlatformSaleRoute,
   AuthenticatedOwnerPlatformsRoute: AuthenticatedOwnerPlatformsRoute,
   AuthenticatedOwnerPosRoute: AuthenticatedOwnerPosRoute,

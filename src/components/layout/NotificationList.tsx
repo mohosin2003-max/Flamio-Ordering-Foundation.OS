@@ -80,10 +80,11 @@ export function NotificationList({
                   n.status === "owner_escalation"
                 ) {
                   // Staff/owner notification: opens the order in the order desk.
-                  await navigate({
-                    to: "/owner/orders",
-                    search: { order: n.orderId },
-                  });
+                   await navigate({
+                     to: "/owner/orders/$orderId",
+                     params: { orderId: n.orderId },
+                     search: n.status === "order_message_staff" ? { message: true } : {},
+                   });
                 } else if (n.status === "review_request") {
                   await navigate({
                     to: "/account/review/$orderId",

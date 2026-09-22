@@ -33,6 +33,7 @@ export interface OwnerOrderRow {
   landmark: string | null;
   deliveryNotes: string | null;
   items: {
+    productId: string | null;
     name: string;
     variantName: string | null;
     quantity: number;
@@ -40,6 +41,20 @@ export interface OwnerOrderRow {
     imageUrl: string | null;
     comboName: string | null;
   }[];
+}
+
+export interface OwnerOrderDetail extends OwnerOrderRow {
+  paymentMethod: string;
+  couponCode: string | null;
+  subtotal: number;
+  discount: number;
+  deliveryCharge: number;
+  pickupNote: string | null;
+  zoneName: string | null;
+  estimatedTime: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  riderPhone: string | null;
 }
 
 export interface OwnerCategory {
@@ -172,7 +187,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -197,6 +212,23 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       }
     }
 
+    const productIds = Array.from(new Set((data ?? []).flatMap((o) =>
+      (o.order_items ?? []).filter((item) => !item.image_url && item.product_id).map((item) => item.product_id as string),
+    )));
+    const currentImages = new Map<string, string>();
+    if (productIds.length > 0) {
+      const { data: images } = await supabaseAdmin
+        .from("product_images")
+        .select("product_id, url, is_primary, sort_order")
+        .in("product_id", productIds)
+        .not("url", "is", null)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
+      for (const image of images ?? []) {
+        if (image.url && !currentImages.has(image.product_id)) currentImages.set(image.product_id, image.url);
+      }
+    }
+
     return (data ?? []).map((o) => ({
       id: o.id,
       code: o.code,
@@ -218,14 +250,104 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       items: (o.order_items ?? [])
         .sort((a, b) => a.created_at.localeCompare(b.created_at))
         .map((item) => ({
+          productId: item.product_id,
           name: item.product_name,
           variantName: item.variant_name,
           quantity: item.quantity,
           unitPrice: Number(item.unit_price),
-          imageUrl: item.image_url,
+          imageUrl: item.image_url ?? (item.product_id ? currentImages.get(item.product_id) ?? null : null),
           comboName: item.combo_name,
         })),
     }));
+  });
+
+export const ownerGetOrder = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data: input, context }): Promise<OwnerOrderDetail | null> => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "online_orders");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error } = await supabaseAdmin
+      .from("orders")
+      .select(
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, created_at, address_line, area, landmark, delivery_notes, pickup_note, zone_name, estimated_time, latitude, longitude, payment_method, payment_label, coupon_code, subtotal, discount, delivery_charge, total, rider_id, riders(name, phone), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
+      )
+      .eq("id", input.orderId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Owner order detail failed", error);
+      throw new Error("We couldn't load this order. Please try again.");
+    }
+    if (!order) return null;
+
+    const missingProductIds = Array.from(new Set((order.order_items ?? [])
+      .filter((item) => !item.image_url && item.product_id)
+      .map((item) => item.product_id as string)));
+    const currentImages = new Map<string, string>();
+    if (missingProductIds.length > 0) {
+      const { data: images } = await supabaseAdmin
+        .from("product_images")
+        .select("product_id, url, is_primary, sort_order")
+        .in("product_id", missingProductIds)
+        .not("url", "is", null)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
+      for (const image of images ?? []) {
+        if (image.url && !currentImages.has(image.product_id)) currentImages.set(image.product_id, image.url);
+      }
+    }
+
+    const { count: unreadMessages } = await supabaseAdmin
+      .from("order_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("order_id", order.id)
+      .eq("sender_role", "customer")
+      .eq("read_by_staff", false);
+
+    return {
+      id: order.id,
+      code: order.code,
+      status: order.status,
+      channel: (order.channel ?? "online") as "online" | "counter" | "platform",
+      unreadMessages: unreadMessages ?? 0,
+      fulfillment: order.fulfillment as "delivery" | "pickup",
+      customerName: order.customer_name,
+      customerPhone: order.customer_phone,
+      total: Number(order.total),
+      createdAt: order.created_at,
+      addressLine: order.address_line,
+      area: order.area,
+      landmark: order.landmark,
+      deliveryNotes: order.delivery_notes,
+      pickupNote: order.pickup_note,
+      zoneName: order.zone_name,
+      estimatedTime: order.estimated_time,
+      latitude: order.latitude == null ? null : Number(order.latitude),
+      longitude: order.longitude == null ? null : Number(order.longitude),
+      paymentMethod: order.payment_method,
+      paymentLabel: order.payment_label,
+      couponCode: order.coupon_code,
+      subtotal: Number(order.subtotal),
+      discount: Number(order.discount),
+      deliveryCharge: Number(order.delivery_charge),
+      riderId: order.rider_id,
+      riderName: order.riders?.name ?? null,
+      riderPhone: order.riders?.phone ?? null,
+      items: (order.order_items ?? [])
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map((item) => ({
+          productId: item.product_id,
+          name: item.product_name,
+          variantName: item.variant_name,
+          quantity: item.quantity,
+          unitPrice: Number(item.unit_price),
+          imageUrl: item.image_url ?? (item.product_id ? currentImages.get(item.product_id) ?? null : null),
+          comboName: item.combo_name,
+        })),
+    };
   });
 
 /**

@@ -10,6 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 
 export interface KitchenOrderItem {
+  productId: string | null;
   name: string;
   variantName: string | null;
   quantity: number;
@@ -58,7 +59,7 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, fulfillment, created_at, delivery_notes, order_items(product_name, variant_name, quantity, image_url, combo_name, created_at)",
+        "id, code, status, fulfillment, created_at, delivery_notes, order_items(product_id, product_name, variant_name, quantity, image_url, combo_name, created_at)",
       )
       .in("status", ["placed", "confirmed", "preparing", "ready"])
       .eq("channel", "online")
@@ -68,6 +69,23 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
     if (error) {
       console.error("Kitchen order list failed", error);
       throw new Error("We couldn't load the kitchen queue. Please try again.");
+    }
+
+    const productIds = Array.from(new Set((data ?? []).flatMap((o) =>
+      (o.order_items ?? []).filter((item) => !item.image_url && item.product_id).map((item) => item.product_id as string),
+    )));
+    const currentImages = new Map<string, string>();
+    if (productIds.length > 0) {
+      const { data: images } = await supabaseAdmin
+        .from("product_images")
+        .select("product_id, url, is_primary, sort_order")
+        .in("product_id", productIds)
+        .not("url", "is", null)
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
+      for (const image of images ?? []) {
+        if (image.url && !currentImages.has(image.product_id)) currentImages.set(image.product_id, image.url);
+      }
     }
 
     return (data ?? []).map((o) => ({
@@ -80,10 +98,11 @@ export const kitchenListOrders = createServerFn({ method: "GET" })
       items: (o.order_items ?? [])
         .sort((a, b) => a.created_at.localeCompare(b.created_at))
         .map((i) => ({
+          productId: i.product_id,
           name: i.product_name,
           variantName: i.variant_name,
           quantity: i.quantity,
-          imageUrl: i.image_url,
+          imageUrl: i.image_url ?? (i.product_id ? currentImages.get(i.product_id) ?? null : null),
           comboName: i.combo_name,
         })),
     }));
