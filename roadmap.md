@@ -33,3 +33,5 @@
 
 - [x] Communication Phase 4: owner self-service WhatsApp/Email integration setup, provider status states, real connection tests, one server-side sender with consent + idempotency, message log, owner-started inbox conversation, signed delivery webhooks, new Message Customers / Integrations permissions
 - [ ] Communication Phase 4: run `docs/sql/communication_phase4.sql` once in Supabase, then store the credentials (WhatsApp access token, email API key, webhook secrets)
+
+- [ ] Owner Data & Storage Management: run docs/sql/data_cleanup.sql in external Supabase (owner review pending); optional pg_cron schedule for /api/public/cleanup/run is commented out in that file.

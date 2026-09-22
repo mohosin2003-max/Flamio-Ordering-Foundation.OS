@@ -40,6 +40,7 @@ import { Route as AuthenticatedOwnerChallengesRouteImport } from './routes/_auth
 import { Route as AuthenticatedOwnerCombosRouteImport } from './routes/_authenticated/owner.combos'
 import { Route as AuthenticatedOwnerCouponsRouteImport } from './routes/_authenticated/owner.coupons'
 import { Route as AuthenticatedOwnerCustomersRouteImport } from './routes/_authenticated/owner.customers'
+import { Route as AuthenticatedOwnerDataStorageRouteImport } from './routes/_authenticated/owner.data-storage'
 import { Route as AuthenticatedOwnerDeliveryRouteImport } from './routes/_authenticated/owner.delivery'
 import { Route as AuthenticatedOwnerFinanceRouteImport } from './routes/_authenticated/owner.finance'
 import { Route as AuthenticatedOwnerInboxRouteImport } from './routes/_authenticated/owner.inbox'
@@ -64,6 +65,7 @@ import { Route as AuthenticatedOwnerCustomersCustomerIdRouteImport } from './rou
 import { Route as AuthenticatedOwnerOrdersIndexRouteImport } from './routes/_authenticated/owner.orders.index'
 import { Route as AuthenticatedOwnerOrdersOrderIdRouteImport } from './routes/_authenticated/owner.orders.$orderId'
 import { Route as ApiPublicAuthSmsHookRouteImport } from './routes/api/public/auth/sms-hook'
+import { Route as ApiPublicCleanupRunRouteImport } from './routes/api/public/cleanup/run'
 import { Route as ApiPublicNotificationsDispatchRouteImport } from './routes/api/public/notifications/dispatch'
 import { Route as ApiPublicCommunicationWebhookProviderRouteImport } from './routes/api/public/communication/webhook.$provider'
 
@@ -236,6 +238,12 @@ const AuthenticatedOwnerCustomersRoute =
     path: '/customers',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerDataStorageRoute =
+  AuthenticatedOwnerDataStorageRouteImport.update({
+    id: '/data-storage',
+    path: '/data-storage',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerDeliveryRoute =
   AuthenticatedOwnerDeliveryRouteImport.update({
     id: '/delivery',
@@ -375,6 +383,11 @@ const ApiPublicAuthSmsHookRoute = ApiPublicAuthSmsHookRouteImport.update({
   path: '/api/public/auth/sms-hook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCleanupRunRoute = ApiPublicCleanupRunRouteImport.update({
+  id: '/api/public/cleanup/run',
+  path: '/api/public/cleanup/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotificationsDispatchRoute =
   ApiPublicNotificationsDispatchRouteImport.update({
     id: '/api/public/notifications/dispatch',
@@ -417,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
+  '/owner/data-storage': typeof AuthenticatedOwnerDataStorageRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -442,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -474,6 +489,7 @@ export interface FileRoutesByTo {
   '/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
+  '/owner/data-storage': typeof AuthenticatedOwnerDataStorageRoute
   '/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -498,6 +514,7 @@ export interface FileRoutesByTo {
   '/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/owner/orders': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -533,6 +550,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/combos': typeof AuthenticatedOwnerCombosRoute
   '/_authenticated/owner/coupons': typeof AuthenticatedOwnerCouponsRoute
   '/_authenticated/owner/customers': typeof AuthenticatedOwnerCustomersRouteWithChildren
+  '/_authenticated/owner/data-storage': typeof AuthenticatedOwnerDataStorageRoute
   '/_authenticated/owner/delivery': typeof AuthenticatedOwnerDeliveryRoute
   '/_authenticated/owner/finance': typeof AuthenticatedOwnerFinanceRoute
   '/_authenticated/owner/inbox': typeof AuthenticatedOwnerInboxRoute
@@ -558,6 +576,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/customers/$customerId': typeof AuthenticatedOwnerCustomersCustomerIdRoute
   '/_authenticated/owner/orders/$orderId': typeof AuthenticatedOwnerOrdersOrderIdRoute
   '/api/public/auth/sms-hook': typeof ApiPublicAuthSmsHookRoute
+  '/api/public/cleanup/run': typeof ApiPublicCleanupRunRoute
   '/api/public/notifications/dispatch': typeof ApiPublicNotificationsDispatchRoute
   '/_authenticated/owner/orders/': typeof AuthenticatedOwnerOrdersIndexRoute
   '/api/public/communication/webhook/$provider': typeof ApiPublicCommunicationWebhookProviderRoute
@@ -593,6 +612,7 @@ export interface FileRouteTypes {
     | '/owner/combos'
     | '/owner/coupons'
     | '/owner/customers'
+    | '/owner/data-storage'
     | '/owner/delivery'
     | '/owner/finance'
     | '/owner/inbox'
@@ -618,6 +638,7 @@ export interface FileRouteTypes {
     | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/owner/orders/'
     | '/api/public/communication/webhook/$provider'
@@ -650,6 +671,7 @@ export interface FileRouteTypes {
     | '/owner/combos'
     | '/owner/coupons'
     | '/owner/customers'
+    | '/owner/data-storage'
     | '/owner/delivery'
     | '/owner/finance'
     | '/owner/inbox'
@@ -674,6 +696,7 @@ export interface FileRouteTypes {
     | '/owner/customers/$customerId'
     | '/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/owner/orders'
     | '/api/public/communication/webhook/$provider'
@@ -708,6 +731,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/combos'
     | '/_authenticated/owner/coupons'
     | '/_authenticated/owner/customers'
+    | '/_authenticated/owner/data-storage'
     | '/_authenticated/owner/delivery'
     | '/_authenticated/owner/finance'
     | '/_authenticated/owner/inbox'
@@ -733,6 +757,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/customers/$customerId'
     | '/_authenticated/owner/orders/$orderId'
     | '/api/public/auth/sms-hook'
+    | '/api/public/cleanup/run'
     | '/api/public/notifications/dispatch'
     | '/_authenticated/owner/orders/'
     | '/api/public/communication/webhook/$provider'
@@ -753,6 +778,7 @@ export interface RootRouteChildren {
   TrackOrderIdRoute: typeof TrackOrderIdRoute
   MenuIndexRoute: typeof MenuIndexRoute
   ApiPublicAuthSmsHookRoute: typeof ApiPublicAuthSmsHookRoute
+  ApiPublicCleanupRunRoute: typeof ApiPublicCleanupRunRoute
   ApiPublicNotificationsDispatchRoute: typeof ApiPublicNotificationsDispatchRoute
   ApiPublicCommunicationWebhookProviderRoute: typeof ApiPublicCommunicationWebhookProviderRoute
 }
@@ -976,6 +1002,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerCustomersRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/data-storage': {
+      id: '/_authenticated/owner/data-storage'
+      path: '/data-storage'
+      fullPath: '/owner/data-storage'
+      preLoaderRoute: typeof AuthenticatedOwnerDataStorageRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/delivery': {
       id: '/_authenticated/owner/delivery'
       path: '/delivery'
@@ -1144,6 +1177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthSmsHookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cleanup/run': {
+      id: '/api/public/cleanup/run'
+      path: '/api/public/cleanup/run'
+      fullPath: '/api/public/cleanup/run'
+      preLoaderRoute: typeof ApiPublicCleanupRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notifications/dispatch': {
       id: '/api/public/notifications/dispatch'
       path: '/api/public/notifications/dispatch'
@@ -1199,6 +1239,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerCombosRoute: typeof AuthenticatedOwnerCombosRoute
   AuthenticatedOwnerCouponsRoute: typeof AuthenticatedOwnerCouponsRoute
   AuthenticatedOwnerCustomersRoute: typeof AuthenticatedOwnerCustomersRouteWithChildren
+  AuthenticatedOwnerDataStorageRoute: typeof AuthenticatedOwnerDataStorageRoute
   AuthenticatedOwnerDeliveryRoute: typeof AuthenticatedOwnerDeliveryRoute
   AuthenticatedOwnerFinanceRoute: typeof AuthenticatedOwnerFinanceRoute
   AuthenticatedOwnerInboxRoute: typeof AuthenticatedOwnerInboxRoute
@@ -1229,6 +1270,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerCouponsRoute: AuthenticatedOwnerCouponsRoute,
   AuthenticatedOwnerCustomersRoute:
     AuthenticatedOwnerCustomersRouteWithChildren,
+  AuthenticatedOwnerDataStorageRoute: AuthenticatedOwnerDataStorageRoute,
   AuthenticatedOwnerDeliveryRoute: AuthenticatedOwnerDeliveryRoute,
   AuthenticatedOwnerFinanceRoute: AuthenticatedOwnerFinanceRoute,
   AuthenticatedOwnerInboxRoute: AuthenticatedOwnerInboxRoute,
@@ -1304,6 +1346,7 @@ const rootRouteChildren: RootRouteChildren = {
   TrackOrderIdRoute: TrackOrderIdRoute,
   MenuIndexRoute: MenuIndexRoute,
   ApiPublicAuthSmsHookRoute: ApiPublicAuthSmsHookRoute,
+  ApiPublicCleanupRunRoute: ApiPublicCleanupRunRoute,
   ApiPublicNotificationsDispatchRoute: ApiPublicNotificationsDispatchRoute,
   ApiPublicCommunicationWebhookProviderRoute:
     ApiPublicCommunicationWebhookProviderRoute,
