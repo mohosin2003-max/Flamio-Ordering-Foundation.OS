@@ -17,3 +17,6 @@
 
 ## Future (separate phases, not started)
 - [ ] Multi-restaurant / multi-tenant SaaS architecture with master admin
+
+## Current
+- [ ] Improve Owner Orders and Kitchen order presentation for faster processing without changing order logic, permissions, or data structure
