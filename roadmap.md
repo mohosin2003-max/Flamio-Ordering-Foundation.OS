@@ -23,3 +23,6 @@
 ## Done
 - [x] Unified staff creation, secure legacy invite claiming, email/phone authentication, staff routing, and password change
 
+## In progress
+- [ ] Reorganize Owner/Staff into the shared Home, Messages, Orders, Account workspace while preserving customer navigation and existing permissions
+
