@@ -136,6 +136,21 @@ function AuthPage() {
       throw new Error("Enter a valid email address or leave it empty.");
     }
 
+    // Duplicate detection happens server-side BEFORE any OTP is sent, so a
+    // duplicate signup attempt never reaches a verification screen.
+    const duplicates = await readDuplicates({
+      data: { phone: normalizedPhone, email: normalizedEmail || undefined },
+    });
+    if (duplicates.phoneExists && duplicates.emailExists) {
+      throw new Error("This email and phone number are already registered. Please log in instead.");
+    }
+    if (duplicates.emailExists) {
+      throw new Error("This email is already registered. Please log in instead.");
+    }
+    if (duplicates.phoneExists) {
+      throw new Error("This phone number is already registered. Please log in instead.");
+    }
+
     const metadata = {
       full_name: fullName.trim(),
       phone: normalizedPhone,

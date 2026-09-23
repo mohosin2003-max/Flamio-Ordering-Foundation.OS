@@ -1,0 +1,33 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+import { normalizePhone } from "@/lib/phone";
+
+/**
+ * Pre-signup duplicate detection. Runs server-side only and returns two
+ * booleans — never account data, auth records, or provider details.
+ */
+export const checkSignupDuplicates = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        phone: z.string().trim().min(6).max(30),
+        email: z.string().trim().max(160).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const phone = normalizePhone(data.phone);
+    const email = data.email ? data.email.trim().toLowerCase() : "";
+
+    const phoneResult = await supabaseAdmin.from("profiles").select("id").eq("phone", phone).limit(1);
+    const emailResult = email
+      ? await supabaseAdmin.from("profiles").select("id").eq("email", email).limit(1)
+      : { data: [] as { id: string }[] };
+
+    return {
+      phoneExists: (phoneResult.data?.length ?? 0) > 0,
+      emailExists: (emailResult.data?.length ?? 0) > 0,
+    };
+  });
