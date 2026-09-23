@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPhoneAuthMode } from "@/lib/auth-mode.functions";
 import { signInWithPhonePassword, signUpWithPhonePassword } from "@/lib/auth.functions";
 import { getOwnerAccess } from "@/lib/owner.functions";
+import { checkSignupDuplicates } from "@/lib/signup-check.functions";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { claimMyStaffInvite } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ function AuthPage() {
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
   const phonePasswordSignUp = useServerFn(signUpWithPhonePassword);
   const readAuthMode = useServerFn(getPhoneAuthMode);
+  const readDuplicates = useServerFn(checkSignupDuplicates);
 
   const [mode, setMode] = useState<Mode>("login");
   const [identity, setIdentity] = useState("");
