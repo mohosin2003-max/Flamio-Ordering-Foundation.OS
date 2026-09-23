@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPhoneAuthMode } from "@/lib/auth-mode.functions";
 import { signInWithPhonePassword, signUpWithPhonePassword } from "@/lib/auth.functions";
 import { getOwnerAccess } from "@/lib/owner.functions";
+import { checkSignupDuplicates } from "@/lib/signup-check.functions";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { claimMyStaffInvite } from "@/lib/staff.functions";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ function AuthPage() {
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
   const phonePasswordSignUp = useServerFn(signUpWithPhonePassword);
   const readAuthMode = useServerFn(getPhoneAuthMode);
+  const readDuplicates = useServerFn(checkSignupDuplicates);
 
   const [mode, setMode] = useState<Mode>("login");
   const [identity, setIdentity] = useState("");
@@ -134,6 +136,21 @@ function AuthPage() {
     // Email is optional; when given it must be valid.
     if (normalizedEmail && !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
       throw new Error("Enter a valid email address or leave it empty.");
+    }
+
+    // Duplicate detection happens server-side BEFORE any OTP is sent, so a
+    // duplicate signup attempt never reaches a verification screen.
+    const duplicates = await readDuplicates({
+      data: { phone: normalizedPhone, email: normalizedEmail || undefined },
+    });
+    if (duplicates.phoneExists && duplicates.emailExists) {
+      throw new Error("This email and phone number are already registered. Please log in instead.");
+    }
+    if (duplicates.emailExists) {
+      throw new Error("This email is already registered. Please log in instead.");
+    }
+    if (duplicates.phoneExists) {
+      throw new Error("This phone number is already registered. Please log in instead.");
     }
 
     const metadata = {
