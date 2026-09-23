@@ -41,7 +41,7 @@ export const STAFF_PERMISSIONS = [
   "own_profit_share",
   "settings",
   "integrations",
-
+  "account_recovery",
 ] as const;
 
 export type StaffPermission = (typeof STAFF_PERMISSIONS)[number];
@@ -88,6 +88,7 @@ export const PERMISSION_LABELS: Record<StaffPermission, string> = {
 
   settings: "Settings",
   integrations: "Integrations & Providers",
+  account_recovery: "Account Recovery",
 };
 
 export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
@@ -101,6 +102,7 @@ export const PERMISSION_HINTS: Partial<Record<StaffPermission, string>> = {
   communication_logs: "See what was sent to a customer",
   customer_messaging: "Send a message to a customer (inbox, push, SMS, WhatsApp, email)",
   integrations: "Set up SMS, WhatsApp, email and payment providers",
+  account_recovery: "Review password-recovery requests and issue one-time codes",
 };
 
 
@@ -145,6 +147,7 @@ export const PERMISSION_GROUPS: { title: string; permissions: StaffPermission[] 
       "communication_logs",
       "customer_messaging",
       "reviews",
+      "account_recovery",
     ],
   },
   {

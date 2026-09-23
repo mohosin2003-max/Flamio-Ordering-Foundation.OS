@@ -68,6 +68,7 @@ const TABS: {
   },
   { to: "/owner/inbox", label: "Inbox", exact: false, permission: "customers" },
   { to: "/owner/reviews", label: "Reviews", exact: false, permission: "reviews" },
+  { to: "/owner/recovery", label: "Account recovery", exact: false, permission: "account_recovery" },
 
   { to: "/owner/staff", label: "Staff", exact: false, permission: "staff" },
   {

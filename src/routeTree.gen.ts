@@ -53,6 +53,7 @@ import { Route as AuthenticatedOwnerPlatformSaleRouteImport } from './routes/_au
 import { Route as AuthenticatedOwnerPlatformsRouteImport } from './routes/_authenticated/owner.platforms'
 import { Route as AuthenticatedOwnerPosRouteImport } from './routes/_authenticated/owner.pos'
 import { Route as AuthenticatedOwnerPurchasesRouteImport } from './routes/_authenticated/owner.purchases'
+import { Route as AuthenticatedOwnerRecoveryRouteImport } from './routes/_authenticated/owner.recovery'
 import { Route as AuthenticatedOwnerReportsRouteImport } from './routes/_authenticated/owner.reports'
 import { Route as AuthenticatedOwnerReviewsRouteImport } from './routes/_authenticated/owner.reviews'
 import { Route as AuthenticatedOwnerRewardsRouteImport } from './routes/_authenticated/owner.rewards'
@@ -314,6 +315,12 @@ const AuthenticatedOwnerPurchasesRoute =
     path: '/purchases',
     getParentRoute: () => AuthenticatedOwnerRoute,
   } as any)
+const AuthenticatedOwnerRecoveryRoute =
+  AuthenticatedOwnerRecoveryRouteImport.update({
+    id: '/recovery',
+    path: '/recovery',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedOwnerReportsRoute =
   AuthenticatedOwnerReportsRouteImport.update({
     id: '/reports',
@@ -450,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
+  '/owner/recovery': typeof AuthenticatedOwnerRecoveryRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/owner/rewards': typeof AuthenticatedOwnerRewardsRoute
@@ -509,6 +517,7 @@ export interface FileRoutesByTo {
   '/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
+  '/owner/recovery': typeof AuthenticatedOwnerRecoveryRoute
   '/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/owner/rewards': typeof AuthenticatedOwnerRewardsRoute
@@ -572,6 +581,7 @@ export interface FileRoutesById {
   '/_authenticated/owner/platforms': typeof AuthenticatedOwnerPlatformsRoute
   '/_authenticated/owner/pos': typeof AuthenticatedOwnerPosRoute
   '/_authenticated/owner/purchases': typeof AuthenticatedOwnerPurchasesRoute
+  '/_authenticated/owner/recovery': typeof AuthenticatedOwnerRecoveryRoute
   '/_authenticated/owner/reports': typeof AuthenticatedOwnerReportsRoute
   '/_authenticated/owner/reviews': typeof AuthenticatedOwnerReviewsRoute
   '/_authenticated/owner/rewards': typeof AuthenticatedOwnerRewardsRoute
@@ -635,6 +645,7 @@ export interface FileRouteTypes {
     | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
+    | '/owner/recovery'
     | '/owner/reports'
     | '/owner/reviews'
     | '/owner/rewards'
@@ -694,6 +705,7 @@ export interface FileRouteTypes {
     | '/owner/platforms'
     | '/owner/pos'
     | '/owner/purchases'
+    | '/owner/recovery'
     | '/owner/reports'
     | '/owner/reviews'
     | '/owner/rewards'
@@ -756,6 +768,7 @@ export interface FileRouteTypes {
     | '/_authenticated/owner/platforms'
     | '/_authenticated/owner/pos'
     | '/_authenticated/owner/purchases'
+    | '/_authenticated/owner/recovery'
     | '/_authenticated/owner/reports'
     | '/_authenticated/owner/reviews'
     | '/_authenticated/owner/rewards'
@@ -1106,6 +1119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnerPurchasesRouteImport
       parentRoute: typeof AuthenticatedOwnerRoute
     }
+    '/_authenticated/owner/recovery': {
+      id: '/_authenticated/owner/recovery'
+      path: '/recovery'
+      fullPath: '/owner/recovery'
+      preLoaderRoute: typeof AuthenticatedOwnerRecoveryRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/owner/reports': {
       id: '/_authenticated/owner/reports'
       path: '/reports'
@@ -1271,6 +1291,7 @@ interface AuthenticatedOwnerRouteChildren {
   AuthenticatedOwnerPlatformsRoute: typeof AuthenticatedOwnerPlatformsRoute
   AuthenticatedOwnerPosRoute: typeof AuthenticatedOwnerPosRoute
   AuthenticatedOwnerPurchasesRoute: typeof AuthenticatedOwnerPurchasesRoute
+  AuthenticatedOwnerRecoveryRoute: typeof AuthenticatedOwnerRecoveryRoute
   AuthenticatedOwnerReportsRoute: typeof AuthenticatedOwnerReportsRoute
   AuthenticatedOwnerReviewsRoute: typeof AuthenticatedOwnerReviewsRoute
   AuthenticatedOwnerRewardsRoute: typeof AuthenticatedOwnerRewardsRoute
@@ -1302,6 +1323,7 @@ const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
   AuthenticatedOwnerPlatformsRoute: AuthenticatedOwnerPlatformsRoute,
   AuthenticatedOwnerPosRoute: AuthenticatedOwnerPosRoute,
   AuthenticatedOwnerPurchasesRoute: AuthenticatedOwnerPurchasesRoute,
+  AuthenticatedOwnerRecoveryRoute: AuthenticatedOwnerRecoveryRoute,
   AuthenticatedOwnerReportsRoute: AuthenticatedOwnerReportsRoute,
   AuthenticatedOwnerReviewsRoute: AuthenticatedOwnerReviewsRoute,
   AuthenticatedOwnerRewardsRoute: AuthenticatedOwnerRewardsRoute,
