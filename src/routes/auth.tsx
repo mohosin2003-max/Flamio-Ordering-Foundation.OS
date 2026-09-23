@@ -371,8 +371,8 @@ function AuthPage() {
                 <Label htmlFor="email">Email (optional)</Label>
                 <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
                 <p className="text-xs text-muted-foreground">
-                  If you add an email, we send a confirmation link there and no SMS code to your
-                  phone. Leave it empty to verify by phone instead.
+                  If you add an email, we send a 6-digit code there and no SMS code to your phone.
+                  Leave it empty to verify by phone instead.
                 </p>
               </div>
               <div className="space-y-2">
