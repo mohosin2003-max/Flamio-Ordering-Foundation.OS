@@ -337,10 +337,15 @@ export const listRecoveryRequests = createServerFn({ method: "GET" })
       .limit(100);
     if (error) throw new Error("Account recovery isn't set up yet. Please run the recovery database update.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const ids = [...new Set((rows ?? []).map((r: { user_id: string }) => r.user_id))];
+    type Row = {
+      id: string; user_id: string; phone: string; status: string; requested_at: string;
+      approved_at: string | null; expires_at: string | null; used_at: string | null; attempts: number | null;
+    };
+    const typed = (rows ?? []) as Row[];
+    const ids: string[] = [...new Set(typed.map((r) => r.user_id))];
     const { data: profiles } = ids.length
       ? await supabaseAdmin.from("profiles").select("id, full_name, created_at").in("id", ids)
-      : { data: [] };
+      : { data: [] as { id: string; full_name: string | null; created_at: string }[] };
     const counts = new Map<string, number>();
     for (const id of ids) {
       const { count } = await supabaseAdmin
@@ -349,20 +354,20 @@ export const listRecoveryRequests = createServerFn({ method: "GET" })
         .eq("user_id", id);
       counts.set(id, count ?? 0);
     }
-    return (rows ?? []).map((r: Record<string, unknown>) => {
+    return typed.map((r) => {
       const p = (profiles ?? []).find((x) => x.id === r.user_id);
       return {
-        id: r.id as string,
-        phone: r.phone as string,
-        status: r.status as string,
-        requestedAt: r.requested_at as string,
-        approvedAt: (r.approved_at as string) ?? null,
-        expiresAt: (r.expires_at as string) ?? null,
-        usedAt: (r.used_at as string) ?? null,
-        attempts: (r.attempts as number) ?? 0,
+        id: r.id,
+        phone: r.phone,
+        status: r.status,
+        requestedAt: r.requested_at,
+        approvedAt: r.approved_at ?? null,
+        expiresAt: r.expires_at ?? null,
+        usedAt: r.used_at ?? null,
+        attempts: r.attempts ?? 0,
         customerName: p?.full_name ?? null,
-        accountCreatedAt: (p?.created_at as string) ?? null,
-        orderCount: counts.get(r.user_id as string) ?? 0,
+        accountCreatedAt: p?.created_at ?? null,
+        orderCount: counts.get(r.user_id) ?? 0,
       };
     });
   });
