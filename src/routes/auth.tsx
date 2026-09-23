@@ -160,8 +160,9 @@ function AuthPage() {
       const emailConfirmed = Boolean(data.user?.email_confirmed_at ?? data.user?.confirmed_at);
       if (!emailConfirmed) {
         if (data.session) await supabase.auth.signOut();
+        setOtp("");
         setAwaitingEmail(true);
-        toast.success("Check your email to confirm your account");
+        toast.success("Enter the code we sent to your email");
         return;
       }
       await goToLanding();
@@ -216,6 +217,30 @@ function AuthPage() {
       else await signup();
     } catch (err) {
       fail(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyEmailCode() {
+    if (otp.trim().length < 6) {
+      fail("Enter the 6-digit code we sent to your email.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp.trim(),
+        type: "email",
+      });
+      if (verifyError) throw verifyError;
+      setAwaitingEmail(false);
+      toast.success("Email verified");
+      await goToLanding();
+    } catch (err) {
+      fail(err instanceof Error ? err.message : "We couldn't verify that code.");
     } finally {
       setBusy(false);
     }
@@ -281,22 +306,25 @@ function AuthPage() {
       {awaitingEmail ? (
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border border-border bg-muted/40 p-4">
-            <p className="font-semibold">Confirm your email</p>
+            <p className="font-semibold">Verify your email</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              We sent a confirmation link to {email.trim()}. Open that email and tap the link to
-              activate your account, then sign in with your phone number and password.
+              We sent a 6-digit code to {email.trim()}. Enter it below to activate your account.
             </p>
           </div>
-          <Button
-            className="w-full"
-            onClick={() => {
-              setAwaitingEmail(false);
-              setMode("login");
-              setIdentity(phone.trim());
-              setPassword("");
-            }}
-          >
-            I confirmed my email — sign in
+          <div className="space-y-2">
+            <Label htmlFor="email-code">Email verification code</Label>
+            <Input
+              id="email-code"
+              value={otp}
+              inputMode="numeric"
+              maxLength={6}
+              autoComplete="one-time-code"
+              onChange={(event) => setOtp(event.target.value)}
+            />
+          </div>
+          <Button className="w-full" disabled={busy} onClick={() => void verifyEmailCode()}>
+            {busy ? <Loader2 className="animate-spin" /> : null}
+            Verify email
           </Button>
         </div>
       ) : awaitingPhoneOtp ? (
