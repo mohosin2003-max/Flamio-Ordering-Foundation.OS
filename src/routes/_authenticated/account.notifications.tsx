@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { MarkAllReadButton, NotificationList } from "@/components/layout/NotificationList";
+import { RecoveryRequestNotices } from "@/components/layout/RecoveryRequestNotices";
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -42,6 +43,7 @@ function NotificationsPage() {
       <PushToggle className="mt-4" />
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card">
+          <RecoveryRequestNotices />
         <NotificationList
           notifications={notifications}
           isLoading={isLoading}
