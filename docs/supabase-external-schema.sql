@@ -122,6 +122,10 @@ CREATE FUNCTION public.claim_owner(_user_id uuid) RETURNS boolean
     SET search_path TO 'public'
     AS $$
 BEGIN
+  -- A caller may only claim ownership for their own authenticated user.
+  IF _user_id IS DISTINCT FROM auth.uid() THEN
+    RETURN false;
+  END IF;
   IF EXISTS (SELECT 1 FROM public.user_roles WHERE role = 'owner') THEN
     RETURN false;
   END IF;
