@@ -458,12 +458,7 @@ function OwnerPos() {
                 {formatBDT(lastSale.total)} · printing is optional
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <PrintReceiptButton order={lastSale} />
-              <Button variant="ghost" size="sm" onClick={() => setLastSale(null)}>
-                Dismiss
-              </Button>
-            </div>
+            <PrintReceiptButton order={lastSale} />
           </CardContent>
         </Card>
       ) : null}
