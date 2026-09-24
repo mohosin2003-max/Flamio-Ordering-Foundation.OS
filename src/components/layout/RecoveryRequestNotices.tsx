@@ -50,7 +50,11 @@ export function RecoveryRequestNotices() {
   const list = useServerFn(listRecoveryRequests);
   const approve = useServerFn(approveRecoveryRequest);
   const reject = useServerFn(rejectRecoveryRequest);
-  const [issued, setIssued] = useState<{ id: string; code: string } | null>(null);
+  const [issued, setIssuedState] = useState<IssuedCode | null>(() => issuedCodeMemory);
+  const setIssued = (value: IssuedCode | null) => {
+    issuedCodeMemory = value;
+    setIssuedState(value);
+  };
   const [error, setError] = useState<string | null>(null);
 
   const query = useQuery({
