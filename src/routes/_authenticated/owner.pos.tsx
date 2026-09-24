@@ -51,6 +51,8 @@ export const Route = createFileRoute("/_authenticated/owner/pos")({
   component: OwnerPos,
 });
 
+let latestCounterSaleReceipt: PrintReceiptOrder | null = null;
+
 function OwnerPos() {
   const getCatalog = useServerFn(ownerGetCatalog);
   const submitOrder = useServerFn(placeOrder);
@@ -68,7 +70,9 @@ function OwnerPos() {
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">("amount");
   // Snapshot of the last SAVED sale, kept only so the cashier can optionally
   // print its receipt. It never re-submits anything.
-  const [lastSale, setLastSale] = useState<PrintReceiptOrder | null>(null);
+  const [lastSale, setLastSale] = useState<PrintReceiptOrder | null>(
+    () => latestCounterSaleReceipt,
+  );
 
   const catalog = useQuery({
     queryKey: ["owner-catalog"],
@@ -197,7 +201,7 @@ function OwnerPos() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["owner-inventory"] });
-      setLastSale({
+      const receipt: PrintReceiptOrder = {
         orderCode: result.code,
         orderId: result.id,
         createdAt: result.createdAt,
@@ -214,7 +218,9 @@ function OwnerPos() {
         deliveryCharge: 0,
         total: finalTotal,
         paymentLabel: "Cash at counter (POS)",
-      });
+      };
+      latestCounterSaleReceipt = receipt;
+      setLastSale(receipt);
       setLines({});
       setCustomerPhone("");
       setDiscountAmount("");
