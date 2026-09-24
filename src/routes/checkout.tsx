@@ -262,9 +262,13 @@ function CheckoutPage() {
         onSubmit={async (e) => {
           e.preventDefault();
           if (submitting) return; // guard against double submission
+          // Lock immediately — before any await — so rapid taps or Go/Enter
+          // during the address save cannot start a second submission.
+          setSubmitting(true);
           setSubmitError(null);
 
           const fail = (message: string) => {
+            setSubmitting(false); // release the lock so the customer can retry
             setSubmitError(message);
             toast.error(message);
           };
@@ -312,7 +316,6 @@ function CheckoutPage() {
             }
           }
 
-          setSubmitting(true);
           try {
             const created = await submitOrder({
               data: {
