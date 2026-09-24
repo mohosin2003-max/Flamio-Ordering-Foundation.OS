@@ -124,8 +124,8 @@ export function RecoveryRequestNotices() {
       <ul className="divide-y divide-border/70 border-b border-border/70">
         {pending.map((r) => {
         const busy = action.isPending && action.variables?.id === r.id;
-        return (
-          <li key={r.id} className="space-y-2 bg-secondary/40 px-4 py-3">
+          return (
+            <li key={r.id} className="space-y-2 bg-secondary/40 px-4 py-3">
             <span className="flex items-start justify-between gap-3">
               <span className="text-sm font-bold leading-snug">Password recovery request</span>
               <span className="shrink-0 text-[11px] text-muted-foreground">
