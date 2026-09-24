@@ -59,7 +59,13 @@ function KitchenPage() {
 
   const access = useQuery({
     queryKey: ["kitchen-access"],
-    queryFn: () => fetchAccess(),
+    queryFn: async () => {
+      // Skip when the session just ended (e.g. during logout).
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return null;
+      return fetchAccess();
+    },
+    retry: false,
     staleTime: 60 * 1000,
   });
 
