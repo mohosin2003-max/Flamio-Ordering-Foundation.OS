@@ -1,3 +1,4 @@
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -366,12 +367,7 @@ function OwnerSettings() {
 
 /** Owner-only entry point. Staff never see this card. */
 function DataStorageLink() {
-  const fetchAccess = useServerFn(getOwnerAccess);
-  const access = useQuery({
-    queryKey: ["owner-access"],
-    queryFn: () => fetchAccess(),
-    staleTime: 60 * 1000,
-  });
+  const access = useDashboardAccess();
   if (!access.data?.roles?.includes("owner")) return null;
 
   return (

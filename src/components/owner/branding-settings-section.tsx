@@ -1,3 +1,4 @@
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ImagePlus, Loader2, ShieldCheck, Upload } from "lucide-react";
@@ -128,13 +129,12 @@ async function uploadLogo(kind: BrandKind, draft: BrandDraft, createTarget: Crea
 }
 
 export function BrandingSettingsSection() {
-  const fetchAccess = useServerFn(getOwnerAccess);
   const getBranding = useServerFn(ownerGetBranding);
   const createTarget = useServerFn(ownerCreateBrandUploadTarget);
   const saveBranding = useServerFn(ownerSaveBranding);
   const queryClient = useQueryClient();
 
-  const access = useQuery({ queryKey: ["owner-access"], queryFn: () => fetchAccess(), staleTime: 60_000 });
+  const access = useDashboardAccess();
   const isOwner = Boolean(access.data?.roles?.includes("owner"));
   const branding = useQuery({
     queryKey: ["owner-branding"],
