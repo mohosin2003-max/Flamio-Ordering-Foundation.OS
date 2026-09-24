@@ -141,7 +141,14 @@ export function RecoveryRequestNotices() {
                 <Button
                   size="sm"
                   disabled={action.isPending}
-                  onClick={() => action.mutate({ id: r.id, kind: "approve" })}
+                  onClick={() =>
+                    action.mutate({
+                      id: r.id,
+                      kind: "approve",
+                      customerName: r.customerName,
+                      phone: r.phone,
+                    })
+                  }
                 >
                   {busy && action.variables?.kind === "approve" ? (
                     <Loader2 aria-hidden="true" className="size-3 animate-spin" />
@@ -152,7 +159,9 @@ export function RecoveryRequestNotices() {
                   size="sm"
                   variant="secondary"
                   disabled={action.isPending}
-                  onClick={() => action.mutate({ id: r.id, kind: "reject" })}
+                  onClick={() =>
+                    action.mutate({ id: r.id, kind: "reject", customerName: null, phone: "" })
+                  }
                 >
                   Reject
                 </Button>
@@ -161,11 +170,12 @@ export function RecoveryRequestNotices() {
           </li>
         );
       })}
-      {error ? (
-        <li role="alert" className="px-4 py-2 text-xs text-destructive">
-          {error}
-        </li>
-      ) : null}
-    </ul>
+        {error ? (
+          <li role="alert" className="px-4 py-2 text-xs text-destructive">
+            {error}
+          </li>
+        ) : null}
+      </ul>
+    </>
   );
 }
