@@ -1,3 +1,4 @@
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -7,7 +8,6 @@ import { Boxes, ChefHat, ClipboardList, Contact, CookingPot, Gift, HandCoins, Im
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBDT } from "@/lib/format";
-import { getOwnerAccess } from "@/lib/owner.functions";
 import { hasPermission, type StaffPermission } from "@/lib/permissions";
 import { ownerGetDashboardSummary } from "@/lib/dashboard.functions";
 
@@ -55,8 +55,7 @@ const MODULES: Module[] = [
 ];
 
 function OwnerHome() {
-  const fetchAccess = useServerFn(getOwnerAccess);
-  const access = useQuery({ queryKey: ["owner-access"], queryFn: () => fetchAccess(), staleTime: 60_000 });
+  const access = useDashboardAccess();
   const can = (permission: StaffPermission | StaffPermission[]) => (Array.isArray(permission) ? permission : [permission]).some((item) => hasPermission(access.data, item));
   const canSeeOrders = can(["online_orders", "order_management"]);
   const getSummary = useServerFn(ownerGetDashboardSummary);

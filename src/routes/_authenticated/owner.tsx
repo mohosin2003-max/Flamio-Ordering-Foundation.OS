@@ -1,3 +1,4 @@
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -9,7 +10,7 @@ import { BrandLogo } from "@/components/branding/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
-import { claimOwnership, getOwnerAccess } from "@/lib/owner.functions";
+import { claimOwnership } from "@/lib/owner.functions";
 import { canManage, hasPermission } from "@/lib/permissions";
 import type { StaffPermission } from "@/lib/permissions";
 
@@ -107,18 +108,13 @@ function allows(
 
 function OwnerLayout() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const fetchAccess = useServerFn(getOwnerAccess);
   const claim = useServerFn(claimOwnership);
   const queryClient = useQueryClient();
   const [claiming, setClaiming] = useState(false);
 
-  const access = useQuery({
-    queryKey: ["owner-access"],
-    queryFn: () => fetchAccess(),
-    staleTime: 60 * 1000,
-  });
+  const access = useDashboardAccess();
 
-  if (access.isLoading) {
+  if (access.isPending && !access.error) {
     return (
       <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
         <Skeleton className="h-8 w-48" />
