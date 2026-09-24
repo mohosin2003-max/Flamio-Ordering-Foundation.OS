@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { HandCoins, KeyRound, LogOut, Settings2, ShieldCheck, UserRound, Users, WalletCards } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Camera, HandCoins, KeyRound, LogOut, Settings2, ShieldCheck, UserRound, Users, WalletCards } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { uploadOwnProfilePhoto, validateProfilePhoto } from "@/lib/profile-photo";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +40,33 @@ function StaffAccountPage() {
   const [newPassword, setNewPassword] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => () => { if (photoPreview) URL.revokeObjectURL(photoPreview); }, [photoPreview]);
+
+  async function handlePhotoChange(file: File | undefined) {
+    if (!file || !profile || photoBusy) return;
+    const invalid = validateProfilePhoto(file);
+    if (invalid) {
+      toast.error(invalid);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoBusy(true);
+    try {
+      await uploadOwnProfilePhoto(profile.id, file, profile.avatarPath);
+      refreshProfile();
+      toast.success("Profile photo updated");
+    } catch {
+      setPhotoPreview(null);
+      toast.error("We couldn't update your photo. Please try again.");
+    } finally {
+      setPhotoBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
   useEffect(() => {
     setName(profile?.fullName ?? "");
     setEmail(profile?.email ?? "");
@@ -61,10 +89,16 @@ function StaffAccountPage() {
     <div className="space-y-5">
       <Card>
         <CardContent className="flex items-center gap-4 p-4 sm:p-5">
-          <Avatar className="size-16 border-2 border-border bg-secondary">
-            <AvatarImage src={profile?.avatarUrl ?? undefined} alt={`${displayName} profile`} />
-            <AvatarFallback className="font-display text-lg font-black">{initials || "F"}</AvatarFallback>
-          </Avatar>
+          <div className="flex shrink-0 flex-col items-center gap-1.5">
+            <Avatar className="size-16 border-2 border-border bg-secondary">
+              <AvatarImage src={photoPreview ?? profile?.avatarUrl ?? undefined} alt={`${displayName} profile`} />
+              <AvatarFallback className="font-display text-lg font-black">{initials || "F"}</AvatarFallback>
+            </Avatar>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" aria-label="Upload profile photo" onChange={(event) => void handlePhotoChange(event.target.files?.[0])} />
+            <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={!profile || photoBusy} onClick={() => fileInputRef.current?.click()}>
+              <Camera className="size-3.5" /> {photoBusy ? "Uploading…" : "Photo"}
+            </Button>
+          </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase text-primary">{access.isManager ? "Owner" : "Staff"}</p>
             <h2 className="truncate font-display text-xl font-black">{displayName}</h2>
