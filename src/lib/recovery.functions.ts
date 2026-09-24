@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -109,14 +110,66 @@ async function methodFor(account: Account | null): Promise<RecoveryMethod> {
 const identitySchema = z.object({ identity: z.string().trim().min(3).max(160) });
 const passwordSchema = z.string().min(8).max(200);
 
+/**
+ * Abuse protection for the public lookup/send endpoints — same per-worker
+ * in-memory sliding-window pattern as checkSignupDuplicates (best-effort,
+ * no database table). Limited callers get the same generic responses an
+ * unregistered identity gets, so nothing reveals account existence.
+ */
+const RL_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RL_MAX_TRACKED_KEYS = 5000;
+const LOOKUP_PER_IP = 10;
+const SEND_PER_IP = 10;
+const SEND_PER_IDENTITY = 3;
+const rlLog = new Map<string, number[]>();
+
+function rlCallerIp(): string {
+  try {
+    const headers = getRequest()?.headers;
+    if (!headers) return "unknown";
+    const cf = headers.get("cf-connecting-ip");
+    if (cf) return cf.trim();
+    const first = headers.get("x-forwarded-for")?.split(",")[0];
+    return first ? first.trim() : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function rlHit(key: string, max: number): boolean {
+  const now = Date.now();
+  if (rlLog.size > RL_MAX_TRACKED_KEYS) rlLog.clear();
+  const recent = (rlLog.get(key) ?? []).filter((t) => now - t < RL_WINDOW_MS);
+  if (recent.length >= max) {
+    rlLog.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  rlLog.set(key, recent);
+  return false;
+}
+
+function identityKey(identity: string): string {
+  return identity.includes("@") ? identity.toLowerCase() : normalizePhone(identity);
+}
+
+const SEND_LIMITED = "Too many attempts. Please try again later or request manual recovery.";
+
 export const lookupRecovery = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => identitySchema.parse(input))
-  .handler(async ({ data }): Promise<RecoveryMethod> => methodFor(await findAccount(data.identity)));
+  .handler(async ({ data }): Promise<RecoveryMethod> => {
+    if (rlHit(`lookup:${rlCallerIp()}`, LOOKUP_PER_IP)) return { method: "manual" };
+    return methodFor(await findAccount(data.identity));
+  });
 
 /** Sends the recovery code through whichever channel the server chooses. */
 export const sendRecoveryCode = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => identitySchema.parse(input))
   .handler(async ({ data }): Promise<{ ok: boolean; message?: string }> => {
+    if (rlHit(`send-ip:${rlCallerIp()}`, SEND_PER_IP)) return { ok: false, message: SEND_LIMITED };
+    if (rlHit(`send-id:${identityKey(data.identity)}`, SEND_PER_IDENTITY)) {
+      return { ok: false, message: SEND_LIMITED };
+    }
     const account = await findAccount(data.identity);
     const method = await methodFor(account);
     if (!account || method.method === "manual") return { ok: false, message: "Use a recovery request instead." };
