@@ -10,7 +10,7 @@ import { BrandLogo } from "@/components/branding/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
-import { claimOwnership, getOwnerAccess } from "@/lib/owner.functions";
+import { claimOwnership } from "@/lib/owner.functions";
 import { canManage, hasPermission } from "@/lib/permissions";
 import type { StaffPermission } from "@/lib/permissions";
 

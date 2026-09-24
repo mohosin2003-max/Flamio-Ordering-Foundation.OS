@@ -18,7 +18,7 @@ import { BrandingSettingsSection } from "@/components/owner/branding-settings-se
 import { IntegrationsSection } from "@/components/owner/integration-providers";
 import { PaymentProvidersSection } from "@/components/owner/payment-providers";
 import { SmsProviderSection } from "@/components/owner/sms-provider";
-import { getOwnerAccess, ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
+import { ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
 import type { RestaurantSettings } from "@/lib/owner.functions";
 
 export const Route = createFileRoute("/_authenticated/owner/settings")({

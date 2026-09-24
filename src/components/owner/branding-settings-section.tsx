@@ -20,7 +20,6 @@ import {
   ownerSaveBranding,
   type OwnerBranding,
 } from "@/lib/branding.functions";
-import { getOwnerAccess } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
