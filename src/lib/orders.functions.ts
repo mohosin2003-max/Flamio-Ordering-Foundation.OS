@@ -381,6 +381,7 @@ export const getOrder = createServerFn({ method: "GET" })
     if (!order) return null;
 
     // Orders that belong to an account are readable only by that account.
+    // Account-owner lookups are never rate-limited by the guest trackers.
     if (order.user_id) {
       const callerId = await getOptionalUserId();
       if (callerId !== order.user_id) return null;
@@ -388,10 +389,24 @@ export const getOrder = createServerFn({ method: "GET" })
       // Guest order: the code alone is not enough. The caller must also know
       // the last 4 digits of the order's phone number. Nothing about the
       // order is returned until that check passes.
+      //
+      // Brute-force protection: cap guest lookups per caller IP, and cap
+      // failed digit attempts per order code (so rotating IPs cannot keep
+      // attacking the same order). A limited caller gets the exact same
+      // { requiresPhone: true } shape as a wrong digit entry — it learns
+      // nothing about whether the order or code exists.
+      if (recordAndCheckLimit(callerLookupLog, lookupCallerKey(), MAX_GUEST_LOOKUPS_PER_CALLER)) {
+        return { requiresPhone: true as const };
+      }
+      const orderKey = (order.code ?? order.id).toLowerCase();
+      if ((orderFailureLog.get(orderKey) ?? []).filter((t) => Date.now() - t < LOOKUP_WINDOW_MS).length >= MAX_FAILED_ATTEMPTS_PER_ORDER) {
+        return { requiresPhone: true as const };
+      }
       const digits = (order.customer_phone ?? "").replace(/\D/g, "");
       const expected = digits.slice(-4);
       const provided = (data.phoneLast4 ?? "").replace(/\D/g, "").slice(-4);
       if (expected.length !== 4 || provided.length !== 4 || provided !== expected) {
+        recordAndCheckLimit(orderFailureLog, orderKey, MAX_FAILED_ATTEMPTS_PER_ORDER);
         return { requiresPhone: true as const };
       }
     }
