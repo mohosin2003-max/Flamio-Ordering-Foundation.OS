@@ -4,6 +4,26 @@ import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
 import { isValidPhone, normalizePhone, phoneToAuthEmail } from "@/lib/phone";
+import { callerKey, createRateLimiter } from "@/lib/rate-limit.server";
+
+/**
+ * Abuse protection for the public phone/password endpoints below, keyed on
+ * the caller IP. These functions proxy to Supabase Auth from the server, so
+ * Supabase's own per-IP limits see only the server — this app-side limit is
+ * what slows a single attacker and keeps one caller from tripping the
+ * server-wide Supabase limit. Best-effort per-worker memory; see
+ * rate-limit.server.ts.
+ *
+ * Login counts FAILED attempts only (10/hour): a successful sign-in never
+ * consumes the limit, so legitimate customers are never blocked by their own
+ * good logins. Signup counts every attempt (5/hour): a genuine customer
+ * creates one account, so this stays far above normal use.
+ */
+const loginLimiter = createRateLimiter(10);
+const signupLimiter = createRateLimiter(5);
+
+const TOO_MANY_LOGINS = "Too many login attempts. Please try again later.";
+const TOO_MANY_SIGNUPS = "Too many signup attempts. Please try again later.";
 
 type LoginResult =
   | { ok: true; accessToken: string; refreshToken: string }
@@ -52,6 +72,13 @@ export const signInWithPhonePassword = createServerFn({ method: "POST" })
     z.object({ identity: z.string().trim().min(3).max(160), password: z.string().min(1).max(200) }).parse(input),
   )
   .handler(async ({ data }): Promise<LoginResult> => {
+    const caller = callerKey();
+    // Refuse before touching the database. The message is generic and does
+    // not reveal whether the phone/email exists.
+    if (loginLimiter.isLimited(caller)) {
+      return { ok: false, message: TOO_MANY_LOGINS };
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const isEmail = data.identity.includes("@");
     const identity = isEmail ? data.identity.toLowerCase() : normalizePhone(data.identity);
@@ -62,19 +89,27 @@ export const signInWithPhonePassword = createServerFn({ method: "POST" })
       .limit(2);
 
     if (error || profiles?.length !== 1) {
+      loginLimiter.record(caller);
       return { ok: false, message: "Incorrect email/phone or password." };
     }
 
     const profile = profiles[0];
-    if (!profile) return { ok: false, message: "Incorrect email/phone or password." };
+    if (!profile) {
+      loginLimiter.record(caller);
+      return { ok: false, message: "Incorrect email/phone or password." };
+    }
 
     const { data: authUser, error: userError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
     const email = authUser.user?.email;
-    if (userError || !email) return { ok: false, message: "Incorrect email/phone or password." };
+    if (userError || !email) {
+      loginLimiter.record(caller);
+      return { ok: false, message: "Incorrect email/phone or password." };
+    }
 
     // When a real SMS provider is active, this compatibility path must never
     // let an account with an unverified phone number in.
     if (authUser.user?.phone && !authUser.user.phone_confirmed_at && (await smsVerificationRequired())) {
+      loginLimiter.record(caller);
       return {
         ok: false,
         message: "Please verify your phone number with the code we sent before signing in.",
@@ -87,6 +122,7 @@ export const signInWithPhonePassword = createServerFn({ method: "POST" })
       password: data.password,
     });
     if (signInError || !signedIn.session) {
+      loginLimiter.record(caller);
       return { ok: false, message: "Incorrect email/phone or password." };
     }
 
@@ -115,6 +151,11 @@ export const signUpWithPhonePassword = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }): Promise<SignUpResult> => {
+    // Count every signup attempt per caller before doing any work. The
+    // message is generic and reveals nothing about existing accounts.
+    if (signupLimiter.checkAndRecord(callerKey())) {
+      return { ok: false, message: TOO_MANY_SIGNUPS };
+    }
     if (!isValidPhone(data.phone)) {
       return { ok: false, message: "Please enter a valid phone number." };
     }
