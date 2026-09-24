@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { getOwnerAccess } from "@/lib/owner.functions";
 
 /**
@@ -19,7 +20,12 @@ export function useDashboardAccess(enabled = true) {
   const fetchAccess = useServerFn(getOwnerAccess);
   const query = useQuery({
     queryKey: ["owner-access"],
-    queryFn: () => fetchAccess(),
+    queryFn: async () => {
+      // Session can end between render and fetch (e.g. during logout).
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return null;
+      return fetchAccess();
+    },
     enabled: enabled && isAuthenticated && !loading,
     retry: false,
     staleTime: 60 * 1000,
