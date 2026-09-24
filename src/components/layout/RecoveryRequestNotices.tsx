@@ -30,6 +30,18 @@ function maskPhone(phone: string): string {
  * notification list for owners and staff with the Account Recovery permission.
  * Approve/Reject call the existing server functions, which re-check permission.
  */
+interface IssuedCode {
+  id: string;
+  code: string;
+  expiresAt: string;
+  customerName: string | null;
+  phone: string;
+}
+
+// In-memory only: keeps the just-issued one-time code across re-renders and
+// in-app navigation until the owner presses "Done". Never persisted anywhere.
+let issuedCodeMemory: IssuedCode | null = null;
+
 export function RecoveryRequestNotices() {
   const access = useDashboardAccess();
   const allowed = hasPermission(access.data ?? null, "account_recovery");
