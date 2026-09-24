@@ -1,10 +1,72 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 /**
  * Order persistence. Orders hold customer PII, so the tables have no public
  * policies at all — every read and write goes through these server functions.
  */
+
+/**
+ * Brute-force protection for GUEST order lookup (getOrder). Two in-memory
+ * sliding-window trackers, same pattern as the signup duplicate check:
+ *
+ * 1. Per-caller (IP): caps how many guest lookups one caller can attempt,
+ *    so code guessing / digit cycling from one address is stopped early.
+ * 2. Per-order: caps FAILED digit attempts against a single order code, so
+ *    rotating IPs cannot keep hammering the same order.
+ *
+ * Both fail closed to the exact same { requiresPhone: true } shape used for
+ * a wrong digit entry, so a limited caller learns nothing about whether the
+ * order or code exists. Signed-in account-owner lookups never touch these
+ * trackers. Storage is per-worker memory (stateless serverless workers), so
+ * this is best-effort rather than a hard global cap — no database table is
+ * used, per the project's no-schema-change constraint.
+ */
+const LOOKUP_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_GUEST_LOOKUPS_PER_CALLER = 20; // per IP per hour
+const MAX_FAILED_ATTEMPTS_PER_ORDER = 10; // per order code per hour
+const MAX_TRACKED_LOOKUP_KEYS = 5000;
+
+const callerLookupLog = new Map<string, number[]>();
+const orderFailureLog = new Map<string, number[]>();
+
+function lookupCallerKey(): string {
+  try {
+    const request = getRequest();
+    const headers = request?.headers;
+    if (!headers) return "unknown";
+    const cf = headers.get("cf-connecting-ip");
+    if (cf) return cf.trim();
+    const forwarded = headers.get("x-forwarded-for");
+    if (forwarded) {
+      const first = forwarded.split(",")[0];
+      if (first) return first.trim();
+    }
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/** Records one attempt; returns true when the key is over its limit. */
+function recordAndCheckLimit(
+  log: Map<string, number[]>,
+  key: string,
+  max: number,
+): boolean {
+  const now = Date.now();
+  // Bound memory: drop the whole log if it grows past the cap.
+  if (log.size > MAX_TRACKED_LOOKUP_KEYS) log.clear();
+  const recent = (log.get(key) ?? []).filter((t) => now - t < LOOKUP_WINDOW_MS);
+  if (recent.length >= max) {
+    log.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  log.set(key, recent);
+  return false;
+}
 
 const itemSchema = z.object({
   productId: z.string().min(1),
