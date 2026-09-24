@@ -3,7 +3,6 @@ import { Bell } from "lucide-react";
 import { useState } from "react";
 
 import { MarkAllReadButton, NotificationList } from "@/components/layout/NotificationList";
-import { RecoveryRequestNotices } from "@/components/layout/RecoveryRequestNotices";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -48,7 +47,6 @@ export function NotificationBell() {
         </div>
 
         <div className="max-h-[65vh] overflow-y-auto overscroll-contain">
-          <RecoveryRequestNotices />
           <NotificationList
             notifications={notifications.slice(0, 12)}
             isLoading={isLoading}

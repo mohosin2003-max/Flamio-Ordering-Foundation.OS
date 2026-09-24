@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 
 import { ContactThread } from "@/components/contact/ContactThread";
+import { RecoveryRequestNotices } from "@/components/layout/RecoveryRequestNotices";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +45,7 @@ function OwnerInbox() {
     <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
       <div className="space-y-2">
         <div className="mb-3 flex items-center gap-2"><MessageCircle className="size-5 text-primary" /><h2 className="font-display text-xl font-bold">Customer inbox</h2></div>
+        <div className="overflow-hidden rounded-xl border border-border/70 bg-card"><RecoveryRequestNotices /></div>
         {threads.data?.length ? threads.data.map((thread) => (
           <Button key={thread.id} variant={selectedId === thread.id ? "secondary" : "outline"} className={thread.unreadCount ? "h-auto w-full justify-between border-destructive/60 bg-destructive/10 px-3 py-3 text-left" : "h-auto w-full justify-between px-3 py-3 text-left"} onClick={() => { setSelectedId(thread.id); void queryClient.setQueryData(["contact-inbox", "owner"], (current: typeof threads.data) => current?.map((row) => row.id === thread.id ? { ...row, unreadCount: 0 } : row)); }}>
             <span className="min-w-0"><span className="block truncate font-semibold">{thread.customerName ?? "Customer"}</span><span className="block text-xs text-muted-foreground">{thread.customerPhone ?? "No phone"}</span></span>
