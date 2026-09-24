@@ -66,10 +66,20 @@ export function RecoveryRequestNotices() {
   });
 
   const action = useMutation({
-    mutationFn: async ({ id, kind }: { id: string; kind: "approve" | "reject" }) => {
+    mutationFn: async ({
+      id,
+      kind,
+      customerName,
+      phone,
+    }: {
+      id: string;
+      kind: "approve" | "reject";
+      customerName: string | null;
+      phone: string;
+    }) => {
       if (kind === "approve") {
         const res = await approve({ data: { id } });
-        setIssued({ id, code: res.code });
+        setIssued({ id, code: res.code, expiresAt: res.expiresAt, customerName, phone });
       } else {
         await reject({ data: { id } });
       }
