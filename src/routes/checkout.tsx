@@ -316,7 +316,6 @@ function CheckoutPage() {
             }
           }
 
-          setSubmitting(true);
           try {
             const created = await submitOrder({
               data: {
