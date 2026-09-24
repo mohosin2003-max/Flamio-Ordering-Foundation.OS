@@ -94,21 +94,35 @@ export function RecoveryRequestNotices() {
   if (pending.length === 0 && !issued) return null;
 
   return (
-    <ul className="divide-y divide-border/70 border-b border-border/70">
-      {issued ? (
-        <li className="space-y-1 bg-secondary/40 px-4 py-3">
-          <p className="text-sm font-bold">Request approved</p>
-          <p className="text-xs text-muted-foreground">
-            Read this one-time code to the customer by phone. It is shown only once, works once, and
-            expires in 30 days. You never see or set their password.
-          </p>
-          <p className="font-mono text-base font-bold tracking-widest text-primary">{issued.code}</p>
-          <Button size="sm" variant="secondary" onClick={() => setIssued(null)}>
-            Done
-          </Button>
-        </li>
-      ) : null}
-      {pending.map((r) => {
+    <>
+      <AlertDialog open={issued !== null}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Request approved</AlertDialogTitle>
+            <AlertDialogDescription>
+              Read this one-time code to the customer by phone. It works once and expires in 30
+              days. You never see or set their password.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {issued ? (
+            <div className="space-y-1 text-sm">
+              <p className="font-bold">{issued.customerName ?? "Customer"}</p>
+              <p className="text-muted-foreground">{maskPhone(issued.phone)}</p>
+              <p className="font-mono text-lg font-bold tracking-widest text-primary">
+                {issued.code}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Expires {new Date(issued.expiresAt).toLocaleString()}
+              </p>
+            </div>
+          ) : null}
+          <AlertDialogFooter>
+            <Button onClick={() => setIssued(null)}>Done</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <ul className="divide-y divide-border/70 border-b border-border/70">
+        {pending.map((r) => {
         const busy = action.isPending && action.variables?.id === r.id;
         return (
           <li key={r.id} className="space-y-2 bg-secondary/40 px-4 py-3">
