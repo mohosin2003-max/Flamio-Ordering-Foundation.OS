@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
-import fallbackLogoAsset from "@/assets/flamio-brand-logo.jpg.asset.json";
 import { getPublicBranding } from "@/lib/branding.functions";
 import { cn } from "@/lib/utils";
 
 export const FALLBACK_BRAND_NAME = "Flamio";
-export const FALLBACK_BRAND_LOGO_URL = fallbackLogoAsset.url;
+/** Official Flamio F + Flame symbol (vector). Reusable for web and future native apps. */
+export const FALLBACK_BRAND_LOGO_URL = "/brand/flamio-symbol.svg";
 
 export function usePublicBranding() {
   const getBranding = useServerFn(getPublicBranding);

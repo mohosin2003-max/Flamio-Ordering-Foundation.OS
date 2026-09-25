@@ -35,7 +35,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3 sm:px-6">
         <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="Flamio home">
-          <BrandLogo showName textClassName="hidden text-xl tracking-tight sm:block" />
+          <BrandLogo variant="icon" showName textClassName="hidden text-xl uppercase tracking-wide sm:block" imageClassName="shadow-none" />
         </Link>
 
         <LocationSelector location={location} onSelect={setLocation} savedLabel={savedLabel} />
