@@ -56,6 +56,7 @@ export interface OwnerOrderDetail extends OwnerOrderRow {
   estimatedTime: string | null;
   latitude: number | null;
   longitude: number | null;
+  distanceM: number | null;
   riderPhone: string | null;
 }
 
@@ -277,7 +278,7 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
     const { data: order, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, channel, fulfillment, customer_name, customer_phone, created_at, address_line, area, landmark, delivery_notes, pickup_note, zone_name, estimated_time, latitude, longitude, payment_method, payment_label, coupon_code, subtotal, discount, delivery_charge, total, rider_id, riders(name, phone), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, created_at, address_line, area, landmark, delivery_notes, pickup_note, zone_name, estimated_time, latitude, longitude, distance_m, payment_method, payment_label, coupon_code, subtotal, discount, delivery_charge, total, rider_id, riders(name, phone), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
       .eq("id", input.orderId)
       .maybeSingle();
@@ -340,6 +341,7 @@ export const ownerGetOrder = createServerFn({ method: "GET" })
       estimatedTime: order.estimated_time,
       latitude: order.latitude == null ? null : Number(order.latitude),
       longitude: order.longitude == null ? null : Number(order.longitude),
+      distanceM: order.distance_m == null ? null : Number(order.distance_m),
       paymentMethod: order.payment_method,
       paymentLabel: order.payment_label,
       couponCode: order.coupon_code,

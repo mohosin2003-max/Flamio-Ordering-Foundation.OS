@@ -1,7 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MapPin, Phone, UserRound } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, MapPin, Navigation, Phone, UserRound } from "lucide-react";
+
+import { MapPicker } from "@/components/map/MapPicker";
+import { formatDistance } from "@/lib/geo";
 
 import { OwnerOrderActions } from "@/components/order/OwnerOrderActions";
 import { PrintReceiptButton } from "@/components/order/PrintReceiptButton";
@@ -97,6 +101,13 @@ function OwnerOrderDetailPage() {
                 </dd>
                 {mapUrl ? <a href={mapUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"><MapPin className="size-3.5" aria-hidden="true" /> Open location</a> : null}
               </div>
+              {details.fulfillment === "delivery" ? (
+                <DeliveryLocation
+                  place={details.area || details.addressLine || fullAddress || null}
+                  distanceM={details.distanceM}
+                  point={details.latitude != null && details.longitude != null ? { lat: details.latitude, lng: details.longitude } : null}
+                />
+              ) : null}
             </dl>
           </section>
 
@@ -150,6 +161,34 @@ function OwnerOrderDetailPage() {
           <OwnerOrderActions order={details} messageOpenInitially={message === true} />
         </CardContent>
       </Card>
+    </div>
+  );
+}
+function DeliveryLocation({ place, distanceM, point }: { place: string | null; distanceM: number | null; point: { lat: number; lng: number } | null }) {
+  const [showMap, setShowMap] = useState(false);
+  return (
+    <div className="col-span-2 min-w-0 space-y-2 rounded-lg border border-border p-3 sm:col-span-4">
+      <dt className="text-xs font-bold uppercase text-muted-foreground">Delivery Location</dt>
+      <dd className="space-y-1 text-sm">
+        <p className="flex items-start gap-1.5 break-words font-semibold"><MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />{place ?? "Address unavailable"}</p>
+        {distanceM != null ? <p className="text-muted-foreground">📏 {formatDistance(distanceM)} from restaurant</p> : null}
+        {!point ? <p className="text-xs text-muted-foreground">No map pin saved for this order.</p> : null}
+      </dd>
+      {point ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setShowMap((v) => !v)}>
+              <MapPin aria-hidden="true" /> {showMap ? "Hide Location" : "View Location"}
+            </Button>
+            <Button asChild size="sm">
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${point.lat},${point.lng}`} target="_blank" rel="noreferrer">
+                <Navigation aria-hidden="true" /> Navigate to Customer
+              </a>
+            </Button>
+          </div>
+          {showMap ? <MapPicker center={point} marker={point} zoom={16} height={220} /> : null}
+        </>
+      ) : null}
     </div>
   );
 }
