@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, MapPin, Pencil, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { LocationFields } from "@/components/address/LocationFields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,15 +202,21 @@ function AddressesPage() {
                 autoComplete="tel"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addr-area">Area (optional)</Label>
-              <Input
-                id="addr-area"
-                value={form.area ?? ""}
-                onChange={(e) => setForm({ ...form, area: e.target.value || null })}
-              />
-            </div>
           </div>
+
+          <LocationFields
+            point={
+              form.latitude !== null && form.longitude !== null
+                ? { lat: form.latitude, lng: form.longitude }
+                : null
+            }
+            onPoint={(p) => setForm((f) => (f ? { ...f, latitude: p.lat, longitude: p.lng } : f))}
+            area={form.area ?? ""}
+            onArea={(v) => setForm((f) => (f ? { ...f, area: v || null } : f))}
+            onGeocoded={(label) =>
+              setForm((f) => (f && !f.addressLine.trim() ? { ...f, addressLine: label } : f))
+            }
+          />
 
           <div className="space-y-2">
             <Label htmlFor="addr-line">Address</Label>

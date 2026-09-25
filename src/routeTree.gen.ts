@@ -34,6 +34,7 @@ import { Route as AuthenticatedAccountNotificationsRouteImport } from './routes/
 import { Route as AuthenticatedAccountOrdersRouteImport } from './routes/_authenticated/account.orders'
 import { Route as AuthenticatedAccountRewardsRouteImport } from './routes/_authenticated/account.rewards'
 import { Route as AuthenticatedAccountVouchersRouteImport } from './routes/_authenticated/account.vouchers'
+import { Route as AuthenticatedOnboardingLocationRouteImport } from './routes/_authenticated/onboarding.location'
 import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner.index'
 import { Route as AuthenticatedOwnerAccountRouteImport } from './routes/_authenticated/owner.account'
 import { Route as AuthenticatedOwnerBannersRouteImport } from './routes/_authenticated/owner.banners'
@@ -203,6 +204,12 @@ const AuthenticatedAccountVouchersRoute =
   AuthenticatedAccountVouchersRouteImport.update({
     id: '/account/vouchers',
     path: '/account/vouchers',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOnboardingLocationRoute =
+  AuthenticatedOnboardingLocationRouteImport.update({
+    id: '/onboarding/location',
+    path: '/onboarding/location',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOwnerIndexRoute = AuthenticatedOwnerIndexRouteImport.update({
@@ -439,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
+  '/onboarding/location': typeof AuthenticatedOnboardingLocationRoute
   '/owner/account': typeof AuthenticatedOwnerAccountRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
@@ -500,6 +508,7 @@ export interface FileRoutesByTo {
   '/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/account/vouchers': typeof AuthenticatedAccountVouchersRoute
+  '/onboarding/location': typeof AuthenticatedOnboardingLocationRoute
   '/owner/account': typeof AuthenticatedOwnerAccountRoute
   '/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
@@ -563,6 +572,7 @@ export interface FileRoutesById {
   '/_authenticated/account/orders': typeof AuthenticatedAccountOrdersRoute
   '/_authenticated/account/rewards': typeof AuthenticatedAccountRewardsRoute
   '/_authenticated/account/vouchers': typeof AuthenticatedAccountVouchersRoute
+  '/_authenticated/onboarding/location': typeof AuthenticatedOnboardingLocationRoute
   '/_authenticated/owner/account': typeof AuthenticatedOwnerAccountRoute
   '/_authenticated/owner/banners': typeof AuthenticatedOwnerBannersRoute
   '/_authenticated/owner/challenges': typeof AuthenticatedOwnerChallengesRoute
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
     | '/account/orders'
     | '/account/rewards'
     | '/account/vouchers'
+    | '/onboarding/location'
     | '/owner/account'
     | '/owner/banners'
     | '/owner/challenges'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/account/orders'
     | '/account/rewards'
     | '/account/vouchers'
+    | '/onboarding/location'
     | '/owner/account'
     | '/owner/banners'
     | '/owner/challenges'
@@ -750,6 +762,7 @@ export interface FileRouteTypes {
     | '/_authenticated/account/orders'
     | '/_authenticated/account/rewards'
     | '/_authenticated/account/vouchers'
+    | '/_authenticated/onboarding/location'
     | '/_authenticated/owner/account'
     | '/_authenticated/owner/banners'
     | '/_authenticated/owner/challenges'
@@ -984,6 +997,13 @@ declare module '@tanstack/react-router' {
       path: '/account/vouchers'
       fullPath: '/account/vouchers'
       preLoaderRoute: typeof AuthenticatedAccountVouchersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/onboarding/location': {
+      id: '/_authenticated/onboarding/location'
+      path: '/onboarding/location'
+      fullPath: '/onboarding/location'
+      preLoaderRoute: typeof AuthenticatedOnboardingLocationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/owner/': {
@@ -1350,6 +1370,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountOrdersRoute: typeof AuthenticatedAccountOrdersRoute
   AuthenticatedAccountRewardsRoute: typeof AuthenticatedAccountRewardsRoute
   AuthenticatedAccountVouchersRoute: typeof AuthenticatedAccountVouchersRoute
+  AuthenticatedOnboardingLocationRoute: typeof AuthenticatedOnboardingLocationRoute
   AuthenticatedAccountIndexRoute: typeof AuthenticatedAccountIndexRoute
   AuthenticatedAccountReviewOrderIdRoute: typeof AuthenticatedAccountReviewOrderIdRoute
 }
@@ -1367,6 +1388,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountOrdersRoute: AuthenticatedAccountOrdersRoute,
   AuthenticatedAccountRewardsRoute: AuthenticatedAccountRewardsRoute,
   AuthenticatedAccountVouchersRoute: AuthenticatedAccountVouchersRoute,
+  AuthenticatedOnboardingLocationRoute: AuthenticatedOnboardingLocationRoute,
   AuthenticatedAccountIndexRoute: AuthenticatedAccountIndexRoute,
   AuthenticatedAccountReviewOrderIdRoute:
     AuthenticatedAccountReviewOrderIdRoute,
