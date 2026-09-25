@@ -85,7 +85,7 @@ function AuthPage() {
       if (Array.isArray(saved) && saved.length === 0) {
         await navigate({
           to: "/onboarding/location",
-          search: back ? ({ redirect: back } as never) : undefined,
+          search: (back ? { redirect: back } : {}) as never,
           replace: true,
         });
         return;
