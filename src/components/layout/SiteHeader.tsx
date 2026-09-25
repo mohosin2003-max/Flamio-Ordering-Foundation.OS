@@ -8,6 +8,7 @@ import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useSavedAddresses } from "@/hooks/use-saved-addresses";
 
 const navItems = [
   { to: "/", label: "Home" },
@@ -21,6 +22,13 @@ export function SiteHeader() {
   const { isAuthenticated, loading } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const { location, setLocation } = useCustomerLocation();
+  const { addresses } = useSavedAddresses();
+  const savedAddress = isAuthenticated
+    ? (addresses.find((a) => a.isDefault) ?? addresses[0] ?? null)
+    : null;
+  const savedLabel = savedAddress
+    ? savedAddress.area?.trim() || savedAddress.label?.trim() || savedAddress.addressLine
+    : null;
 
   return (
     <>
@@ -30,7 +38,7 @@ export function SiteHeader() {
           <BrandLogo showName textClassName="hidden text-xl tracking-tight sm:block" />
         </Link>
 
-        <LocationSelector location={location} onSelect={setLocation} />
+        <LocationSelector location={location} onSelect={setLocation} savedLabel={savedLabel} />
 
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => (

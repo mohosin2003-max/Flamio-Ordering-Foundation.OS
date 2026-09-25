@@ -53,7 +53,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [address, setAddress] = useState("");
   const [otp, setOtp] = useState("");
   const [awaitingPhoneOtp, setAwaitingPhoneOtp] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState(false);
@@ -173,7 +172,6 @@ function AuthPage() {
       full_name: fullName.trim(),
       phone: normalizedPhone,
       contact_email: normalizedEmail,
-      address_line: address.trim(),
     };
 
     // Verification priority — exactly one method per signup:
@@ -407,10 +405,6 @@ function AuthPage() {
                   If you add an email, we send a 6-digit code there and no SMS code to your phone.
                   Leave it empty to verify by phone instead.
                 </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Delivery location (optional)</Label>
-                <Input id="address" value={address} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} />
               </div>
             </>
           )}
