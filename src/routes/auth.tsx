@@ -313,7 +313,7 @@ function AuthPage() {
         {mode === "login" ? "Welcome back" : "Create your account"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        One account works for Flamio customers and staff.
+        Sign in or create your Flamio account.
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
