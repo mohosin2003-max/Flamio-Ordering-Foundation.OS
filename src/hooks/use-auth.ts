@@ -81,6 +81,7 @@ async function loadProfile(userId: string) {
 
 function applySession(next: Session | null) {
   const user = next?.user ?? null;
+  const hadUser = snapshot.user != null;
   const userChanged = (user?.id ?? null) !== (snapshot.user?.id ?? null);
   setSnapshot({
     session: next,
@@ -89,6 +90,9 @@ function applySession(next: Session | null) {
     ...(userChanged ? { profile: null } : {}),
   });
   if (!user) {
+    // Any path that drops a signed-in user (expiry, invalid session, deleted
+    // user) must clear device-remembered data, not just the SIGNED_OUT event.
+    if (hadUser) clearCustomerDeviceData();
     loadedProfileFor = null;
     profileRequest++;
     return;
