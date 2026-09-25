@@ -52,6 +52,7 @@ function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [manualPhone, setManualPhone] = useState("");
 
   async function run(fn: () => Promise<void>) {
     if (busy) return;
@@ -104,9 +105,16 @@ function ForgotPasswordPage() {
     });
   };
 
+  const enteredEmail = identity.includes("@");
+
   const onManualRequest = () =>
     run(async () => {
-      const res = await requestManual({ data: { phone: identity } });
+      // Never send an email address as a phone number.
+      const phone = enteredEmail ? manualPhone.trim() : identity;
+      if (phone.includes("@") || phone.replace(/\D/g, "").length < 6) {
+        return setError("Enter the phone number on your account.");
+      }
+      const res = await requestManual({ data: { phone } });
       if (!res.ok) return setError(res.message);
       setInfo(res.message);
     });
@@ -209,6 +217,13 @@ function ForgotPasswordPage() {
             <p className="text-sm text-muted-foreground">
               Send a recovery request. Our team will call you on your registered number to verify it's you, then give you a one-time recovery code.
             </p>
+            {enteredEmail && !info && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Email recovery isn't available for this address. Enter the phone number on your account to continue.</p>
+                <Label htmlFor="manual-phone">Phone number</Label>
+                <Input id="manual-phone" inputMode="tel" autoComplete="tel" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} placeholder="01712345678" />
+              </div>
+            )}
             {info ? (
               <p className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm">{info}</p>
             ) : (
