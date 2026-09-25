@@ -29,16 +29,19 @@ export function useCustomerLocation() {
 export function LocationSelector({
   location,
   onSelect,
+  savedLabel = null,
 }: {
   location: CustomerLocation | null;
   onSelect: (next: CustomerLocation | null) => void;
+  /** Signed-in customer's saved/default address label; preferred when present. */
+  savedLabel?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<CustomerLocation | null>(null);
 
-  const label = location?.label ?? RESTAURANT_LABEL;
+  const label = savedLabel || location?.label || RESTAURANT_LABEL;
 
   async function useCurrentLocation() {
     setError(null);
