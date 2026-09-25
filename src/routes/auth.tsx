@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPhoneAuthMode } from "@/lib/auth-mode.functions";
 import { signInWithPhonePassword, signUpWithPhonePassword } from "@/lib/auth.functions";
 import { getOwnerAccess } from "@/lib/owner.functions";
+import { listAddresses } from "@/lib/customer.functions";
 import { checkSignupDuplicates } from "@/lib/signup-check.functions";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { claimMyStaffInvite } from "@/lib/staff.functions";
@@ -40,6 +41,7 @@ function AuthPage() {
   const { isAuthenticated, loading } = useAuth();
   const fetchAccess = useServerFn(getOwnerAccess);
   const claimInvite = useServerFn(claimMyStaffInvite);
+  const fetchAddresses = useServerFn(listAddresses);
   const phonePasswordLogin = useServerFn(signInWithPhonePassword);
   const phonePasswordSignUp = useServerFn(signUpWithPhonePassword);
   const readAuthMode = useServerFn(getPhoneAuthMode);
@@ -77,12 +79,26 @@ function AuthPage() {
       // Customer routing remains available if no invitation exists.
     }
     const back = safeRedirect();
+    // One-time delivery location setup: only for customers with no saved address.
+    try {
+      const saved = await fetchAddresses();
+      if (Array.isArray(saved) && saved.length === 0) {
+        await navigate({
+          to: "/onboarding/location",
+          search: back ? ({ redirect: back } as never) : undefined,
+          replace: true,
+        });
+        return;
+      }
+    } catch {
+      // If the check fails, continue normally rather than blocking sign-in.
+    }
     if (back) {
       window.location.replace(back);
       return;
     }
     await navigate({ to: "/account/orders", replace: true });
-  }, [claimInvite, fetchAccess, navigate]);
+  }, [claimInvite, fetchAccess, fetchAddresses, navigate]);
 
   useEffect(() => {
     if (!loading && isAuthenticated && !awaitingPhoneOtp) void goToLanding();
