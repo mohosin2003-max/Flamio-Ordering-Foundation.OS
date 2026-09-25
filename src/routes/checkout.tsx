@@ -577,7 +577,11 @@ function CheckoutPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-2">
                     <span className="text-xs text-muted-foreground">
                       {point
-                        ? `Selected: ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${
+                        ? `📍 ${
+                            (form.area ?? "").trim() ||
+                            form.addressLine.trim() ||
+                            `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`
+                          }${
                             distanceM !== null ? ` · ${formatDistance(distanceM)} away` : ""
                           }`
                         : "No delivery location selected yet."}
