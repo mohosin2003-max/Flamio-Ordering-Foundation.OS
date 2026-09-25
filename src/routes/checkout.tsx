@@ -100,6 +100,8 @@ function CheckoutPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [form, setForm] = useState<CustomerAddress>(() => emptyAddress());
   const [addressTouched, setAddressTouched] = useState(false);
 
@@ -293,6 +295,10 @@ function CheckoutPage() {
           }
           if (isDelivery && form.addressLine.trim().length < 5) {
             fail("Please enter your delivery address.");
+            return;
+          }
+          if (isDelivery && !(form.area ?? "").trim()) {
+            fail("Please enter your area.");
             return;
           }
           if (lines.length === 0) {
@@ -567,71 +573,109 @@ function CheckoutPage() {
             {isDelivery ? (
               <>
                 <div className="space-y-2">
-                  <Label>Delivery location on the map</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Tap the map or drag the pin to where you want your order delivered.
-                  </p>
-                  <MapPicker
-                    center={
-                      point ??
-                      (origin ? { lat: origin.latitude, lng: origin.longitude } : MAP_FALLBACK)
-                    }
-                    marker={point}
-                    origin={origin ? { lat: origin.latitude, lng: origin.longitude } : null}
-                    height={280}
-                    zoom={point || origin ? 15 : 12}
-                    onPick={(lat, lng) => setPoint({ lat, lng })}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={locating}
-                      onClick={() => {
-                        if (!navigator.geolocation) {
-                          toast.error("Your device can't share its location.");
-                          return;
-                        }
-                        setLocating(true);
-                        navigator.geolocation.getCurrentPosition(
-                          async (pos) => {
-                            const lat = pos.coords.latitude;
-                            const lng = pos.coords.longitude;
-                            setPoint({ lat, lng });
-                            try {
-                              const label = await reverseGeocode(lat, lng);
-                              if (label) {
-                                setForm((current) =>
-                                  current.addressLine.trim()
-                                    ? current
-                                    : { ...current, addressLine: label },
-                                );
-                              }
-                            } catch {
-                              /* the map pin is enough on its own */
-                            }
-                            setLocating(false);
-                          },
-                          () => {
-                            setLocating(false);
-                            toast.error(
-                              "We couldn't get your location. Please pick it on the map instead.",
-                            );
-                          },
-                        );
-                      }}
-                    >
-                      {locating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Use my current location
-                    </Button>
-                    {point ? (
-                      <span className="text-xs text-muted-foreground">
-                        Selected: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
-                        {distanceM !== null ? ` · ${formatDistance(distanceM)} away` : ""}
-                      </span>
+                  <Label>Delivery location</Label>
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-secondary/40 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">
+                      {point
+                        ? `Selected: ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}${
+                            distanceM !== null ? ` · ${formatDistance(distanceM)} away` : ""
+                          }`
+                        : "No delivery location selected yet."}
+                    </span>
+                    {!editingLocation ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingLocation(true)}
+                      >
+                        Edit Location
+                      </Button>
                     ) : null}
                   </div>
+                  {editingLocation ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={locating}
+                        onClick={() => {
+                          if (!navigator.geolocation) {
+                            toast.error("Your device can't share its location.");
+                            return;
+                          }
+                          setLocating(true);
+                          navigator.geolocation.getCurrentPosition(
+                            async (pos) => {
+                              const lat = pos.coords.latitude;
+                              const lng = pos.coords.longitude;
+                              setPoint({ lat, lng });
+                              try {
+                                const label = await reverseGeocode(lat, lng);
+                                if (label) {
+                                  setForm((current) =>
+                                    current.addressLine.trim()
+                                      ? current
+                                      : { ...current, addressLine: label },
+                                  );
+                                }
+                              } catch {
+                                /* the map pin is enough on its own */
+                              }
+                              setLocating(false);
+                            },
+                            () => {
+                              setLocating(false);
+                              toast.error(
+                                "We couldn't get your location. Please pick it on the map instead.",
+                              );
+                            },
+                          );
+                        }}
+                      >
+                        {locating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Use Current Location
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={showMap ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => setShowMap((v) => !v)}
+                      >
+                        Choose on Map
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingLocation(false);
+                          setShowMap(false);
+                        }}
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  ) : null}
+                  {editingLocation && showMap ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        Tap the map or drag the pin to where you want your order delivered.
+                      </p>
+                      <MapPicker
+                        center={
+                          point ??
+                          (origin ? { lat: origin.latitude, lng: origin.longitude } : MAP_FALLBACK)
+                        }
+                        marker={point}
+                        origin={origin ? { lat: origin.latitude, lng: origin.longitude } : null}
+                        height={280}
+                        zoom={point || origin ? 15 : 12}
+                        onPick={(lat, lng) => setPoint({ lat, lng })}
+                      />
+                    </>
+                  ) : null}
                   {radiusMode && outOfRange ? (
                     <p
                       role="alert"
@@ -683,9 +727,10 @@ function CheckoutPage() {
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="area">Area (optional)</Label>
+                    <Label htmlFor="area">Area</Label>
                     <Input
                       id="area"
+                      required
                       value={form.area ?? ""}
                       onChange={(e) => setForm({ ...form, area: e.target.value || null })}
                     />
