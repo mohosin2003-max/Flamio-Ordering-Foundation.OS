@@ -19,6 +19,7 @@ import { formatBDT } from "@/lib/format";
 import { isOnlineChannel } from "@/lib/order-flow";
 import { statusLabel } from "@/lib/order-status";
 import { ownerListOrders } from "@/lib/owner.functions";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/owner/orders/")({
   head: () => ({
@@ -123,7 +124,16 @@ function OwnerOrders() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-display text-lg font-black">{formatBDT(order.total)}</p>
-                    <Badge className="mt-1">{statusLabel(order.status, order.fulfillment)}</Badge>
+                    <Badge
+                      variant={order.status === "cancelled" ? "destructive" : order.status === "placed" ? "default" : "secondary"}
+                      className={cn(
+                        "mt-1",
+                        order.status === "completed" &&
+                          "border-success/40 bg-success text-success-foreground hover:bg-success/90",
+                      )}
+                    >
+                      {statusLabel(order.status, order.fulfillment)}
+                    </Badge>
                   </div>
                 </div>
 
