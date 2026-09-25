@@ -158,12 +158,97 @@ function OwnerOrderDetailPage() {
             </div>
           ) : null}
 
+          {details.fulfillment === "delivery" ? (
+            <ShareWithRider
+              riderName={details.riderName}
+              riderPhone={details.riderPhone}
+              message={buildRiderMessage({
+                code: details.code,
+                customerName: details.customerName,
+                customerPhone: details.customerPhone,
+                area: details.area,
+                address: details.addressLine,
+                landmark: details.landmark,
+                note: details.deliveryNotes,
+                distanceM: details.distanceM,
+                lat: details.latitude,
+                lng: details.longitude,
+              })}
+            />
+          ) : null}
+
           <OwnerOrderActions order={details} messageOpenInitially={message === true} />
         </CardContent>
       </Card>
     </div>
   );
 }
+/** Bangladesh-aware normalization for wa.me (digits only, 880 prefix). */
+function toWhatsAppNumber(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let d = raw.replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (/^01\d{9}$/.test(d)) d = `88${d}`;
+  else if (/^1\d{9}$/.test(d)) d = `880${d}`;
+  if (/^8801\d{9}$/.test(d)) return d;
+  return d.length >= 10 && d.length <= 15 && !d.startsWith("0") ? d : null;
+}
+
+function buildRiderMessage(o: {
+  code: string; customerName: string; customerPhone: string; area: string | null; address: string | null;
+  landmark: string | null; note: string | null; distanceM: number | null; lat: number | null; lng: number | null;
+}): string {
+  const lines = ["🛵 FLAMIO DELIVERY", "", `📦 Order: #${o.code.replace(/^#/, "")}`, `👤 Customer: ${o.customerName}`, `📞 Customer Phone: ${o.customerPhone}`, ""];
+  if (o.area) lines.push(`📍 Area: ${o.area}`);
+  if (o.address) lines.push(`🏠 Address: ${o.address}`);
+  const extra: string[] = [];
+  if (o.landmark) extra.push(`📝 Landmark: ${o.landmark}`);
+  if (o.note) extra.push(`📋 Delivery Note: ${o.note}`);
+  if (extra.length) lines.push("", ...extra);
+  if (o.distanceM != null) lines.push("", `📏 Distance: ${formatDistance(o.distanceM)}`);
+  lines.push("");
+  if (o.lat != null && o.lng != null) {
+    lines.push("🗺️ Delivery Location:", `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}`, "", "Please deliver to the exact location shown on the map.");
+  } else {
+    lines.push("🗺️ Delivery Location: No exact map pin available — please use the address above.");
+  }
+  return lines.join("\n");
+}
+
+function ShareWithRider({ riderName, riderPhone, message }: { riderName: string | null; riderPhone: string | null; message: string }) {
+  const [typed, setTyped] = useState("");
+  const number = toWhatsAppNumber(riderPhone) ?? toWhatsAppNumber(typed);
+  return (
+    <section aria-labelledby="share-rider-heading" className="space-y-2 rounded-lg border border-border p-3">
+      <h2 id="share-rider-heading" className="text-xs font-bold uppercase text-muted-foreground">Share Delivery with Rider</h2>
+      <dl className="grid grid-cols-2 gap-3 text-sm">
+        <div className="min-w-0"><dt className="text-xs text-muted-foreground">Rider</dt><dd className="break-words font-semibold">{riderName ?? "Not assigned"}</dd></div>
+        {riderPhone ? <div className="min-w-0"><dt className="text-xs text-muted-foreground">Rider WhatsApp</dt><dd className="break-words font-semibold">{riderPhone}</dd></div> : null}
+      </dl>
+      {!toWhatsAppNumber(riderPhone) ? (
+        <label className="block space-y-1 text-sm">
+          <span className="text-xs text-muted-foreground">Rider WhatsApp Number</span>
+          <input
+            type="tel"
+            inputMode="tel"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value.slice(0, 20))}
+            placeholder="01XXXXXXXXX"
+            className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </label>
+      ) : null}
+      {number ? (
+        <Button asChild className="w-full sm:w-auto">
+          <a href={`https://wa.me/${number}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Share Delivery via WhatsApp</a>
+        </Button>
+      ) : (
+        <Button type="button" className="w-full sm:w-auto" disabled>Share Delivery via WhatsApp</Button>
+      )}
+    </section>
+  );
+}
+
 function DeliveryLocation({ place, distanceM, point }: { place: string | null; distanceM: number | null; point: { lat: number; lng: number } | null }) {
   const [showMap, setShowMap] = useState(false);
   return (
