@@ -56,7 +56,7 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { lines, subtotal, isHydrated, clear } = useCart();
-  const { profile } = useAuth();
+  const { profile, isAuthenticated } = useAuth();
   const { isStaffOnly } = useDashboardAccess();
 
   const { data } = useSuspenseQuery(deliveryQueryOptions());
@@ -104,6 +104,36 @@ function CheckoutPage() {
   const [showMap, setShowMap] = useState(false);
   const [form, setForm] = useState<CustomerAddress>(() => emptyAddress());
   const [addressTouched, setAddressTouched] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+
+  /** Saves the edited location right away for signed-in customers. */
+  async function handleSaveLocation() {
+    if (isAuthenticated) {
+      setSavingLocation(true);
+      try {
+        const savedAddress = await persistSavedAddress({
+          ...form,
+          zoneId: radiusMode ? (zone?.id ?? null) : zoneId,
+          latitude: point?.lat ?? null,
+          longitude: point?.lng ?? null,
+          isDefault:
+            saved.length === 0 || Boolean(saved.find((a) => a.id === form.id)?.isDefault),
+        });
+        if (savedAddress) {
+          setForm((current) => ({ ...current, id: savedAddress.id }));
+          setSelectedId(savedAddress.id);
+        }
+        toast.success("Location saved");
+      } catch {
+        toast.error("We couldn't save this location. Check your name, phone and address.");
+        setSavingLocation(false);
+        return;
+      }
+      setSavingLocation(false);
+    }
+    setEditingLocation(false);
+    setShowMap(false);
+  }
 
   // Preselect the default (or first) saved address once, without clobbering typing.
   useEffect(() => {
@@ -311,7 +341,7 @@ function CheckoutPage() {
             zoneId: radiusMode ? (zone?.id ?? null) : zoneId,
             latitude: isDelivery ? (point?.lat ?? null) : null,
             longitude: isDelivery ? (point?.lng ?? null) : null,
-            isDefault: saved.length === 0,
+            isDefault: saved.length === 0 || Boolean(saved.find((a) => a.id === form.id)?.isDefault),
           };
           if (isDelivery) {
             try {
@@ -363,27 +393,7 @@ function CheckoutPage() {
               },
             });
 
-            // Local copy so the order page still works offline.
-            const order: PlacedOrder = {
-              id: created.id,
-              code: created.code,
-              createdAt: created.createdAt,
-              fulfillment,
-              paymentMethod: method,
-              paymentLabel:
-                paymentMethods.find((m) => m.id === method)?.label ?? "Cash on Delivery",
-              items: lines,
-              subtotal,
-              discount,
-              deliveryCharge: quote.charge,
-              total: grandTotal,
-              estimatedTime: quote.estimatedTime,
-              zoneName: isDelivery ? (zone?.name ?? null) : null,
-              address: record,
-              pickupNote: settings.pickupNote,
-              status: "placed",
-            };
-            saveOrder(order);
+            // Orders live in the database only — nothing private is kept on the device.
 
             setPlaced(true);
             clear();
@@ -651,14 +661,12 @@ function CheckoutPage() {
                       </Button>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="default"
                         size="sm"
-                        onClick={() => {
-                          setEditingLocation(false);
-                          setShowMap(false);
-                        }}
+                        disabled={savingLocation}
+                        onClick={() => void handleSaveLocation()}
                       >
-                        Done
+                        {savingLocation ? "Saving…" : "Save Location"}
                       </Button>
                     </div>
                   ) : null}

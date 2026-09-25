@@ -4,9 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
+  clearDeviceAddresses,
   deleteAddress as deleteLocal,
-  loadAddresses,
-  saveAddresses,
   upsertAddress as upsertLocal,
 } from "@/lib/addresses";
 import {
@@ -37,8 +36,11 @@ export function useSavedAddresses() {
   const [local, setLocal] = useState<CustomerAddress[]>([]);
 
   useEffect(() => {
+    // Guests are never remembered on the device; purge anything left over
+    // from older versions so the next person cannot see it.
     if (isAuthenticated) return;
-    setLocal(loadAddresses());
+    clearDeviceAddresses();
+    setLocal([]);
   }, [isAuthenticated]);
 
   const remote = useQuery({
@@ -52,14 +54,12 @@ export function useSavedAddresses() {
   }, [queryClient]);
 
   const saveMutation = useMutation({
-    mutationFn: async (address: CustomerAddress) => {
+    mutationFn: async (address: CustomerAddress): Promise<CustomerAddress | null> => {
       if (!isAuthenticated) {
-        const next = upsertLocal(local, address);
-        setLocal(next);
-        saveAddresses(next);
-        return;
+        setLocal(upsertLocal(local, address));
+        return null;
       }
-      await persistAddress({
+      const result = await persistAddress({
         data: {
           id: UUID_RE.test(address.id) ? address.id : null,
           label: address.label,
@@ -76,15 +76,14 @@ export function useSavedAddresses() {
         },
       });
       invalidate();
+      return (result ?? null) as CustomerAddress | null;
     },
   });
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!isAuthenticated) {
-        const next = deleteLocal(local, id);
-        setLocal(next);
-        saveAddresses(next);
+        setLocal(deleteLocal(local, id));
         return;
       }
       await dropAddress({ data: { id } });
@@ -95,9 +94,7 @@ export function useSavedAddresses() {
   const defaultMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!isAuthenticated) {
-        const next = local.map((a) => ({ ...a, isDefault: a.id === id }));
-        setLocal(next);
-        saveAddresses(next);
+        setLocal(local.map((a) => ({ ...a, isDefault: a.id === id })));
         return;
       }
       await makeDefault({ data: { id } });

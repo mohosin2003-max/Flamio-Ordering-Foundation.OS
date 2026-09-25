@@ -41,6 +41,8 @@ function StaffAccountPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => () => { if (photoPreview) URL.revokeObjectURL(photoPreview); }, [photoPreview]);
@@ -73,7 +75,6 @@ function StaffAccountPage() {
   }, [profile?.email, profile?.fullName]);
   const displayName = profile?.fullName?.trim() || (access.isManager ? "Flamio owner" : "Flamio staff");
   const initials = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  const assigned = Object.entries(access.data?.grants ?? {}).filter(([, level]) => level === "view" || level === "manage");
 
   const links: { to: "/owner/my-account" | "/owner/staff" | "/owner/staff-accounts" | "/owner/finance" | "/owner/settings"; label: string; detail: string; icon: typeof UserRound; show: boolean }[] = [
     // Owners use Owner Finance instead of the staff "My salary" concept.
@@ -110,8 +111,11 @@ function StaffAccountPage() {
 
       <Card>
         <CardContent className="space-y-4 p-4 sm:p-5">
-          <h2 className="font-display text-lg font-black">Profile</h2>
-          <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-black">Profile</h2>
+            <Button type="button" size="sm" variant="outline" aria-expanded={editingProfile} onClick={() => setEditingProfile((open) => !open)}>{editingProfile ? "Close" : "Edit Profile"}</Button>
+          </div>
+          {editingProfile ? <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
             event.preventDefault();
             if (!profile || name.trim().length < 2) {
               toast.error("Enter your full name.");
@@ -129,20 +133,24 @@ function StaffAccountPage() {
               return;
             }
             refreshProfile();
+            setEditingProfile(false);
             toast.success("Profile saved");
           }}>
             <div className="space-y-1.5"><Label htmlFor="staff-profile-name">Name</Label><Input id="staff-profile-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" /></div>
             <div className="space-y-1.5"><Label htmlFor="staff-profile-email">Email</Label><Input id="staff-profile-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="staff-profile-phone">Phone</Label><Input id="staff-profile-phone" value={profile?.phone ? formatPhone(profile.phone) : "Not added"} readOnly /><p className="text-xs text-muted-foreground">Your verified login phone is managed by the owner.</p></div>
             <Button type="submit" className="sm:col-span-2" disabled={savingProfile}>{savingProfile ? "Saving…" : "Save profile"}</Button>
-          </form>
+          </form> : null}
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="space-y-4 p-4 sm:p-5">
-          <h2 className="flex items-center gap-2 font-display text-lg font-black"><KeyRound className="size-5 text-primary" /> Change password</h2>
-          <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-display text-lg font-black"><KeyRound className="size-5 text-primary" /> Password</h2>
+            <Button type="button" size="sm" variant="outline" aria-expanded={showPassword} onClick={() => setShowPassword((open) => !open)}>{showPassword ? "Close" : "Change Password"}</Button>
+          </div>
+          {showPassword ? <form className="grid gap-3 sm:grid-cols-2" onSubmit={async (event) => {
             event.preventDefault();
             if (!currentPassword) {
               toast.error("Enter your current password.");
@@ -161,22 +169,18 @@ function StaffAccountPage() {
             }
             setCurrentPassword("");
             setNewPassword("");
+            setShowPassword(false);
             toast.success("Password changed");
           }}>
             <div className="space-y-1.5"><Label htmlFor="staff-current-password">Current password</Label><Input id="staff-current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></div>
             <div className="space-y-1.5"><Label htmlFor="staff-new-password">New password</Label><Input id="staff-new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></div>
-            <Button type="submit" className="sm:col-span-2" disabled={savingPassword}>{savingPassword ? "Changing…" : "Change password"}</Button>
-          </form>
+            <Button type="submit" className="sm:col-span-2" disabled={savingPassword}>{savingPassword ? "Changing…" : "Save new password"}</Button>
+          </form> : null}
         </CardContent>
       </Card>
 
       {!access.isManager ? (
-        <section>
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold"><ShieldCheck className="size-4 text-primary" /> Assigned access</h2>
-          <div className="flex flex-wrap gap-2">
-            {assigned.length ? assigned.map(([permission, level]) => <span key={permission} className="rounded-md border border-border bg-secondary px-2.5 py-1.5 text-xs font-medium capitalize">{permission.replaceAll("_", " ")} · {level === "view" ? "View only" : "Full access"}</span>) : <p className="text-sm text-muted-foreground">No work sections are assigned.</p>}
-          </div>
-        </section>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground"><ShieldCheck className="size-4 text-primary" /> Your access is managed by the owner.</p>
       ) : null}
 
       <section className="grid gap-2 sm:grid-cols-2">

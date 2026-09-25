@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { SIGNED_OUT_EVENT } from "@/lib/device-privacy";
 import type { CartLine, Product, ProductVariant } from "@/types/menu";
 
 const STORAGE_KEY = "flamio.cart.v1";
@@ -54,6 +55,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setLines(readStorage());
     setIsHydrated(true);
+    const onSignedOut = () => setLines([]);
+    window.addEventListener(SIGNED_OUT_EVENT, onSignedOut);
+    return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut);
   }, []);
 
   useEffect(() => {

@@ -28,7 +28,7 @@ export function useDashboardAccess(enabled = true) {
     },
     enabled: enabled && isAuthenticated && !loading,
     retry: false,
-    staleTime: 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 
   const data = query.data;

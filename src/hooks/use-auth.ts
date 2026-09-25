@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
+import { clearCustomerDeviceData } from "@/lib/device-privacy";
 
 export type CustomerProfile = {
   id: string;
@@ -13,91 +14,123 @@ export type CustomerProfile = {
   avatarUrl: string | null;
 };
 
+type AuthSnapshot = {
+  session: Session | null;
+  user: User | null;
+  profile: CustomerProfile | null;
+  loading: boolean;
+};
+
 /**
- * Single source of truth for the customer session. Registers one
- * onAuthStateChange listener and keeps the linked profile in sync.
+ * Single shared source of truth for the customer session. One auth listener,
+ * one session read and one profile/photo load for the whole app — every
+ * component calling useAuth() reads the same state.
  */
-export function useAuth() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<CustomerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profileVersion, setProfileVersion] = useState(0);
+const SERVER_SNAPSHOT: AuthSnapshot = { session: null, user: null, profile: null, loading: true };
+let snapshot: AuthSnapshot = SERVER_SNAPSHOT;
+const listeners = new Set<() => void>();
+let started = false;
+let profileRequest = 0;
+let loadedProfileFor: string | null = null;
 
-  useEffect(() => {
-    let active = true;
+function setSnapshot(patch: Partial<AuthSnapshot>) {
+  snapshot = { ...snapshot, ...patch };
+  listeners.forEach((l) => l());
+}
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      if (!active) return;
-      setSession(next);
-      setUser(next?.user ?? null);
-      setLoading(false);
-    });
+async function loadProfile(userId: string) {
+  const request = ++profileRequest;
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, email, address_line, avatar_path")
+    .eq("id", userId)
+    .maybeSingle();
+  if (request !== profileRequest) return;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+  let avatarUrl: string | null = null;
+  if (data?.avatar_path) {
+    const { data: signed } = await supabase.storage
+      .from("profile-photos")
+      .createSignedUrl(data.avatar_path, 60 * 60);
+    if (request !== profileRequest) return;
+    avatarUrl = signed?.signedUrl ?? null;
+  }
 
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
-    let active = true;
-    void supabase
-      .from("profiles")
-      .select("id, full_name, phone, email, address_line, avatar_path")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (!active) return;
-
-        let avatarUrl: string | null = null;
-        if (data?.avatar_path) {
-          const { data: signed } = await supabase.storage
-            .from("profile-photos")
-            .createSignedUrl(data.avatar_path, 60 * 60);
-          if (!active) return;
-          avatarUrl = signed?.signedUrl ?? null;
+  setSnapshot({
+    profile: data
+      ? {
+          id: data.id,
+          fullName: data.full_name,
+          phone: data.phone,
+          email: data.email,
+          addressLine: data.address_line,
+          avatarPath: data.avatar_path,
+          avatarUrl,
         }
+      : {
+          id: userId,
+          fullName: null,
+          phone: null,
+          email: null,
+          addressLine: null,
+          avatarPath: null,
+          avatarUrl: null,
+        },
+  });
+}
 
-        setProfile(
-          data
-            ? {
-                id: data.id,
-                fullName: data.full_name,
-                phone: data.phone,
-                email: data.email,
-                addressLine: data.address_line,
-                avatarPath: data.avatar_path,
-                avatarUrl,
-              }
-            : {
-                id: user.id,
-                fullName: null,
-                phone: null,
-                email: null,
-                addressLine: null,
-                avatarPath: null,
-                avatarUrl: null,
-              },
-        );
-      });
-    return () => {
-      active = false;
-    };
-  }, [user?.id, profileVersion]);
+function applySession(next: Session | null) {
+  const user = next?.user ?? null;
+  const userChanged = (user?.id ?? null) !== (snapshot.user?.id ?? null);
+  setSnapshot({
+    session: next,
+    user,
+    loading: false,
+    ...(userChanged ? { profile: null } : {}),
+  });
+  if (!user) {
+    loadedProfileFor = null;
+    profileRequest++;
+    return;
+  }
+  if (loadedProfileFor !== user.id) {
+    loadedProfileFor = user.id;
+    void loadProfile(user.id);
+  }
+}
 
-  const refreshProfile = useCallback(() => setProfileVersion((v) => v + 1), []);
+function start() {
+  if (started || typeof window === "undefined") return;
+  started = true;
 
-  return { session, user, profile, loading, refreshProfile, isAuthenticated: Boolean(user) };
+  supabase.auth.onAuthStateChange((event, next) => {
+    // Covers every sign-out path: logout buttons, session expiry and the
+    // foreign-token cleanup in the auth attacher.
+    if (event === "SIGNED_OUT") clearCustomerDeviceData();
+    applySession(next);
+  });
+
+  void supabase.auth.getSession().then(({ data }) => applySession(data.session));
+}
+
+function subscribe(listener: () => void) {
+  start();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function refreshProfile() {
+  const id = snapshot.user?.id;
+  if (id) void loadProfile(id);
+}
+
+export function useAuth() {
+  const state = useSyncExternalStore(
+    subscribe,
+    () => snapshot,
+    () => SERVER_SNAPSHOT,
+  );
+  return { ...state, refreshProfile, isAuthenticated: Boolean(state.user) };
 }
