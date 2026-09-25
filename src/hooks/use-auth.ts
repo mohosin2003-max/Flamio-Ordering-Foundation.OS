@@ -102,7 +102,6 @@ function applySession(next: Session | null) {
 function start() {
   if (started || typeof window === "undefined") return;
   started = true;
-  snapshot = { ...SERVER_SNAPSHOT };
 
   supabase.auth.onAuthStateChange((event, next) => {
     // Covers every sign-out path: logout buttons, session expiry and the

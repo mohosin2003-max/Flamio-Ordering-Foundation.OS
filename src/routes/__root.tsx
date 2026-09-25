@@ -162,7 +162,7 @@ function AppExperience() {
     }
   }, [access.isLoading, customerSurface, isAuthenticated, loading, navigate, staffAccount]);
 
-  if (!workspace && isAuthenticated && (access.isLoading || (staffAccount && customerSurface))) {
+  if (!workspace && isAuthenticated && customerSurface && (access.isLoading || staffAccount)) {
     return <div className="min-h-screen bg-background" />;
   }
 

@@ -5,9 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    // Local session read (no network round-trip per navigation). Every
+    // protected server function still re-validates the token server-side.
+    const { data } = await supabase.auth.getSession();
+    const user = data.session?.user;
+    if (!user) throw redirect({ to: "/auth" });
+    return { user };
   },
   component: () => <Outlet />,
 });
