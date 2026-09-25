@@ -66,6 +66,24 @@ function generateCode(): string {
 
 type Account = { id: string; phone: string | null; email: string | null; authPhone: string | null };
 
+/**
+ * Read-only fallback: finds the auth user whose login email matches exactly.
+ * Used only when no profile row carries that email. Bounded page scan.
+ */
+async function findAuthUserIdByEmail(email: string): Promise<string | null> {
+  if (email.endsWith(PHONE_AUTH_DOMAIN)) return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const perPage = 1000;
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error || !data) return null;
+    const match = data.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (match) return match.id;
+    if (data.users.length < perPage) return null;
+  }
+  return null;
+}
+
 /** Resolves an account by phone or email. Returns null when there is no single match. */
 async function findAccount(identity: string): Promise<Account | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -76,14 +94,28 @@ async function findAccount(identity: string): Promise<Account | null> {
     .select("id, phone")
     .eq(isEmail ? "email" : "phone", value)
     .limit(2);
-  if (!profiles || profiles.length !== 1 || !profiles[0]) return null;
-  const { data } = await supabaseAdmin.auth.admin.getUserById(profiles[0].id);
+  let userId: string | null = null;
+  let profilePhone: string | null = null;
+  if (profiles && profiles.length === 1 && profiles[0]) {
+    userId = profiles[0].id;
+    profilePhone = profiles[0].phone;
+  } else if (isEmail && (!profiles || profiles.length === 0)) {
+    userId = await findAuthUserIdByEmail(value);
+    if (userId) {
+      const { data: p } = await supabaseAdmin.from("profiles").select("phone").eq("id", userId).maybeSingle();
+      profilePhone = p?.phone ?? null;
+    }
+  }
+  if (!userId) return null;
+  const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
   const user = data.user;
   if (!user) return null;
+  // When the account was found by email, that email must be its real login email.
+  if (isEmail && (user.email ?? "").toLowerCase() !== value) return null;
   const email = user.email && !user.email.endsWith(PHONE_AUTH_DOMAIN) ? user.email : null;
   return {
     id: user.id,
-    phone: profiles[0].phone ? normalizePhone(profiles[0].phone) : null,
+    phone: profilePhone ? normalizePhone(profilePhone) : null,
     email,
     authPhone: user.phone || null,
   };
