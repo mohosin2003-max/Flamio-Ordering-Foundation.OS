@@ -24,6 +24,14 @@ export function saveAddresses(addresses: CustomerAddress[]): void {
   }
 }
 
+export function clearDeviceAddresses(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function upsertAddress(
   addresses: CustomerAddress[],
   address: CustomerAddress,
