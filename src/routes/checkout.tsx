@@ -28,6 +28,7 @@ import { formatBDT } from "@/lib/format";
 import { checkCoupon } from "@/lib/coupons.functions";
 import { saveOrder, type PlacedOrder } from "@/lib/orders";
 import { placeOrder } from "@/lib/orders.functions";
+import { clearPendingCheckout, readPendingCheckout, savePendingCheckout } from "@/lib/pending-checkout";
 import { cn } from "@/lib/utils";
 import type { CustomerAddress, FulfillmentType } from "@/types/menu";
 
@@ -134,6 +135,22 @@ function CheckoutPage() {
     setEditingLocation(false);
     setShowMap(false);
   }
+
+  // Returning from sign-in/sign-up: restore the exact Checkout the customer
+  // prepared. Marking it as touched stops saved/default addresses replacing it.
+  useEffect(() => {
+    const pending = readPendingCheckout();
+    if (!pending) return;
+    clearPendingCheckout();
+    setForm(pending.form);
+    setPoint(pending.point);
+    setFulfillment(pending.fulfillment);
+    setMethod(pending.method as typeof method);
+    setZoneId(pending.zoneId);
+    setSelectedId(null);
+    setAddressTouched(true);
+    if (pending.couponCode) setCouponInput(pending.couponCode);
+  }, []);
 
   // Preselect the default (or first) saved address once, without clobbering typing.
   useEffect(() => {
@@ -333,6 +350,25 @@ function CheckoutPage() {
           }
           if (lines.length === 0) {
             fail("Your cart is empty.");
+            return;
+          }
+
+          if (!isAuthenticated) {
+            // No order yet: keep this Checkout for the current tab only and
+            // ask the guest to sign in or create an account first.
+            savePendingCheckout({
+              form,
+              point,
+              fulfillment,
+              method,
+              zoneId,
+              couponCode: coupon?.code ?? null,
+            });
+            setSubmitting(false);
+            await navigate({
+              to: "/auth",
+              search: { redirect: "/checkout", from: "checkout" } as never,
+            });
             return;
           }
 
