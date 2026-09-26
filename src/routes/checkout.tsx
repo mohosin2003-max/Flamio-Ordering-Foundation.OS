@@ -336,6 +336,25 @@ function CheckoutPage() {
             return;
           }
 
+          if (!isAuthenticated) {
+            // No order yet: keep this Checkout for the current tab only and
+            // ask the guest to sign in or create an account first.
+            savePendingCheckout({
+              form,
+              point,
+              fulfillment,
+              method,
+              zoneId,
+              couponCode: coupon?.code ?? null,
+            });
+            setSubmitting(false);
+            await navigate({
+              to: "/auth",
+              search: { redirect: "/checkout", from: "checkout" } as never,
+            });
+            return;
+          }
+
           const record: CustomerAddress = {
             ...form,
             zoneId: radiusMode ? (zone?.id ?? null) : zoneId,
