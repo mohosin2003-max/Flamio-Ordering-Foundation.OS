@@ -146,7 +146,10 @@ export const placeOrder = createServerFn({ method: "POST" })
       const { assertPermission } = await import("@/lib/owner.server");
       await assertPermission(userId, "pos");
       channel = "counter";
-    } else if (userId) {
+    } else if (!userId) {
+      // Online customer orders require a signed-in account (session verified server-side).
+      throw new Error("Please sign in or create an account to place your order.");
+    } else {
       // Staff accounts use the counter till, not the customer cart.
       const { getAccessProfile } = await import("@/lib/owner.server");
       const access = await getAccessProfile(userId);

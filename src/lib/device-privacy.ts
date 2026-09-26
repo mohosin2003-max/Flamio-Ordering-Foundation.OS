@@ -22,6 +22,11 @@ export function clearCustomerDeviceData(): void {
     }
   }
   try {
+    window.sessionStorage.removeItem("flamio.pending-checkout.v1");
+  } catch {
+    /* storage unavailable */
+  }
+  try {
     window.dispatchEvent(new Event(SIGNED_OUT_EVENT));
   } catch {
     /* ignore */
