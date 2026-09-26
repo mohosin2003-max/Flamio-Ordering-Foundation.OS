@@ -136,6 +136,23 @@ function CheckoutPage() {
     setShowMap(false);
   }
 
+  /**
+   * Below the delivery minimum: go back to the Menu keeping the cart (it lives
+   * in the cart store) and this exact Checkout (same tab-only temporary state
+   * used for sign-in, restored below on return). No order is created.
+   */
+  function handleAddMoreItems() {
+    savePendingCheckout({
+      form,
+      point,
+      fulfillment,
+      method,
+      zoneId,
+      couponCode: coupon?.code ?? null,
+    });
+    void navigate({ to: "/menu", search: {} as never });
+  }
+
   // Returning from sign-in/sign-up: restore the exact Checkout the customer
   // prepared. Marking it as touched stops saved/default addresses replacing it.
   useEffect(() => {
@@ -948,9 +965,9 @@ function CheckoutPage() {
             </div>
           </dl>
 
-          {isDelivery && quote.amountToFreeDelivery !== null ? (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Add {formatBDT(quote.amountToFreeDelivery)} more for free delivery.
+          {isDelivery && !outOfRange && quote.meetsMinimumOrder && quote.amountToFreeDelivery !== null ? (
+            <p className="mt-3 text-xs font-medium text-primary">
+              Add {formatBDT(quote.amountToFreeDelivery)} more to get FREE delivery.
             </p>
           ) : null}
           {isDelivery && distanceM !== null ? (
@@ -964,11 +981,30 @@ function CheckoutPage() {
             </p>
           ) : null}
           {blocked ? (
-            <p className="mt-2 text-xs text-destructive">
-              {outOfRange
-                ? outOfRangeMessage
-                : `Minimum order for delivery is ${formatBDT(quote.minimumOrder)}.`}
-            </p>
+            outOfRange ? (
+              <p className="mt-2 text-xs text-destructive">{outOfRangeMessage}</p>
+            ) : (
+              <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3">
+                <p className="text-sm font-medium text-destructive">
+                  {formatBDT(
+                    Math.max(quote.minimumOrder - Math.max(subtotal - discount, 0), 0),
+                  )}{" "}
+                  more needed to place this delivery order.
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Minimum order for delivery is {formatBDT(quote.minimumOrder)}.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={handleAddMoreItems}
+                >
+                  Add More Items
+                </Button>
+              </div>
+            )
           ) : null}
 
           <div className="mt-4 flex justify-between border-t border-border/70 pt-3">
