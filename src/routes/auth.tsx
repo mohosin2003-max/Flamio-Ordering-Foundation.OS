@@ -14,6 +14,7 @@ import { getPhoneAuthMode } from "@/lib/auth-mode.functions";
 import { signInWithPhonePassword, signUpWithPhonePassword } from "@/lib/auth.functions";
 import { getOwnerAccess } from "@/lib/owner.functions";
 import { listAddresses } from "@/lib/customer.functions";
+import { readPendingCheckout } from "@/lib/pending-checkout";
 import { checkSignupDuplicates } from "@/lib/signup-check.functions";
 import { isValidPhone, normalizePhone } from "@/lib/phone";
 import { claimMyStaffInvite } from "@/lib/staff.functions";
@@ -47,12 +48,15 @@ function AuthPage() {
   const readAuthMode = useServerFn(getPhoneAuthMode);
   const readDuplicates = useServerFn(checkSignupDuplicates);
 
-  const [mode, setMode] = useState<Mode>("login");
+  // Set when a guest arrives here from Checkout (tab-only, no order exists yet).
+  const [pendingCheckout] = useState(() => readPendingCheckout());
+  const fromCheckout = pendingCheckout !== null;
+  const [mode, setMode] = useState<Mode>(fromCheckout ? "signup" : "login");
   const [identity, setIdentity] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(pendingCheckout?.form.phone ?? "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(pendingCheckout?.form.fullName ?? "");
   const [otp, setOtp] = useState("");
   const [awaitingPhoneOtp, setAwaitingPhoneOtp] = useState(false);
   const [awaitingEmail, setAwaitingEmail] = useState(false);
@@ -78,6 +82,12 @@ function AuthPage() {
       // Customer routing remains available if no invitation exists.
     }
     const back = safeRedirect();
+    // Returning to a prepared Checkout: its location is used as-is, so skip
+    // the first-time location step.
+    if (back === "/checkout" && readPendingCheckout()) {
+      window.location.replace(back);
+      return;
+    }
     // One-time delivery location setup: only for customers with no saved address.
     try {
       const saved = await fetchAddresses();
@@ -309,14 +319,32 @@ function AuthPage() {
       <div className="mb-6 flex justify-center">
         <BrandLogo showName textClassName="text-2xl tracking-tight" imageClassName="size-14" />
       </div>
+      {fromCheckout && !awaitingEmail && !awaitingPhoneOtp ? (
+        <p className="mb-4 text-center text-sm text-muted-foreground">
+          {mode === "signup" ? "Already have an account?" : "New to Flamio?"}{" "}
+          <button
+            type="button"
+            className="font-semibold text-primary hover:underline"
+            onClick={() => {
+              setMode(mode === "signup" ? "login" : "signup");
+              setError(null);
+            }}
+          >
+            {mode === "signup" ? "Sign in" : "Create account"}
+          </button>
+        </p>
+      ) : null}
       <h1 className="font-display text-3xl font-extrabold">
-        {mode === "login" ? "Welcome back" : "Create your account"}
+        {mode === "login" ? "Welcome back" : fromCheckout ? "Create your Flamio account" : "Create your account"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Sign in or create your Flamio account.
+        {fromCheckout
+          ? "Your order details are saved. Continue to place your order."
+          : "Sign in or create your Flamio account."}
       </p>
 
-      <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
+      <div className={cn("mt-6 grid", fromCheckout && "hidden")}>
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
         {(["login", "signup"] as const).map((value) => (
           <Button
             key={value}
@@ -332,6 +360,7 @@ function AuthPage() {
             {value === "login" ? "Sign in" : "Sign up"}
           </Button>
         ))}
+      </div>
       </div>
 
       {awaitingEmail ? (
@@ -398,6 +427,15 @@ function AuthPage() {
                 <Input id="phone" value={phone} inputMode="tel" autoComplete="tel" required placeholder="01712345678" onChange={(e) => setPhone(e.target.value)} />
                 <p className="text-xs text-muted-foreground">You will sign in with this number.</p>
               </div>
+              {fromCheckout && pendingCheckout?.fulfillment === "delivery" ? (
+                <div className="space-y-1 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                  <p className="font-semibold">Delivery location</p>
+                  <p className="text-muted-foreground">
+                    {[pendingCheckout.form.area, pendingCheckout.form.addressLine].filter(Boolean).join(" — ") ||
+                      "Kept from Checkout"}
+                  </p>
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="email">Email (optional)</Label>
                 <Input id="email" type="email" value={email} autoComplete="email" onChange={(e) => setEmail(e.target.value)} />
