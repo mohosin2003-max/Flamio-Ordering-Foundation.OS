@@ -145,7 +145,7 @@ function CheckoutPage() {
     setForm(pending.form);
     setPoint(pending.point);
     setFulfillment(pending.fulfillment);
-    setMethod(pending.method);
+    setMethod(pending.method as typeof method);
     setZoneId(pending.zoneId);
     setSelectedId(null);
     setAddressTouched(true);
