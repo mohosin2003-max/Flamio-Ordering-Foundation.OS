@@ -5,8 +5,11 @@ import { BellRing, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   isAudioUnlocked,
+  playAlarmOnce,
+  writeAlarmSettings,
   readAlarmSettings,
   startAlarm,
   stopAlarm,
@@ -142,6 +145,56 @@ export function NewOrderAlarm() {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Owner Settings controls — stored on this device/browser only. */
+export function NewOrderAlarmSettings() {
+  const [s, setS] = useState<OrderAlarmSettings | null>(null);
+  useEffect(() => setS(readAlarmSettings()), []);
+  if (!s) return null;
+  const update = (patch: Partial<OrderAlarmSettings>) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    writeAlarmSettings(next);
+  };
+  return (
+    <div className="space-y-3 rounded-xl border border-border p-3">
+      <div className="flex items-center justify-between">
+        <div className="pr-3">
+          <p className="font-medium">New Order Alarm on this device</p>
+          <p className="text-sm text-muted-foreground">
+            Repeating alarm while the dashboard is open. Saved on this device only.
+          </p>
+        </div>
+        <Switch checked={s.enabled} onCheckedChange={(v) => update({ enabled: v })} />
+      </div>
+      <label className="block text-sm">
+        Alarm volume: {Math.round(s.volume * 100)}%
+        <input
+          type="range" min={0.1} max={1} step={0.1} value={s.volume}
+          className="mt-1 w-full accent-primary"
+          onChange={(e) => update({ volume: Number(e.target.value) })}
+        />
+      </label>
+      <label className="block text-sm">
+        Repeat every {s.intervalSec} seconds
+        <input
+          type="range" min={2} max={15} step={1} value={s.intervalSec}
+          className="mt-1 w-full accent-primary"
+          onChange={(e) => update({ intervalSec: Number(e.target.value) })}
+        />
+      </label>
+      <Button
+        type="button" size="sm" variant="outline"
+        onClick={async () => {
+          await unlockAudio();
+          playAlarmOnce(s.volume);
+        }}
+      >
+        <BellRing aria-hidden="true" /> Test Alarm
+      </Button>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BrandingSettingsSection } from "@/components/owner/branding-settings-section";
 import { IntegrationsSection } from "@/components/owner/integration-providers";
 import { PaymentProvidersSection } from "@/components/owner/payment-providers";
+import { NewOrderAlarmSettings } from "@/components/owner/NewOrderAlarm";
 import { SmsProviderSection } from "@/components/owner/sms-provider";
 import { ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
 import type { RestaurantSettings } from "@/lib/owner.functions";
@@ -220,6 +221,7 @@ function OwnerSettings() {
                 onCheckedChange={(v) => set("ownerEscalationEnabled", v)}
               />
             </div>
+            <NewOrderAlarmSettings />
           </div>
 
 
