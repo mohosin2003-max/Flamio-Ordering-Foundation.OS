@@ -80,6 +80,7 @@ export function isAudioUnlocked(): boolean {
 
 const activeAlarmSources = new Set<AudioBufferSourceNode>();
 const activeAlarmGains = new Set<GainNode>();
+let alarmPlaybackGeneration = 0;
 
 /** Kitchen's original short beep (own context, same sound as before). */
 export function beep() {
@@ -109,8 +110,9 @@ export function beep() {
 export function playAlarmOnce(volume: number) {
   const ctx = context();
   if (!ctx || ctx.state !== "running") return;
+  const generation = alarmPlaybackGeneration;
   void loadAlarmBuffer(ctx).then((buffer) => {
-    if (ctx.state !== "running") return;
+    if (ctx.state !== "running" || generation !== alarmPlaybackGeneration) return;
     stopActiveAlarmTones();
     const source = ctx.createBufferSource();
     const gain = ctx.createGain();
@@ -163,6 +165,7 @@ export function startAlarm(volume: number, intervalSec: number) {
 }
 
 export function stopAlarm() {
+  alarmPlaybackGeneration += 1;
   if (timer) clearInterval(timer);
   timer = null;
   stopActiveAlarmTones();
