@@ -53,15 +53,33 @@ export function isAudioUnlocked(): boolean {
   return shared?.state === "running";
 }
 
-function tone(ctx: AudioContext, start: number, freq: number, peak: number, length: number) {
+const activeAlarmOscillators = new Set<OscillatorNode>();
+const activeAlarmGains = new Set<GainNode>();
+
+function alarmTone(
+  ctx: AudioContext,
+  start: number,
+  freq: number,
+  peak: number,
+  length: number,
+) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = "sine";
+  osc.type = "triangle";
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.001, start);
-  gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.002), start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.002), start + 0.012);
+  gain.gain.setValueAtTime(Math.max(peak, 0.002), start + length * 0.62);
   gain.gain.exponentialRampToValueAtTime(0.001, start + length);
   osc.connect(gain).connect(ctx.destination);
+  activeAlarmOscillators.add(osc);
+  activeAlarmGains.add(gain);
+  osc.onended = () => {
+    activeAlarmOscillators.delete(osc);
+    activeAlarmGains.delete(gain);
+    osc.disconnect();
+    gain.disconnect();
+  };
   osc.start(start);
   osc.stop(start + length + 0.01);
 }
@@ -90,20 +108,41 @@ export function beep() {
   }
 }
 
-/** One alarm burst: three quick two-tone pulses. */
+/** One alarm burst: a loud, distinctive three-tone POS/KDS alert. */
 export function playAlarmOnce(volume: number) {
   try {
     const ctx = context();
     if (!ctx || ctx.state !== "running") return;
-    const peak = Math.min(Math.max(volume, 0), 1) * 0.5;
-    const t = ctx.currentTime;
-    for (let i = 0; i < 3; i++) {
-      tone(ctx, t + i * 0.3, 988, peak, 0.13);
-      tone(ctx, t + i * 0.3 + 0.14, 784, peak, 0.13);
-    }
+    stopActiveAlarmTones();
+    const peak = Math.min(Math.max(volume, 0), 1) * 0.82;
+    const t = ctx.currentTime + 0.01;
+    alarmTone(ctx, t, 784, peak, 0.18);
+    alarmTone(ctx, t + 0.2, 1047, peak, 0.18);
+    alarmTone(ctx, t + 0.4, 1319, peak, 0.28);
   } catch {
     /* blocked — the banner still shows */
   }
+}
+
+function stopActiveAlarmTones() {
+  const now = shared?.currentTime ?? 0;
+  for (const gain of activeAlarmGains) {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(0.001, now);
+    } catch {
+      /* node may already have ended */
+    }
+  }
+  for (const osc of activeAlarmOscillators) {
+    try {
+      osc.stop(now);
+    } catch {
+      /* node may already have ended */
+    }
+  }
+  activeAlarmOscillators.clear();
+  activeAlarmGains.clear();
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -119,4 +158,5 @@ export function startAlarm(volume: number, intervalSec: number) {
 export function stopAlarm() {
   if (timer) clearInterval(timer);
   timer = null;
+  stopActiveAlarmTones();
 }
