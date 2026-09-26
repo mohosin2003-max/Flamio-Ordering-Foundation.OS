@@ -7,6 +7,7 @@ import { Eye, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { BrandLogo } from "@/components/branding/BrandLogo";
+import { NewOrderAlarm } from "@/components/owner/NewOrderAlarm";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/states";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -226,6 +227,8 @@ function OwnerLayout() {
         </div>
         <h1 className="font-display text-2xl font-bold">{pathname.startsWith("/owner/inbox") ? "Messages" : pathname.startsWith("/owner/orders") ? "Orders" : pathname.startsWith("/owner/account") ? "Account" : "Workspace"}</h1>
       </header>
+
+      {allows(access.data, ["online_orders", "order_management"]) ? <NewOrderAlarm /> : null}
 
       {viewOnlySection ? (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
