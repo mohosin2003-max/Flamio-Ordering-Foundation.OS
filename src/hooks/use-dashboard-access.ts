@@ -16,10 +16,15 @@ import { getOwnerAccess } from "@/lib/owner.functions";
  * would throw "Unauthorized" for guests.
  */
 export function useDashboardAccess(enabled = true) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const fetchAccess = useServerFn(getOwnerAccess);
   const query = useQuery({
-    queryKey: ["owner-access"],
+    // The key includes the signed-in user's id so a cached owner/staff role
+    // can never be reused by a different user on the same device. When the
+    // user changes or signs out, the key changes and the old state is left
+    // behind. "owner-access" stays the prefix, so invalidations by that
+    // prefix (owner shell, staff editor) keep working.
+    queryKey: ["owner-access", user?.id ?? null],
     queryFn: async () => {
       // Session can end between render and fetch (e.g. during logout).
       const { data } = await supabase.auth.getSession();
