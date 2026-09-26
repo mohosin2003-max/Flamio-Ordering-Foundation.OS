@@ -116,7 +116,7 @@ export function NewOrderAlarm() {
     ) : null;
   }
 
-  const first = alarming[0];
+  const first = alarming[0]!;
   return (
     <div
       role="alert"
