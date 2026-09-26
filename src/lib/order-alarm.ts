@@ -4,6 +4,7 @@
  */
 
 const SETTINGS_KEY = "flamio.order-alarm.v1";
+const NEW_ORDER_ALARM_URL = "/sounds/new-order-alarm.mp3";
 
 export type OrderAlarmSettings = { enabled: boolean; volume: number; intervalSec: number };
 export const DEFAULT_ALARM_SETTINGS: OrderAlarmSettings = { enabled: true, volume: 0.6, intervalSec: 3 };
@@ -27,6 +28,8 @@ export function writeAlarmSettings(settings: OrderAlarmSettings) {
 }
 
 let shared: AudioContext | null = null;
+let alarmBuffer: AudioBuffer | null = null;
+let alarmBufferRequest: Promise<AudioBuffer> | null = null;
 
 function context(): AudioContext | null {
   const Ctx =
@@ -37,12 +40,34 @@ function context(): AudioContext | null {
   return shared;
 }
 
+function loadAlarmBuffer(ctx: AudioContext): Promise<AudioBuffer> {
+  if (alarmBuffer) return Promise.resolve(alarmBuffer);
+  if (!alarmBufferRequest) {
+    alarmBufferRequest = fetch(NEW_ORDER_ALARM_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error("New order alarm audio unavailable");
+        return response.arrayBuffer();
+      })
+      .then((data) => ctx.decodeAudioData(data))
+      .then((decoded) => {
+        alarmBuffer = decoded;
+        return decoded;
+      })
+      .catch((error) => {
+        alarmBufferRequest = null;
+        throw error;
+      });
+  }
+  return alarmBufferRequest;
+}
+
 /** Call from a tap/click so later sounds are allowed to play. */
 export async function unlockAudio(): Promise<boolean> {
   try {
     const ctx = context();
     if (!ctx) return false;
     if (ctx.state === "suspended") await ctx.resume();
+    if (ctx.state === "running") await loadAlarmBuffer(ctx);
     return ctx.state === "running";
   } catch {
     return false;
@@ -53,36 +78,8 @@ export function isAudioUnlocked(): boolean {
   return shared?.state === "running";
 }
 
-const activeAlarmOscillators = new Set<OscillatorNode>();
+const activeAlarmSources = new Set<AudioBufferSourceNode>();
 const activeAlarmGains = new Set<GainNode>();
-
-function alarmTone(
-  ctx: AudioContext,
-  start: number,
-  freq: number,
-  peak: number,
-  length: number,
-) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "triangle";
-  osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0.001, start);
-  gain.gain.exponentialRampToValueAtTime(Math.max(peak, 0.002), start + 0.012);
-  gain.gain.setValueAtTime(Math.max(peak, 0.002), start + length * 0.62);
-  gain.gain.exponentialRampToValueAtTime(0.001, start + length);
-  osc.connect(gain).connect(ctx.destination);
-  activeAlarmOscillators.add(osc);
-  activeAlarmGains.add(gain);
-  osc.onended = () => {
-    activeAlarmOscillators.delete(osc);
-    activeAlarmGains.delete(gain);
-    osc.disconnect();
-    gain.disconnect();
-  };
-  osc.start(start);
-  osc.stop(start + length + 0.01);
-}
 
 /** Kitchen's original short beep (own context, same sound as before). */
 export function beep() {
@@ -108,20 +105,30 @@ export function beep() {
   }
 }
 
-/** One alarm burst: a loud, distinctive three-tone POS/KDS alert. */
+/** One alarm burst using the locally bundled reference tune. */
 export function playAlarmOnce(volume: number) {
-  try {
-    const ctx = context();
-    if (!ctx || ctx.state !== "running") return;
+  const ctx = context();
+  if (!ctx || ctx.state !== "running") return;
+  void loadAlarmBuffer(ctx).then((buffer) => {
+    if (ctx.state !== "running") return;
     stopActiveAlarmTones();
-    const peak = Math.min(Math.max(volume, 0), 1) * 0.82;
-    const t = ctx.currentTime + 0.01;
-    alarmTone(ctx, t, 784, peak, 0.18);
-    alarmTone(ctx, t + 0.2, 1047, peak, 0.18);
-    alarmTone(ctx, t + 0.4, 1319, peak, 0.28);
-  } catch {
-    /* blocked — the banner still shows */
-  }
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = buffer;
+    gain.gain.value = Math.min(Math.max(volume, 0), 1);
+    source.connect(gain).connect(ctx.destination);
+    activeAlarmSources.add(source);
+    activeAlarmGains.add(gain);
+    source.onended = () => {
+      activeAlarmSources.delete(source);
+      activeAlarmGains.delete(gain);
+      source.disconnect();
+      gain.disconnect();
+    };
+    source.start();
+  }).catch(() => {
+    /* unavailable or blocked — the banner still shows */
+  });
 }
 
 function stopActiveAlarmTones() {
@@ -134,14 +141,14 @@ function stopActiveAlarmTones() {
       /* node may already have ended */
     }
   }
-  for (const osc of activeAlarmOscillators) {
+  for (const source of activeAlarmSources) {
     try {
-      osc.stop(now);
+      source.stop(now);
     } catch {
       /* node may already have ended */
     }
   }
-  activeAlarmOscillators.clear();
+  activeAlarmSources.clear();
   activeAlarmGains.clear();
 }
 
