@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Opening hours and scheduled-order slots live in `src/lib/opening-hours.ts` (pure, Asia/Dhaka) with the server read in `opening-hours.server.ts`; placeOrder and game play re-check them server-side — one source of truth for browser preview and server enforcement.
+- Scheduled pre-orders are ordinary `orders` rows with status `scheduled`; `activate_due_scheduled_orders()` (run by the minute dispatcher) flips them to `placed`, which reuses the existing alert/Kitchen/alarm path — no parallel order system.
