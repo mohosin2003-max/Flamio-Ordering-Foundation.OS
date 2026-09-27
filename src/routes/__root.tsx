@@ -9,7 +9,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -22,7 +22,7 @@ import { StaffBottomNav, StaffBottomNavSpacer } from "@/components/layout/StaffB
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/cart";
 import { useAuth } from "@/hooks/use-auth";
-import { useDashboardAccess } from "@/hooks/use-dashboard-access";
+import { readAccessHint, useDashboardAccess, writeAccessHint } from "@/hooks/use-dashboard-access";
 
 function NotFoundComponent() {
   return (
