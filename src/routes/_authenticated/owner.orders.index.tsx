@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, Navigate, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -18,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatBDT } from "@/lib/format";
 import { isOnlineChannel } from "@/lib/order-flow";
 import { statusLabel } from "@/lib/order-status";
+import { formatScheduled } from "@/lib/opening-hours";
 import { ownerListOrders } from "@/lib/owner.functions";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +41,7 @@ export const Route = createFileRoute("/_authenticated/owner/orders/")({
 function OwnerOrders() {
   const { order: legacyOrderId, date, activeOnline } = Route.useSearch();
   const listOrders = useServerFn(ownerListOrders);
+  const [upcomingOnly, setUpcomingOnly] = useState(false);
 
   const orders = useQuery({
     queryKey: ["owner-orders"],
@@ -87,11 +90,18 @@ function OwnerOrders() {
       activeOnline &&
       (!isOnlineChannel(order.channel) || order.status === "completed" || order.status === "cancelled")
     ) return false;
+    if (upcomingOnly && order.status !== "scheduled") return false;
     return true;
   });
+  const upcomingCount = orders.data.filter((o) => o.status === "scheduled").length;
 
   return (
     <div className="space-y-3">
+      <div className="flex gap-2">
+        <Button type="button" size="sm" variant={upcomingOnly ? "outline" : "default"} onClick={() => setUpcomingOnly(false)}>All</Button>
+        <Button type="button" size="sm" variant={upcomingOnly ? "default" : "outline"} onClick={() => setUpcomingOnly(true)}>Upcoming{upcomingCount ? ` (${upcomingCount})` : ""}</Button>
+      </div>
+      {upcomingOnly && shownOrders.length === 0 ? <p className="text-sm text-muted-foreground">No upcoming scheduled orders.</p> : null}
       {shownOrders.map((order) => {
         const { date: orderDate, time: orderTime } = orderDateParts(order.createdAt);
         const address = [order.addressLine, order.area].filter(Boolean).join(", ");
@@ -117,6 +127,9 @@ function OwnerOrders() {
                       </Badge>
                       {order.unreadMessages > 0 ? <Badge variant="destructive" className="shrink-0 gap-1"><MessageCircle className="size-3" />{order.unreadMessages} unread</Badge> : null}
                     </div>
+                    {order.scheduledFor ? (
+                      <p className="mt-2 text-sm font-semibold text-primary">Scheduled for {formatScheduled(order.scheduledFor)} · Payment: {order.paymentStatus}</p>
+                    ) : null}
                     <p className="mt-2 truncate text-sm font-bold">{order.customerName}</p>
                     <p className="mt-0.5 text-sm text-muted-foreground">
                       {order.customerPhone}

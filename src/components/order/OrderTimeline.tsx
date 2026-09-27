@@ -22,14 +22,17 @@ export function OrderTimeline({
   status,
   fulfillment,
   compact = false,
+  scheduled = false,
 }: {
+  scheduled?: boolean;
   status: string;
   fulfillment: FulfillmentType;
   compact?: boolean;
 }) {
-  const steps = statusFlow(fulfillment);
+  const baseSteps = statusFlow(fulfillment);
+  const steps: OrderStatus[] = status === "scheduled" || scheduled ? ["scheduled", ...baseSteps] : baseSteps;
   const cancelled = isCancelled(status);
-  const currentIndex = cancelled ? -1 : statusIndex(status, fulfillment);
+  const currentIndex = cancelled ? -1 : steps.indexOf(status as OrderStatus);
 
   return (
     <div>
