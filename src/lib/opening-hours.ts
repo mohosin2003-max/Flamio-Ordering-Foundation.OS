@@ -49,7 +49,7 @@ function dhakaMidnight(ms: number): number {
   return Math.floor((ms + DHAKA_OFFSET_MS) / DAY_MS) * DAY_MS - DHAKA_OFFSET_MS;
 }
 
-function window(settings: HoursSettings): { open: number; close: number } | null {
+function hoursWindow(settings: HoursSettings): { open: number; close: number } | null {
   const open = parseTime(settings.opensAt);
   const close = parseTime(settings.closesAt);
   if (open === null || close === null || open === close) return null;
@@ -60,7 +60,7 @@ function window(settings: HoursSettings): { open: number; close: number } | null
 export function isOpenAt(settings: HoursSettings, at: Date = new Date()): boolean {
   if (!settings.isOpen) return false;
   if (!settings.autoHours) return true;
-  const w = window(settings);
+  const w = hoursWindow(settings);
   if (!w) return true; // hours not configured: manual switch decides
   const ms = at.getTime();
   const today = dhakaMidnight(ms);
@@ -99,7 +99,7 @@ export function formatScheduled(iso: string): string {
 /** Every bookable slot from now + preparation time up to the advance window. */
 export function listSlots(settings: HoursSettings, now: Date = new Date()): Slot[] {
   if (!settings.scheduledEnabled || !settings.isOpen) return [];
-  const w = window(settings);
+  const w = hoursWindow(settings);
   if (!w) return [];
   const step = Math.max(settings.slotMinutes, 5) * 60_000;
   const nowMs = now.getTime();
