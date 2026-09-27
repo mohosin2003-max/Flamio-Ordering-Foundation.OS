@@ -1,7 +1,7 @@
 import { ChefHat, CheckCircle2, CircleSlash, PackageCheck, ShoppingBag, Truck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isCancelled, statusFlow, statusIndex, statusLabel, type OrderStatus } from "@/lib/order-status";
+import { isCancelled, statusFlow, statusLabel, type OrderStatus } from "@/lib/order-status";
 import type { FulfillmentType } from "@/types/menu";
 
 const ICONS: Record<OrderStatus, typeof CheckCircle2> = {
