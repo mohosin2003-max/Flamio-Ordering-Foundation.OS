@@ -412,12 +412,11 @@ async function runStaffNewOrder(job: JobRow): Promise<void> {
   // Already acknowledged (moved past "placed") or closed — stay quiet.
   if (order.status !== "placed") return;
 
+  const settings = await getNotificationSettings();
   const recipients = await recipientsWithPermission(["order_management", "online_orders"]);
   if (recipients.length === 0) return;
 
-  // New orders reach Owner/Staff through the dashboard's New Order Alarm, so
-  // only the in-app history row is written here — no one-time phone push.
-  await createNotifications(
+  await notifyUsers(
     recipients.map((userId) => ({
       userId,
       kind: "staff_new_order" as const,
@@ -428,6 +427,15 @@ async function runStaffNewOrder(job: JobRow): Promise<void> {
       orderCode: order.code,
       dedupeKey: `staff_new_order:${order.id}:${userId}`,
     })),
+    {
+      title: `New Order ${order.code}`,
+      body: "A new order needs your attention.",
+      url: `/owner/orders?order=${order.id}`,
+      tag: `order-${order.id}`,
+      silent: !settings.staffOrderSoundEnabled,
+      requireInteraction: true,
+      urgency: "high",
+    },
   );
 }
 
