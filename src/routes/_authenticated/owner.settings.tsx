@@ -18,6 +18,7 @@ import { BrandingSettingsSection } from "@/components/owner/branding-settings-se
 import { IntegrationsSection } from "@/components/owner/integration-providers";
 import { PaymentProvidersSection } from "@/components/owner/payment-providers";
 import { NewOrderAlarmSettings } from "@/components/owner/NewOrderAlarm";
+import { ScheduledOrdersSettings } from "@/components/owner/ScheduledOrdersSettings";
 import { SmsProviderSection } from "@/components/owner/sms-provider";
 import { ownerGetSettings, ownerUpdateSettings } from "@/lib/owner.functions";
 import type { RestaurantSettings } from "@/lib/owner.functions";
@@ -356,6 +357,7 @@ function OwnerSettings() {
         </CardContent>
       </Card>
 
+      <ScheduledOrdersSettings />
       <PaymentProvidersSection />
 
       <SmsProviderSection />
