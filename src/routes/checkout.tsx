@@ -28,6 +28,9 @@ import { formatBDT } from "@/lib/format";
 import { checkCoupon } from "@/lib/coupons.functions";
 import { saveOrder, type PlacedOrder } from "@/lib/orders";
 import { placeOrder } from "@/lib/orders.functions";
+import { canScheduleNow, formatScheduled, isOpenAt, listSlots } from "@/lib/opening-hours";
+import { getPublicHours } from "@/lib/scheduling.functions";
+import { ScheduleDialog } from "@/components/checkout/ScheduleDialog";
 import { clearPendingCheckout, readPendingCheckout, savePendingCheckout } from "@/lib/pending-checkout";
 import { cn } from "@/lib/utils";
 import type { CustomerAddress, FulfillmentType } from "@/types/menu";
@@ -71,6 +74,29 @@ function CheckoutPage() {
   const navigate = useNavigate();
 
   const submitOrder = useServerFn(placeOrder);
+
+  // Opening hours (Asia/Dhaka). The server re-checks everything on submit.
+  const fetchHours = useServerFn(getPublicHours);
+  const hoursQuery = useQuery({ queryKey: ["public-hours"], queryFn: () => fetchHours(), refetchInterval: 60_000, staleTime: 30_000 });
+  const hours = hoursQuery.data ?? null;
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [closedPromptShown, setClosedPromptShown] = useState(false);
+  const restaurantOpen = hours ? isOpenAt(hours) : true;
+  const scheduleAllowed = hours ? canScheduleNow(hours) : false;
+  const slots = useMemo(() => (hours && scheduleAllowed ? listSlots(hours) : []), [hours, scheduleAllowed, hoursQuery.dataUpdatedAt]);
+  const closedWithoutSlot = !restaurantOpen && !scheduledFor;
+  useEffect(() => {
+    if (hours && !restaurantOpen && !scheduledFor && !closedPromptShown) {
+      setClosedPromptShown(true);
+      setScheduleOpen(true);
+    }
+  }, [hours, restaurantOpen, scheduledFor, closedPromptShown]);
+  useEffect(() => {
+    if (scheduledFor && hours && slots.length > 0 && !slots.some((s) => s.iso === scheduledFor)) {
+      setScheduledFor(null);
+    }
+  }, [slots, scheduledFor, hours]);
 
   const [placed, setPlaced] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -149,6 +175,7 @@ function CheckoutPage() {
       method,
       zoneId,
       couponCode: coupon?.code ?? null,
+      scheduledFor,
     });
     void navigate({ to: "/menu", search: {} as never });
   }
@@ -167,6 +194,7 @@ function CheckoutPage() {
     setSelectedId(null);
     setAddressTouched(true);
     if (pending.couponCode) setCouponInput(pending.couponCode);
+    if (pending.scheduledFor) setScheduledFor(pending.scheduledFor);
   }, []);
 
   // Preselect the default (or first) saved address once, without clobbering typing.
@@ -339,6 +367,11 @@ function CheckoutPage() {
             toast.error(message);
           };
 
+          if (closedWithoutSlot) {
+            setScheduleOpen(true);
+            fail("We're closed right now. Please choose a time to schedule this order.");
+            return;
+          }
           if (isDelivery && outOfRange) {
             fail(outOfRangeMessage);
             return;
@@ -380,6 +413,7 @@ function CheckoutPage() {
               method,
               zoneId,
               couponCode: coupon?.code ?? null,
+              scheduledFor,
             });
             setSubmitting(false);
             await navigate({
@@ -427,6 +461,7 @@ function CheckoutPage() {
                 subtotal,
                 discount,
                 couponCode: coupon?.code ?? null,
+                scheduledFor,
                 deliveryCharge: quote.charge,
                 total: grandTotal,
                 items: lines.map((l) => ({
@@ -450,7 +485,7 @@ function CheckoutPage() {
 
             setPlaced(true);
             clear();
-            toast.success("Order placed");
+            toast.success(scheduledFor ? "Order scheduled" : "Order placed");
             await navigate({ to: "/order/$orderId", params: { orderId: created.id } });
           } catch (err) {
             console.error("[checkout] placeOrder failed", err);
@@ -1023,11 +1058,30 @@ function CheckoutPage() {
             </p>
           ) : null}
 
+          {scheduledFor ? (
+            <div className="mt-4 rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 text-sm">
+              <p className="font-semibold">Scheduled for {formatScheduled(scheduledFor)}</p>
+              <div className="mt-1 flex gap-3 text-xs">
+                <button type="button" className="font-semibold text-primary underline-offset-2 hover:underline" onClick={() => setScheduleOpen(true)}>Change</button>
+                {restaurantOpen ? (
+                  <button type="button" className="text-muted-foreground underline-offset-2 hover:underline" onClick={() => setScheduledFor(null)}>Order now instead</button>
+                ) : null}
+              </div>
+            </div>
+          ) : closedWithoutSlot && hours ? (
+            <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <p>We're closed right now{hours.opensAt ? ` — we open at ${hours.opensAt}` : ""}.</p>
+              {slots.length > 0 ? (
+                <button type="button" className="mt-1 text-xs font-semibold underline" onClick={() => setScheduleOpen(true)}>Choose a time to schedule</button>
+              ) : null}
+            </div>
+          ) : null}
+
           <Button
             type="submit"
             size="lg"
             className="mt-5 w-full shadow-ember"
-            disabled={blocked || submitting}
+            disabled={blocked || submitting || (closedWithoutSlot && Boolean(hours))}
             aria-busy={submitting}
           >
             {submitting ? (
@@ -1036,9 +1090,27 @@ function CheckoutPage() {
                 Placing order…
               </>
             ) : (
-              "Place order"
+              scheduledFor ? "Schedule order" : "Place order"
             )}
           </Button>
+          {restaurantOpen && !scheduledFor && slots.length > 0 ? (
+            <button
+              type="button"
+              className="mt-2 w-full text-center text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              onClick={() => setScheduleOpen(true)}
+            >
+              Schedule for later
+            </button>
+          ) : null}
+          <ScheduleDialog
+            open={scheduleOpen}
+            onOpenChange={setScheduleOpen}
+            closed={!restaurantOpen}
+            slots={slots}
+            opensAt={hours?.opensAt ?? null}
+            value={scheduledFor}
+            onConfirm={setScheduledFor}
+          />
         </aside>
       </form>
     </div>
