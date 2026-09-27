@@ -19,6 +19,7 @@ export interface MyOrder {
   code: string;
   status: string;
   createdAt: string;
+  scheduledFor: string | null;
   fulfillment: "delivery" | "pickup";
   paymentMethod: string;
   paymentLabel: string;
@@ -42,7 +43,7 @@ export const listMyOrders = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("orders")
       .select(
-        "id, code, status, created_at, fulfillment, payment_method, payment_label, subtotal, discount, delivery_charge, total, zone_name, estimated_time, order_items(*)",
+        "id, code, status, created_at, fulfillment, payment_method, payment_label, subtotal, discount, delivery_charge, total, zone_name, estimated_time, scheduled_for, order_items(*)",
       )
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
@@ -58,6 +59,7 @@ export const listMyOrders = createServerFn({ method: "GET" })
       code: order.code,
       status: order.status,
       createdAt: order.created_at,
+      scheduledFor: order.scheduled_for,
       fulfillment: order.fulfillment as "delivery" | "pickup",
       paymentMethod: order.payment_method,
       paymentLabel: order.payment_label,

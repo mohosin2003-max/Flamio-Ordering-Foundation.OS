@@ -1,10 +1,11 @@
-import { ChefHat, CheckCircle2, CircleSlash, PackageCheck, ShoppingBag, Truck } from "lucide-react";
+import { CalendarClock, ChefHat, CheckCircle2, CircleSlash, PackageCheck, ShoppingBag, Truck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { isCancelled, statusFlow, statusIndex, statusLabel, type OrderStatus } from "@/lib/order-status";
+import { isCancelled, statusFlow, statusLabel, type OrderStatus } from "@/lib/order-status";
 import type { FulfillmentType } from "@/types/menu";
 
 const ICONS: Record<OrderStatus, typeof CheckCircle2> = {
+  scheduled: CalendarClock,
   placed: ShoppingBag,
   confirmed: CheckCircle2,
   preparing: ChefHat,
@@ -22,14 +23,17 @@ export function OrderTimeline({
   status,
   fulfillment,
   compact = false,
+  scheduled = false,
 }: {
+  scheduled?: boolean;
   status: string;
   fulfillment: FulfillmentType;
   compact?: boolean;
 }) {
-  const steps = statusFlow(fulfillment);
+  const baseSteps = statusFlow(fulfillment);
+  const steps: OrderStatus[] = status === "scheduled" || scheduled ? ["scheduled", ...baseSteps] : baseSteps;
   const cancelled = isCancelled(status);
-  const currentIndex = cancelled ? -1 : statusIndex(status, fulfillment);
+  const currentIndex = cancelled ? -1 : steps.indexOf(status as OrderStatus);
 
   return (
     <div>

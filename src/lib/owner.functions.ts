@@ -14,6 +14,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface OwnerOrderRow {
   id: string;
+  orderKind?: string;
+  scheduledFor?: string | null;
+  paymentStatus?: string;
   code: string;
   status: string;
   /** Where the sale came from: online order, counter sale or platform sale. */
@@ -192,7 +195,7 @@ export const ownerListOrders = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, rider_id, riders(name), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
+        "id, code, status, channel, fulfillment, customer_name, customer_phone, total, created_at, address_line, area, landmark, delivery_notes, payment_label, order_kind, scheduled_for, payment_status, rider_id, riders(name), order_items(product_id, product_name, variant_name, quantity, unit_price, image_url, combo_name, created_at)",
       )
       .eq("channel", "online")
       .order("created_at", { ascending: false })
@@ -249,6 +252,9 @@ export const ownerListOrders = createServerFn({ method: "GET" })
       addressLine: o.address_line,
       area: o.area,
       paymentLabel: o.payment_label,
+      orderKind: o.order_kind,
+      scheduledFor: o.scheduled_for,
+      paymentStatus: o.payment_status,
       riderId: o.rider_id,
       riderName: o.riders?.name ?? null,
       landmark: o.landmark,

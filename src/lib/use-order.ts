@@ -44,6 +44,7 @@ export function useOrder(orderId: string, phoneLast4?: string) {
         deliveryCharge: row.deliveryCharge,
         total: row.total,
         estimatedTime: row.estimatedTime,
+        scheduledFor: row.scheduledFor ?? null,
         zoneName: row.zoneName,
         pickupNote: row.pickupNote,
         status: row.status,

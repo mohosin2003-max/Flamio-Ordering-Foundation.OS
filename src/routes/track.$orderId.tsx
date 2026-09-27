@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatScheduled } from "@/lib/opening-hours";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 
@@ -99,7 +100,8 @@ function TrackOrderPage() {
           </div>
 
           <div className="mt-6">
-            <OrderTimeline status={order.status} fulfillment={order.fulfillment} />
+            {(order as { scheduledFor?: string | null }).scheduledFor ? (<p className="mb-3 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-semibold">Scheduled for {formatScheduled((order as { scheduledFor: string }).scheduledFor)}</p>) : null}
+            <OrderTimeline status={order.status} fulfillment={order.fulfillment} scheduled={Boolean((order as { scheduledFor?: string | null }).scheduledFor)} />
           </div>
 
           {isActiveOrder(order.status) ? (

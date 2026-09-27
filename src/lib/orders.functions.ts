@@ -112,6 +112,8 @@ const placeOrderSchema = z.object({
    * so it never enters the online-order status flow.
    */
   channel: z.enum(["online", "counter"]).default("online"),
+  /** Optional scheduled pre-order slot (ISO). Re-validated on the server. */
+  scheduledFor: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
@@ -158,6 +160,29 @@ export const placeOrder = createServerFn({ method: "POST" })
       }
     }
 
+    // Opening hours (Asia/Dhaka) are authoritative here. Counter sales are
+    // never affected; online orders need an open restaurant or a valid slot.
+    let scheduledFor: string | null = null;
+    let scheduledActivateAt: string | null = null;
+    if (channel === "online") {
+      const { loadHoursSettings } = await import("@/lib/opening-hours.server");
+      const { isOpenAt, isValidSlot, canScheduleNow } = await import("@/lib/opening-hours");
+      const hours = await loadHoursSettings();
+      if (data.scheduledFor) {
+        if (!canScheduleNow(hours)) throw new Error("Scheduled orders aren't available right now.");
+        if (hours.paymentRequired) {
+          throw new Error("Online payment is required for scheduled orders and isn't available yet.");
+        }
+        if (!isValidSlot(hours, data.scheduledFor)) {
+          throw new Error("That time slot is no longer available. Please pick another time.");
+        }
+        const at = new Date(data.scheduledFor).getTime();
+        scheduledFor = new Date(at).toISOString();
+        scheduledActivateAt = new Date(at - hours.prepMinutes * 60_000).toISOString();
+      } else if (!isOpenAt(hours)) {
+        throw new Error("We're closed right now. You can schedule this order for later.");
+      }
+    }
 
     // Combo lines are re-checked against the owner's configuration and the live
     // menu, then re-priced here. Availability, selection rules and combo prices
@@ -243,7 +268,12 @@ export const placeOrder = createServerFn({ method: "POST" })
           user_id: userId,
           channel,
           // Counter sales are confirmed/sold the moment the bill is completed.
-          status: channel === "counter" ? "completed" : "placed",
+          status: channel === "counter" ? "completed" : scheduledFor ? "scheduled" : "placed",
+          ...({
+            order_kind: scheduledFor ? "scheduled" : "regular",
+            scheduled_for: scheduledFor,
+            scheduled_activate_at: scheduledActivateAt,
+          } as Record<string, unknown>),
           fulfillment: data.fulfillment,
           payment_method: data.paymentMethod,
           payment_label: data.paymentLabel,
@@ -431,6 +461,9 @@ export const getOrder = createServerFn({ method: "GET" })
       fulfillment: order.fulfillment as "delivery" | "pickup",
       paymentMethod: order.payment_method,
       paymentLabel: order.payment_label,
+      orderKind: ((order as Record<string, unknown>)["order_kind"] as string | null) ?? "regular",
+      scheduledFor: ((order as Record<string, unknown>)["scheduled_for"] as string | null) ?? null,
+      paymentStatus: ((order as Record<string, unknown>)["payment_status"] as string | null) ?? "unpaid",
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
       addressLine: order.address_line,

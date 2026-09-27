@@ -93,6 +93,8 @@ export const startChallengePlay = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ challengeId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const { assertRestaurantOpen } = await import("@/lib/opening-hours.server");
+    await assertRestaurantOpen();
     const { CHALLENGE_COLUMNS, openSession } = await import("@/lib/challenges.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
@@ -110,6 +112,8 @@ export const finishChallengePlay = createServerFn({ method: "POST" })
     z.object({ sessionId: z.string().uuid(), score: z.number().min(0).max(100_000) }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { assertRestaurantOpen } = await import("@/lib/opening-hours.server");
+    await assertRestaurantOpen();
     const { resolveSession } = await import("@/lib/challenges.server");
     return resolveSession(context.userId, data.sessionId, data.score);
   });

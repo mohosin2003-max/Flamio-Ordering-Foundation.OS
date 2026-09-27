@@ -14,6 +14,8 @@ export type PendingCheckout = {
   method: string;
   zoneId: string | null;
   couponCode: string | null;
+  /** Chosen scheduled pre-order slot (ISO), if any. */
+  scheduledFor?: string | null;
 };
 
 export function savePendingCheckout(state: PendingCheckout): void {

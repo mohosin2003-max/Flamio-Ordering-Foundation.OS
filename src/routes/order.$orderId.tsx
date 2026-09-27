@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatScheduled } from "@/lib/opening-hours";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Clock, ListChecks, MapPin, MessageCircle, Receipt, Wallet } from "lucide-react";
 
@@ -119,7 +120,8 @@ function OrderSuccessPage() {
             <ListChecks className="h-4 w-4 text-primary" /> Order status
           </h2>
           <div className="mt-4">
-            <OrderTimeline status={order.status} fulfillment={order.fulfillment} compact />
+            {(order as { scheduledFor?: string | null }).scheduledFor ? (<p className="mb-3 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-semibold">Scheduled for {formatScheduled((order as { scheduledFor: string }).scheduledFor)}</p>) : null}
+            <OrderTimeline status={order.status} fulfillment={order.fulfillment} compact scheduled={Boolean((order as { scheduledFor?: string | null }).scheduledFor)} />
           </div>
           <Button asChild variant="outline" size="sm" className="mt-4 w-full sm:w-auto">
             <Link to="/track/$orderId" params={{ orderId: order.id }}>

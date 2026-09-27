@@ -1094,6 +1094,10 @@ export type Database = {
           user_id: string | null
           zone_id: string | null
           zone_name: string | null
+          order_kind: string
+          payment_status: string
+          scheduled_activate_at: string | null
+          scheduled_for: string | null
         }
         Insert: {
           address_line?: string | null
@@ -1130,6 +1134,10 @@ export type Database = {
           user_id?: string | null
           zone_id?: string | null
           zone_name?: string | null
+          order_kind?: string
+          payment_status?: string
+          scheduled_activate_at?: string | null
+          scheduled_for?: string | null
         }
         Update: {
           address_line?: string | null
@@ -1166,6 +1174,10 @@ export type Database = {
           user_id?: string | null
           zone_id?: string | null
           zone_name?: string | null
+          order_kind?: string
+          payment_status?: string
+          scheduled_activate_at?: string | null
+          scheduled_for?: string | null
         }
         Relationships: [
           {
