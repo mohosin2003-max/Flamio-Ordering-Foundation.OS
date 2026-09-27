@@ -34,6 +34,8 @@ export type PushPayload = {
   silent?: boolean;
   requireInteraction?: boolean;
   urgency?: "low" | "normal" | "high";
+  /** Optional vibration pattern (ms); honoured only where the platform supports it. */
+  vibrate?: number[];
 };
 
 type SubscriptionRow = {
@@ -244,6 +246,7 @@ export async function sendPushToUsers(
             tag: payload.tag ?? null,
             silent: payload.silent === true,
             requireInteraction: payload.requireInteraction === true,
+            ...(payload.vibrate ? { vibrate: payload.vibrate } : {}),
           },
           options: { ttl: 3600, urgency: payload.urgency ?? "normal" } as const,
         };
@@ -428,13 +431,14 @@ async function runStaffNewOrder(job: JobRow): Promise<void> {
       dedupeKey: `staff_new_order:${order.id}:${userId}`,
     })),
     {
-      title: `New Order ${order.code}`,
-      body: "A new order needs your attention.",
-      url: `/owner/orders?order=${order.id}`,
+      title: `NEW ORDER #${order.code}`,
+      body: "New order waiting — tap to open and accept it.",
+      url: `/owner/orders/${order.id}`,
       tag: `order-${order.id}`,
       silent: !settings.staffOrderSoundEnabled,
       requireInteraction: true,
       urgency: "high",
+      vibrate: [500, 200, 500, 200, 500, 200, 800],
     },
   );
 }
