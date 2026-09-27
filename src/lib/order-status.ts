@@ -2,6 +2,7 @@ import type { FulfillmentType } from "@/types/menu";
 
 /** Canonical order lifecycle used by both the customer app and the backend. */
 export type OrderStatus =
+  | "scheduled"
   | "placed"
   | "confirmed"
   | "preparing"
@@ -11,6 +12,7 @@ export type OrderStatus =
   | "cancelled";
 
 const LABELS: Record<OrderStatus, string> = {
+  scheduled: "Scheduled",
   placed: "Order placed",
   confirmed: "Confirmed",
   preparing: "Preparing",
