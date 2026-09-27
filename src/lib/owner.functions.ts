@@ -14,9 +14,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface OwnerOrderRow {
   id: string;
-  orderKind: string;
-  scheduledFor: string | null;
-  paymentStatus: string;
+  orderKind?: string;
+  scheduledFor?: string | null;
+  paymentStatus?: string;
   code: string;
   status: string;
   /** Where the sale came from: online order, counter sale or platform sale. */

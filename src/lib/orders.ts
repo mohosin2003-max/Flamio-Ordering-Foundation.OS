@@ -19,6 +19,7 @@ export interface PlacedOrder {
   deliveryCharge: number;
   total: number;
   estimatedTime: string | null;
+  scheduledFor?: string | null;
   zoneName: string | null;
   address: CustomerAddress | null;
   pickupNote: string | null;
