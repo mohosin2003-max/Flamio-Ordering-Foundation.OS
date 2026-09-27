@@ -19,9 +19,9 @@ export const Route = createFileRoute("/api/public/notifications/dispatch")({
         // existing staff new-order alert, which is sent just below.
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { error } = await (supabaseAdmin.rpc as unknown as (fn: string) => Promise<{ error: unknown }>)(
-            "activate_due_scheduled_orders",
-          );
+          const { error } = await (
+            supabaseAdmin as unknown as { rpc: (fn: string) => Promise<{ error: unknown }> }
+          ).rpc("activate_due_scheduled_orders");
           if (error) console.error("Scheduled order activation failed", error);
         } catch (activationError) {
           console.error("Scheduled order activation failed", activationError);
