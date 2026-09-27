@@ -25,11 +25,16 @@ self.addEventListener("push", (event) => {
     renotify: Boolean(payload.tag) && !silent,
     silent,
     requireInteraction: payload.requireInteraction === true,
+    timestamp: Date.now(),
     data: { url: payload.url || "/account/notifications" },
   };
   // Vibration is only honoured where the platform supports it; a plain
   // notification is shown everywhere else.
   if (!silent) options.vibrate = payload.vibrate || [200, 100, 200, 100, 200];
+  // Staff/owner new-order alerts get a direct "Open Order" button.
+  if (payload.tag && String(payload.tag).startsWith("order-")) {
+    options.actions = [{ action: "open", title: "Open Order" }];
+  }
 
   event.waitUntil(self.registration.showNotification(payload.title || "Flamio", options));
 });
