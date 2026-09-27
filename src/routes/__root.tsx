@@ -9,7 +9,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -22,7 +22,7 @@ import { StaffBottomNav, StaffBottomNavSpacer } from "@/components/layout/StaffB
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/cart";
 import { useAuth } from "@/hooks/use-auth";
-import { useDashboardAccess } from "@/hooks/use-dashboard-access";
+import { readAccessHint, useDashboardAccess, writeAccessHint } from "@/hooks/use-dashboard-access";
 
 function NotFoundComponent() {
   return (
@@ -153,19 +153,31 @@ const CUSTOMER_PATHS = ["/", "/menu", "/combos", "/offers", "/contact", "/accoun
 function AppExperience() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const access = useDashboardAccess(isAuthenticated && !loading);
   const workspace = pathname === "/owner" || pathname.startsWith("/owner/") || pathname === "/kitchen";
-  const staffAccount = Boolean(access.data?.isManager || access.data?.isStaff);
+  const serverStaff = Boolean(access.data?.isManager || access.data?.isStaff);
+  const [hint, setHint] = useState<boolean | null>(null);
+  useEffect(() => setHint(readAccessHint(user?.id)), [user?.id]);
+  // While the server check runs, the device hint picks the first screen only.
+  const staffAccount = access.isLoading ? hint === true : serverStaff;
   const customerSurface = CUSTOMER_PATHS.some((path) => path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`));
 
   useEffect(() => {
-    if (!loading && isAuthenticated && !access.isLoading && staffAccount && customerSurface) {
+    if (user?.id && access.isSuccess) {
+      writeAccessHint(user.id, serverStaff);
+      setHint(serverStaff);
+    }
+  }, [access.isSuccess, serverStaff, user?.id]);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && staffAccount && customerSurface) {
       void navigate({ to: "/owner", replace: true });
     }
-  }, [access.isLoading, customerSurface, isAuthenticated, loading, navigate, staffAccount]);
+  }, [customerSurface, isAuthenticated, loading, navigate, staffAccount]);
 
-  if (!workspace && isAuthenticated && customerSurface && (access.isLoading || staffAccount)) {
+  const awaitingUnknown = access.isLoading && hint === null;
+  if (!workspace && isAuthenticated && customerSurface && (awaitingUnknown || staffAccount)) {
     return <div className="min-h-screen bg-background" />;
   }
 

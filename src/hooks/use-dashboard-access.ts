@@ -43,3 +43,28 @@ export function useDashboardAccess(enabled = true) {
     isStaffOnly: Boolean(data?.isStaff && !data?.isManager),
   };
 }
+
+/**
+ * Startup hint only: remembers, per user id, whether this device last saw that
+ * user as owner/staff. Holds no tokens or permissions — it only picks which
+ * screen to show first; the server check above still decides everything.
+ */
+const ACCESS_HINT_KEY = "flamio.access-hint.v1";
+
+export function readAccessHint(userId: string | null | undefined): boolean | null {
+  if (!userId || typeof window === "undefined") return null;
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(ACCESS_HINT_KEY) ?? "null");
+    return raw && raw.userId === userId && typeof raw.staff === "boolean" ? raw.staff : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeAccessHint(userId: string, staff: boolean) {
+  try {
+    window.localStorage.setItem(ACCESS_HINT_KEY, JSON.stringify({ userId, staff }));
+  } catch {
+    /* storage unavailable — hint is optional */
+  }
+}
