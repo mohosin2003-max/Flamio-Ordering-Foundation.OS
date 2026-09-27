@@ -13,6 +13,7 @@ import { formatBDT } from "@/lib/format";
 import { menuQueryOptions } from "@/lib/menu-repository";
 import { isActiveOrder, isCancelled, statusLabel } from "@/lib/order-status";
 import { formatOrderDate } from "@/lib/orders";
+import { formatScheduled } from "@/lib/opening-hours";
 import { buildReorderPlan } from "@/lib/reorder";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types/menu";
@@ -183,6 +184,7 @@ function OrderCard({
 
       <div className="mt-1 flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">{formatOrderDate(order.createdAt)}</span>
+        {order.scheduledFor ? <span className="text-xs font-semibold text-primary">Scheduled for {formatScheduled(order.scheduledFor)}</span> : null}
         <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
           {order.fulfillment === "delivery" ? "Delivery" : "Pickup"}
         </span>
