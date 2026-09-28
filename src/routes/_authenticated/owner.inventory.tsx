@@ -441,6 +441,15 @@ function OwnerInventory() {
               disabled={saving}
               onClick={async () => {
                 if (!itemDraft) return;
+                const trimmedName = itemDraft.name.trim();
+                if (trimmedName.length < 2 || trimmedName.length > 60) {
+                  toast.error("Item name must be 2–60 characters.");
+                  return;
+                }
+                if (!itemDraft.unit.trim()) {
+                  toast.error("Please choose a unit.");
+                  return;
+                }
                 setSaving(true);
                 try {
                   await saveItem({
