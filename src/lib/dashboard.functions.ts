@@ -14,6 +14,9 @@ export type DashboardSummary = {
   activeOnlineOrders: number;
   inventory: { totalItems: number; lowStock: number; outOfStock: number };
   reports: { sales: number; expenses: number; net: number };
+  todayProfit: number;
+  stock: { id: string; name: string; unit: string; stock: number }[];
+  todayPurchases: { id: string; label: string; quantity: number; unit: string; amount: number; at: string }[];
 };
 
 export const ownerGetDashboardSummary = createServerFn({ method: "GET" })
@@ -35,13 +38,13 @@ export const ownerGetDashboardSummary = createServerFn({ method: "GET" })
         ? supabaseAdmin.from("orders").select("total").eq("status", "completed").lte("created_at", bounds.to).limit(10000)
         : Promise.resolve({ data: [] }),
       can("purchases")
-        ? supabaseAdmin.from("purchases").select("total_price").eq("purchased_on", today)
+        ? supabaseAdmin.from("purchases").select("id, total_price, quantity, unit_label, expense_name, created_at, inventory_items(name, unit)").eq("purchased_on", today).order("created_at", { ascending: false })
         : Promise.resolve({ data: [] }),
       can("reports")
         ? supabaseAdmin.from("purchases").select("total_price").lte("purchased_on", today).limit(10000)
         : Promise.resolve({ data: [] }),
       can("inventory")
-        ? supabaseAdmin.from("inventory_items").select("current_stock, low_stock_threshold").eq("is_active", true)
+        ? supabaseAdmin.from("inventory_items").select("id, name, unit, current_stock, low_stock_threshold").eq("is_active", true).order("name")
         : Promise.resolve({ data: [] }),
       can("staff_finance")
         ? supabaseAdmin.from("staff_ledger_entries").select("amount").eq("entry_date", today).eq("status", "approved")
@@ -71,6 +74,12 @@ export const ownerGetDashboardSummary = createServerFn({ method: "GET" })
         lowStock: inventoryRows.filter((row) => Number(row.current_stock) > 0 && Number(row.current_stock) <= Number(row.low_stock_threshold)).length,
         outOfStock: inventoryRows.filter((row) => Number(row.current_stock) <= 0).length,
       },
+      todayProfit: Number((todaySales - todayExpenses).toFixed(2)),
+      stock: inventoryRows.map((row) => ({ id: row.id, name: row.name, unit: row.unit, stock: Number(row.current_stock) })),
+      todayPurchases: (todayPurchasesResult.data ?? []).map((row) => {
+        const item = (row as { inventory_items?: { name: string; unit: string } | null }).inventory_items;
+        return { id: row.id, label: item?.name ?? row.expense_name ?? "Expense", quantity: Number(row.quantity), unit: row.unit_label ?? item?.unit ?? "", amount: Number(row.total_price), at: row.created_at };
+      }),
       reports: { sales: Number(sales.toFixed(2)), expenses: Number(expenses.toFixed(2)), net: Number((sales - expenses).toFixed(2)) },
     };
   });

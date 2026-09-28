@@ -1,4 +1,5 @@
 import { useDashboardAccess } from "@/hooks/use-dashboard-access";
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -68,6 +69,7 @@ function OwnerHome() {
       (!module.ownerRoleOnly || isOwnerRole),
   );
   const s = summary.data;
+  const [panel, setPanel] = useState<"stock" | "purchases" | null>(null);
 
   return (
     <div className="space-y-6">
@@ -81,6 +83,37 @@ function OwnerHome() {
           {can("purchases") ? <SummaryLink to="/owner/purchases" search={{ date: s?.today }} label="Expenses" value={formatBDT(s?.todayExpenses ?? 0)} /> : null}
         </div>
         {summary.isLoading ? <Skeleton className="mt-3 h-24 w-full" /> : null}
+        {(canSeeOrders || can(["pos", "platform_sales"])) && can("purchases") ? (
+          <div className="mt-3 rounded-lg border border-primary/40 bg-card p-4 shadow-card">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Today's Profit</p>
+            <p className={`mt-1 font-display text-2xl font-black ${(s?.todayProfit ?? 0) < 0 ? "text-destructive" : "text-primary"}`}>{formatBDT(s?.todayProfit ?? 0)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Sales {formatBDT(s?.todaySales ?? 0)} − Expenses {formatBDT(s?.todayExpenses ?? 0)}</p>
+          </div>
+        ) : null}
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {can("inventory") ? <button type="button" onClick={() => setPanel(panel === "stock" ? null : "stock")} className="rounded-lg border border-border bg-card p-3 text-left text-sm font-bold transition-colors hover:bg-muted" aria-expanded={panel === "stock"}>Current Stock</button> : null}
+          {can("purchases") ? <button type="button" onClick={() => setPanel(panel === "purchases" ? null : "purchases")} className="rounded-lg border border-border bg-card p-3 text-left text-sm font-bold transition-colors hover:bg-muted" aria-expanded={panel === "purchases"}>Purchase History</button> : null}
+        </div>
+        {panel === "stock" && can("inventory") ? (
+          <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card text-sm">
+            {(s?.stock ?? []).length === 0 ? <li className="p-3 text-muted-foreground">No inventory items yet.</li> : null}
+            {(s?.stock ?? []).map((item) => (
+              <li key={item.id} className="flex justify-between gap-3 p-3"><span>{item.name}</span><span className={`font-semibold ${item.stock <= 0 ? "text-destructive" : ""}`}>{item.stock.toLocaleString("en-US")} {item.unit}</span></li>
+            ))}
+          </ul>
+        ) : null}
+        {panel === "purchases" && can("purchases") ? (
+          <ul className="mt-3 divide-y divide-border rounded-lg border border-border bg-card text-sm">
+            {(s?.todayPurchases ?? []).length === 0 ? <li className="p-3 text-muted-foreground">No purchases recorded today.</li> : null}
+            {(s?.todayPurchases ?? []).map((row) => (
+              <li key={row.id} className="flex justify-between gap-3 p-3">
+                <span><span className="block font-semibold">{row.label}</span><span className="text-xs text-muted-foreground">{row.quantity > 0 ? `${row.quantity.toLocaleString("en-US")} ${row.unit} · ` : ""}{new Date(row.at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span></span>
+                <span className="font-semibold">{formatBDT(row.amount)}</span>
+              </li>
+            ))}
+            <li className="p-3"><Link to="/owner/purchases" className="text-xs font-semibold text-primary">Open Purchases</Link></li>
+          </ul>
+        ) : null}
       </section>
 
       <section>
