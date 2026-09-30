@@ -2,32 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Loader2, Minus, Pencil, Plus } from "lucide-react";
-import { toast } from "sonner";
-
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { EmptyState } from "@/components/ui/states";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
+import { AlertTriangle, Loader2, Minus, Pencil, Plus, Trash2 } from "lucide-react";
+...
 import { ownerGetCatalog } from "@/lib/owner.functions";
+import { useDashboardAccess } from "@/hooks/use-dashboard-access";
 import {
   UNITS,
   ownerAdjustStock,
@@ -35,6 +13,7 @@ import {
   ownerListStockMovements,
   ownerSaveInventoryItem,
   ownerSaveRecipe,
+  recordWaste,
 } from "@/lib/inventory.functions";
 import type { InventoryItem } from "@/lib/inventory.functions";
 
@@ -87,18 +66,24 @@ type StockDraft = {
   item: InventoryItem;
   changeType: "add" | "reduce" | "update";
   quantity: string;
+  note: string;
 };
+
+type WasteDraft = { itemId: string; quantity: string; reason: string; note: string };
 
 function OwnerInventory() {
   const listInventory = useServerFn(ownerListInventory);
   const getCatalog = useServerFn(ownerGetCatalog);
   const saveItem = useServerFn(ownerSaveInventoryItem);
   const adjustStock = useServerFn(ownerAdjustStock);
+  const recordWasteFn = useServerFn(recordWaste);
   const saveRecipe = useServerFn(ownerSaveRecipe);
   const queryClient = useQueryClient();
+  const { isManager } = useDashboardAccess();
 
   const [itemDraft, setItemDraft] = useState<ItemDraft | null>(null);
   const [stockDraft, setStockDraft] = useState<StockDraft | null>(null);
+  const [wasteDraft, setWasteDraft] = useState<WasteDraft | null>(null);
   const [recipeProductId, setRecipeProductId] = useState<string | null>(null);
   const [recipeLines, setRecipeLines] = useState<{ itemId: string; quantity: string }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -220,21 +205,39 @@ function OwnerInventory() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  {isManager ? (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        aria-label={`Add stock to ${item.name}`}
+                        onClick={() =>
+                          setStockDraft({ item, changeType: "add", quantity: "1", note: "" })
+                        }
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        aria-label={`Reduce stock of ${item.name}`}
+                        onClick={() =>
+                          setStockDraft({ item, changeType: "reduce", quantity: "1", note: "" })
+                        }
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : null}
                   <Button
                     size="icon"
                     variant="outline"
-                    aria-label={`Add stock to ${item.name}`}
-                    onClick={() => setStockDraft({ item, changeType: "add", quantity: "1" })}
+                    aria-label={`Record waste for ${item.name}`}
+                    onClick={() =>
+                      setWasteDraft({ itemId: item.id, quantity: "", reason: "", note: "" })
+                    }
                   >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    aria-label={`Reduce stock of ${item.name}`}
-                    onClick={() => setStockDraft({ item, changeType: "reduce", quantity: "1" })}
-                  >
-                    <Minus className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                   <Button
                     size="icon"
@@ -338,7 +341,7 @@ function OwnerInventory() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold">
-                      {m.changeType === "order" || m.changeType === "reduce" ? "−" : "+"}
+                      {m.changeType === "order" || m.changeType === "reduce" || m.changeType === "waste" ? "−" : "+"}
                       {m.quantity} {m.unit}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -519,6 +522,15 @@ function OwnerInventory() {
                   onChange={(e) => setStockDraft({ ...stockDraft, quantity: e.target.value })}
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-note">Reason (required)</Label>
+                <Input
+                  id="stock-note"
+                  maxLength={200}
+                  value={stockDraft.note}
+                  onChange={(e) => setStockDraft({ ...stockDraft, note: e.target.value })}
+                />
+              </div>
             </div>
           ) : null}
           <DialogFooter>
@@ -529,6 +541,10 @@ function OwnerInventory() {
               disabled={saving}
               onClick={async () => {
                 if (!stockDraft) return;
+                if (stockDraft.note.trim().length < 3) {
+                  toast.error("Please enter a reason (at least 3 characters).");
+                  return;
+                }
                 setSaving(true);
                 try {
                   await adjustStock({
@@ -536,7 +552,7 @@ function OwnerInventory() {
                       itemId: stockDraft.item.id,
                       changeType: stockDraft.changeType,
                       quantity: Number(stockDraft.quantity) || 0,
-                      note: null,
+                      note: stockDraft.note.trim(),
                     },
                   });
                   setStockDraft(null);
@@ -551,6 +567,110 @@ function OwnerInventory() {
             >
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Waste entry */}
+      <Dialog open={wasteDraft !== null} onOpenChange={(open) => !open && setWasteDraft(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record waste</DialogTitle>
+          </DialogHeader>
+          {wasteDraft ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Inventory item</Label>
+                <Select
+                  value={wasteDraft.itemId}
+                  onValueChange={(v) => setWasteDraft({ ...wasteDraft, itemId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {items.map((i) => (
+                      <SelectItem key={i.id} value={i.id}>
+                        {i.name} ({i.currentStock} {i.unit})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="waste-qty">
+                  Waste quantity
+                  {itemsById.get(wasteDraft.itemId)
+                    ? ` (${itemsById.get(wasteDraft.itemId)!.unit})`
+                    : ""}
+                </Label>
+                <Input
+                  id="waste-qty"
+                  inputMode="decimal"
+                  value={wasteDraft.quantity}
+                  onChange={(e) => setWasteDraft({ ...wasteDraft, quantity: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="waste-reason">Waste reason (required)</Label>
+                <Input
+                  id="waste-reason"
+                  maxLength={120}
+                  placeholder="e.g. Expired, spoiled, dropped"
+                  value={wasteDraft.reason}
+                  onChange={(e) => setWasteDraft({ ...wasteDraft, reason: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="waste-note">Note (optional)</Label>
+                <Input
+                  id="waste-note"
+                  maxLength={200}
+                  value={wasteDraft.note}
+                  onChange={(e) => setWasteDraft({ ...wasteDraft, note: e.target.value })}
+                />
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWasteDraft(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={saving}
+              onClick={async () => {
+                if (!wasteDraft) return;
+                const item = itemsById.get(wasteDraft.itemId);
+                const qty = Number(wasteDraft.quantity);
+                if (!item) return void toast.error("Please select an inventory item.");
+                if (!(qty > 0)) return void toast.error("Enter a waste quantity above zero.");
+                if (qty > item.currentStock)
+                  return void toast.error("Waste can't be more than the available stock.");
+                if (wasteDraft.reason.trim().length < 3)
+                  return void toast.error("Please enter a waste reason (at least 3 characters).");
+                setSaving(true);
+                try {
+                  await recordWasteFn({
+                    data: {
+                      itemId: item.id,
+                      quantity: qty,
+                      reason: wasteDraft.reason.trim(),
+                      note: wasteDraft.note.trim() || null,
+                    },
+                  });
+                  setWasteDraft(null);
+                  await refresh();
+                  toast.success("Waste recorded");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Couldn't record waste");
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save waste
             </Button>
           </DialogFooter>
         </DialogContent>
