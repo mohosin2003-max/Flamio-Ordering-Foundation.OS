@@ -4,7 +4,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import type { LucideIcon } from "lucide-react";
-import { Boxes, ChefHat, ClipboardList, Contact, CookingPot, Gift, HandCoins, Images, LayoutGrid, MessageCircle, PackageCheck, ReceiptText, Settings2, ShieldCheck, Tags, Truck, Users, UtensilsCrossed, WalletCards } from "lucide-react";
+import { Boxes, ChefHat, ClipboardList, Contact, CookingPot, Gift, HandCoins, Images, LayoutGrid, MessageCircle, PackageCheck, ReceiptText, Settings2, ShieldCheck, ShoppingBag, Tags, Truck, Users, UtensilsCrossed, WalletCards } from "lucide-react";
 
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,6 +47,7 @@ const MODULES: Module[] = [
   { to: "/owner/banners", label: "Banners", description: "Home promotions", icon: Images, permission: "banners" },
   { to: "/owner/reviews", label: "Reviews", description: "Customer feedback", icon: MessageCircle, permission: "reviews" },
   { to: "/owner/platforms", label: "Platforms", description: "Delivery platform sales", icon: HandCoins, permission: "platform_sales" },
+  { to: "/owner/platform-sale", label: "Platform Sale", description: "Record a platform sale", icon: ShoppingBag, permission: "platform_sales" },
   { to: "/owner/staff", label: "Staff", description: "People and permissions", icon: ShieldCheck, permission: "staff" },
   { to: "/owner/staff-accounts", label: "Payroll", description: "Staff salary accounts", icon: WalletCards, permission: "staff_finance", ownerOnly: true },
   { to: "/owner/finance", label: "Owner Finance", description: "Profit, withdrawals and partners", icon: HandCoins, permission: "staff_finance", ownerOnly: true },
