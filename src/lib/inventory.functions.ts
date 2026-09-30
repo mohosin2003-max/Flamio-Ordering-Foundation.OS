@@ -128,7 +128,10 @@ export const ownerSaveInventoryItem = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Manual stock movement. Negative stock is blocked inside the DB function. */
+/**
+ * Manual stock movement — Owner/Admin only, reason required.
+ * Negative stock is blocked inside the DB function.
+ */
 export const ownerAdjustStock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -137,20 +140,20 @@ export const ownerAdjustStock = createServerFn({ method: "POST" })
         itemId: z.string().uuid(),
         changeType: z.enum(["add", "reduce", "update"]),
         quantity: z.number().nonnegative().max(1000000),
-        note: z.string().trim().max(200).nullable().optional(),
+        note: z.string().trim().min(3).max(200),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "inventory");
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: newStock, error } = await supabaseAdmin.rpc("apply_stock_change", {
       _item_id: data.itemId,
       _change_type: data.changeType,
       _quantity: data.quantity,
-      ...(data.note ? { _note: data.note } : {}),
+      _note: data.note,
       _created_by: context.userId,
     });
 
@@ -160,6 +163,48 @@ export const ownerAdjustStock = createServerFn({ method: "POST" })
         error.message.includes("Not enough stock")
           ? "That would take stock below zero."
           : "We couldn't update stock. Please try again.",
+      );
+    }
+    return { ok: true, currentStock: Number(newStock) };
+  });
+
+/**
+ * Waste entry. Reuses `apply_stock_change` with the `waste` type, so stock and
+ * the movement record (item, quantity, reason, user, time, resulting stock)
+ * are written together. Waste larger than current stock is refused.
+ */
+export const recordWaste = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        itemId: z.string().uuid(),
+        quantity: z.number().positive().max(1000000),
+        reason: z.string().trim().min(3).max(120),
+        note: z.string().trim().max(200).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertPermission } = await import("@/lib/owner.server");
+    await assertPermission(context.userId, "inventory");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const note = data.note ? `Waste: ${data.reason} — ${data.note}` : `Waste: ${data.reason}`;
+    const { data: newStock, error } = await supabaseAdmin.rpc("apply_stock_change", {
+      _item_id: data.itemId,
+      _change_type: "waste",
+      _quantity: data.quantity,
+      _note: note,
+      _created_by: context.userId,
+    });
+
+    if (error) {
+      console.error("Waste entry failed", error);
+      throw new Error(
+        error.message.includes("Not enough stock")
+          ? "Waste can't be more than the available stock."
+          : "We couldn't save this waste entry. Please try again.",
       );
     }
     return { ok: true, currentStock: Number(newStock) };
