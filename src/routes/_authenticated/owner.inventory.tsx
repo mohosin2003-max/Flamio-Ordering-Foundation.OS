@@ -304,9 +304,11 @@ function OwnerInventory() {
                               .join(" · ")}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => openRecipe(product.id)}>
-                      Manage
-                    </Button>
+                    {isManager ? (
+                      <Button size="sm" variant="outline" onClick={() => openRecipe(product.id)}>
+                        Manage
+                      </Button>
+                    ) : null}
                   </CardContent>
                 </Card>
               );
@@ -358,7 +360,7 @@ function OwnerInventory() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{m.itemName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(m.createdAt).toLocaleString()} · {m.changeType}
+                      {new Date(m.createdAt).toLocaleString()} · {m.changeType} · {m.createdByName}
                       {m.note ? ` · ${m.note}` : ""}
                     </p>
                   </div>
@@ -435,7 +437,7 @@ function OwnerInventory() {
                     onChange={(e) => setItemDraft({ ...itemDraft, unitCost: e.target.value })}
                   />
                 </div>
-                {!itemDraft.id ? (
+                {!itemDraft.id && isManager ? (
                   <div className="space-y-1.5">
                     <Label htmlFor="inv-stock">Starting stock</Label>
                     <Input
