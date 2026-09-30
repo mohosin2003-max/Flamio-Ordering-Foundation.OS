@@ -312,7 +312,7 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("inventory_movements")
       .select(
-        "id, item_id, change_type, quantity, resulting_stock, note, created_at, inventory_items(name, unit)",
+        "id, item_id, change_type, quantity, resulting_stock, note, created_at, created_by, inventory_items(name, unit)",
       )
       .order("created_at", { ascending: false })
       .limit(200);
@@ -322,7 +322,14 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
       throw new Error("We couldn't load stock history. Please try again.");
     }
 
-    return (data ?? []).map((row) => {
+    const rows = data ?? [];
+    const userIds = [...new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))];
+    const { data: profileRows } = userIds.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [] };
+    const namesById = new Map((profileRows ?? []).map((p) => [p.id, p.full_name]));
+
+    return rows.map((row) => {
       const item = row.inventory_items as { name: string; unit: string } | null;
       return {
         id: row.id,
@@ -334,6 +341,9 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
         resultingStock: Number(row.resulting_stock),
         note: row.note,
         createdAt: row.created_at,
+        createdByName: row.created_by
+          ? (namesById.get(row.created_by) ?? "Unknown user")
+          : "System (order)",
       };
     });
   });
