@@ -100,8 +100,11 @@ export const ownerSaveInventoryItem = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "inventory");
+    const access = await assertPermission(context.userId, "inventory");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Only Owner/Admin may set starting stock; staff-created items start at 0.
+    const initialStock = access.isManager ? (data.initialStock ?? 0) : 0;
 
     const row = {
       name: data.name,
@@ -111,19 +114,43 @@ export const ownerSaveInventoryItem = createServerFn({ method: "POST" })
       is_active: data.isActive,
     };
 
-    const { error } = data.id
-      ? await supabaseAdmin.from("inventory_items").update(row).eq("id", data.id)
-      : await supabaseAdmin
-          .from("inventory_items")
-          .insert({ ...row, current_stock: data.initialStock ?? 0 });
+    if (data.id) {
+      const { error } = await supabaseAdmin.from("inventory_items").update(row).eq("id", data.id);
+      if (error) {
+        console.error("Save inventory item failed", error);
+        throw new Error("We couldn't save this inventory item. Please try again.");
+      }
+      return { ok: true };
+    }
 
-    if (error) {
+    const { data: inserted, error } = await supabaseAdmin
+      .from("inventory_items")
+      .insert({ ...row, current_stock: 0 })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
       console.error("Save inventory item failed", error);
       throw new Error(
-        error.code === "23505"
+        error?.code === "23505"
           ? "An inventory item with that name already exists."
           : "We couldn't save this inventory item. Please try again.",
       );
+    }
+
+    // Record an Owner/Admin's starting stock as an auditable movement.
+    if (initialStock > 0) {
+      const { error: stockError } = await supabaseAdmin.rpc("apply_stock_change", {
+        _item_id: inserted.id,
+        _change_type: "add",
+        _quantity: initialStock,
+        _note: "Initial stock",
+        _created_by: context.userId,
+      });
+      if (stockError) {
+        console.error("Initial stock movement failed", stockError);
+        throw new Error("The item was saved, but its starting stock couldn't be recorded.");
+      }
     }
     return { ok: true };
   });
@@ -229,8 +256,9 @@ export const ownerSaveRecipe = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { assertPermission } = await import("@/lib/owner.server");
-    await assertPermission(context.userId, "inventory");
+    // Recipes drive automatic stock deduction, so editing them is Owner/Admin only.
+    const { assertOwner } = await import("@/lib/owner.server");
+    await assertOwner(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { error: clearError } = await supabaseAdmin
@@ -269,6 +297,8 @@ export interface StockMovement {
   resultingStock: number;
   note: string | null;
   createdAt: string;
+  /** Display name of who made the change; "System (order)" for automatic deductions. */
+  createdByName: string;
 }
 
 /** Read-only stock movement history from the existing movements table. */
@@ -282,7 +312,7 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("inventory_movements")
       .select(
-        "id, item_id, change_type, quantity, resulting_stock, note, created_at, inventory_items(name, unit)",
+        "id, item_id, change_type, quantity, resulting_stock, note, created_at, created_by, inventory_items(name, unit)",
       )
       .order("created_at", { ascending: false })
       .limit(200);
@@ -292,7 +322,14 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
       throw new Error("We couldn't load stock history. Please try again.");
     }
 
-    return (data ?? []).map((row) => {
+    const rows = data ?? [];
+    const userIds = [...new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))];
+    const { data: profileRows } = userIds.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [] };
+    const namesById = new Map((profileRows ?? []).map((p) => [p.id, p.full_name]));
+
+    return rows.map((row) => {
       const item = row.inventory_items as { name: string; unit: string } | null;
       return {
         id: row.id,
@@ -304,6 +341,9 @@ export const ownerListStockMovements = createServerFn({ method: "GET" })
         resultingStock: Number(row.resulting_stock),
         note: row.note,
         createdAt: row.created_at,
+        createdByName: row.created_by
+          ? (namesById.get(row.created_by) ?? "Unknown user")
+          : "System (order)",
       };
     });
   });
