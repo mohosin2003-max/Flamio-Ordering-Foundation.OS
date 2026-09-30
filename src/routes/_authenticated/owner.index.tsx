@@ -4,7 +4,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import type { LucideIcon } from "lucide-react";
-import { Boxes, ChefHat, ClipboardList, Contact, CookingPot, Gift, HandCoins, Images, LayoutGrid, MessageCircle, PackageCheck, ReceiptText, Settings2, ShieldCheck, Tags, Truck, Users, UtensilsCrossed, WalletCards } from "lucide-react";
+import { Boxes, ChefHat, ClipboardList, Contact, CookingPot, Gift, HandCoins, Images, LayoutGrid, MessageCircle, PackageCheck, ReceiptText, Settings2, ShieldCheck, ShoppingBag, Tags, Truck, Users, UtensilsCrossed, WalletCards } from "lucide-react";
 
 import { PushToggle } from "@/components/notifications/PushToggle";
 import { Skeleton } from "@/components/ui/skeleton";
