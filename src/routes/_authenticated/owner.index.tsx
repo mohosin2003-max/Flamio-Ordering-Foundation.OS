@@ -47,6 +47,7 @@ const MODULES: Module[] = [
   { to: "/owner/banners", label: "Banners", description: "Home promotions", icon: Images, permission: "banners" },
   { to: "/owner/reviews", label: "Reviews", description: "Customer feedback", icon: MessageCircle, permission: "reviews" },
   { to: "/owner/platforms", label: "Platforms", description: "Delivery platform sales", icon: HandCoins, permission: "platform_sales" },
+  { to: "/owner/platform-sale", label: "Platform Sale", description: "Record a platform sale", icon: ShoppingBag, permission: "platform_sales" },
   { to: "/owner/staff", label: "Staff", description: "People and permissions", icon: ShieldCheck, permission: "staff" },
   { to: "/owner/staff-accounts", label: "Payroll", description: "Staff salary accounts", icon: WalletCards, permission: "staff_finance", ownerOnly: true },
   { to: "/owner/finance", label: "Owner Finance", description: "Profit, withdrawals and partners", icon: HandCoins, permission: "staff_finance", ownerOnly: true },
