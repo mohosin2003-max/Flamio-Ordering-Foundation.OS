@@ -30,7 +30,9 @@ export const Route = createFileRoute("/contact")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://flamio.bd/contact" },
     ],
+    links: [{ rel: "canonical", href: "https://flamio.bd/contact" }],
   }),
   component: ContactPage,
 });
