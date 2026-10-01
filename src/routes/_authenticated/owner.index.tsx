@@ -29,6 +29,7 @@ type Module = { to: string; label: string; description: string; icon: LucideIcon
 
 const MODULES: Module[] = [
   { to: "/owner/pos", label: "Counter Sale", description: "Create an in-store sale", icon: ReceiptText, permission: "pos", prominent: true },
+  { to: "/owner/platform-sale", label: "Platform Sale", description: "Record a platform sale", icon: ShoppingBag, permission: "platform_sales" },
   { to: "/kitchen", label: "Kitchen", description: "Open the live kitchen queue", icon: ChefHat, permission: "kitchen", prominent: true },
   { to: "/owner/orders", label: "Orders", description: "Manage online orders", icon: ClipboardList, permission: ["online_orders", "order_management"], prominent: true },
   { to: "/owner/inbox", label: "Messages", description: "Reply to customers", icon: MessageCircle, permission: "customers", prominent: true },
@@ -47,7 +48,6 @@ const MODULES: Module[] = [
   { to: "/owner/banners", label: "Banners", description: "Home promotions", icon: Images, permission: "banners" },
   { to: "/owner/reviews", label: "Reviews", description: "Customer feedback", icon: MessageCircle, permission: "reviews" },
   { to: "/owner/platforms", label: "Platforms", description: "Delivery platform sales", icon: HandCoins, permission: "platform_sales" },
-  { to: "/owner/platform-sale", label: "Platform Sale", description: "Record a platform sale", icon: ShoppingBag, permission: "platform_sales" },
   { to: "/owner/staff", label: "Staff", description: "People and permissions", icon: ShieldCheck, permission: "staff" },
   { to: "/owner/staff-accounts", label: "Payroll", description: "Staff salary accounts", icon: WalletCards, permission: "staff_finance", ownerOnly: true },
   { to: "/owner/finance", label: "Owner Finance", description: "Profit, withdrawals and partners", icon: HandCoins, permission: "staff_finance", ownerOnly: true },
