@@ -31,7 +31,11 @@ export const Route = createFileRoute("/menu/")({
         property: "og:description",
         content: "Burgers, meat boxes, pizza, pasta, shawarma and sides — order online from Flamio.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://flamio.bd/menu" },
     ],
+    links: [{ rel: "canonical", href: "https://flamio.bd/menu" }],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());

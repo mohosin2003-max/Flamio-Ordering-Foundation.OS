@@ -23,7 +23,9 @@ export const Route = createFileRoute("/offers")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://flamio.bd/offers" },
     ],
+    links: [{ rel: "canonical", href: "https://flamio.bd/offers" }],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());

@@ -26,7 +26,9 @@ export const Route = createFileRoute("/combos")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: "https://flamio.bd/combos" },
     ],
+    links: [{ rel: "canonical", href: "https://flamio.bd/combos" }],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(menuQueryOptions());
